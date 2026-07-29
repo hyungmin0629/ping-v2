@@ -21,6 +21,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import sys
 import uuid
 from pathlib import Path
@@ -32,6 +33,12 @@ ROOT = Path(__file__).resolve().parent.parent.parent
 
 A_AUTH = uuid.UUID("aaaaaaaa-0000-4000-8000-000000000001")
 B_AUTH = uuid.UUID("bbbbbbbb-0000-4000-8000-000000000002")
+# C 는 아직 온보딩하지 않은 계정이다. 가입 경로 자체를 시험하려면
+# app_user 행이 없는 익명 계정이 하나 필요하다.
+C_AUTH = uuid.UUID("cccccccc-0000-4000-8000-000000000003")
+
+INVITE_CODE_RE = re.compile(r"^[A-HJ-NP-Z2-9]{6,8}$")   # DDL 의 ck_invite_code 와 같다
+SIGNUP_GRANT = 300                                       # onboarding.sql 이 지급하는 양
 
 
 def as_user(cur, auth_uuid: uuid.UUID | None):
@@ -48,8 +55,8 @@ def as_user(cur, auth_uuid: uuid.UUID | None):
 
 def setup(cur):
     cur.execute("SET LOCAL ROLE postgres")
-    cur.execute("INSERT INTO auth.users (id) VALUES (%s), (%s) ON CONFLICT DO NOTHING",
-                (A_AUTH, B_AUTH))
+    cur.execute("INSERT INTO auth.users (id) VALUES (%s), (%s), (%s) ON CONFLICT DO NOTHING",
+                (A_AUTH, B_AUTH, C_AUTH))
 
     cur.execute("INSERT INTO region (sido, sigungu) VALUES ('시험','구') RETURNING id")
     rid = cur.fetchone()[0]
@@ -187,6 +194,88 @@ def main() -> int:
                 print(f"  {'막힘  ' if blocked else '뚫림!!'} {desc}  ({detail})")
                 if not blocked:
                     failures.append(desc)
+
+            # ---------------------------------------------------------
+            # 온보딩 — 가입 경로가 정말 RPC 하나뿐인가 (W3)
+            #
+            # 가입은 유일하게 "없던 행을 만드는" 동작이라 따로 시험한다.
+            # 여기가 열려 있으면 하트를 얹은 계정을 스스로 만들 수 있다.
+            # ---------------------------------------------------------
+            print()
+            print("온보딩 시험 (W3)")
+
+            cid = ctx["class"]
+
+            # 1) 직접 INSERT — 하트까지 얹어서 시도해 본다
+            cur.execute("SAVEPOINT sp")
+            blocked, detail = False, ""
+            try:
+                as_user(cur, C_AUTH)
+                cur.execute(
+                    "INSERT INTO app_user (auth_user_id,nickname,invite_code,class_id,"
+                    "heart_balance,is_synthetic) "
+                    "VALUES (%s,'몰래가입','ZZZZZZ',%s,999999,true)", (C_AUTH, cid))
+                blocked, detail = cur.rowcount == 0, f"{cur.rowcount}행 생성됨"
+            except Exception as e:
+                blocked, detail = True, type(e).__name__
+            finally:
+                cur.execute("ROLLBACK TO SAVEPOINT sp")
+                cur.execute("SET LOCAL ROLE postgres")
+
+            print(f"  {'막힘  ' if blocked else '뚫림!!'} 직접 INSERT 로 가입 시도  ({detail})")
+            if not blocked:
+                failures.append("[온보딩] 직접 INSERT 로 계정이 만들어짐")
+
+            # 2~4) RPC 로는 제대로 가입되는가
+            cur.execute("SAVEPOINT onboarding")
+            try:
+                as_user(cur, C_AUTH)
+                cur.execute("SELECT id, nickname, invite_code, heart_balance, is_synthetic "
+                            "FROM complete_onboarding('새로온사람', %s)", (cid,))
+                new_id, nick, code, bal, synth = cur.fetchone()
+                cur.execute("SET LOCAL ROLE postgres")
+
+                ok = (nick == "새로온사람"
+                      and bool(INVITE_CODE_RE.match(code or ""))
+                      and bal == SIGNUP_GRANT
+                      and synth is False)
+                print(f"  {'동작함' if ok else '실패!!'} RPC 로 가입  "
+                      f"(코드={code}, 하트={bal}, 합성데이터={synth})")
+                if not ok:
+                    failures.append("[온보딩] 가입 결과가 기대와 다름")
+
+                # 새로고침이나 중복 클릭으로 두 번 불려도 계정이 갈라지면 안 된다
+                as_user(cur, C_AUTH)
+                cur.execute("SELECT id FROM complete_onboarding('다른이름', %s)", (cid,))
+                again_id = cur.fetchone()[0]
+                cur.execute("SET LOCAL ROLE postgres")
+                cur.execute("SELECT count(*) FROM app_user WHERE auth_user_id=%s", (C_AUTH,))
+                cnt = cur.fetchone()[0]
+
+                ok = again_id == new_id and cnt == 1
+                print(f"  {'동작함' if ok else '실패!!'} 재호출해도 계정은 하나  "
+                      f"(id={again_id}, 행수={cnt})")
+                if not ok:
+                    failures.append("[온보딩] 재호출로 계정이 갈라짐")
+
+                # 잔액과 원장의 일치 — 구 시스템 최대 결함이 이 자리였다
+                cur.execute(
+                    "SELECT u.heart_balance, coalesce(sum(t.delta),0) "
+                    "FROM app_user u LEFT JOIN heart_transaction t ON t.user_id = u.id "
+                    "WHERE u.id = %s GROUP BY u.heart_balance", (new_id,))
+                bal, ledger = cur.fetchone()
+
+                ok = bal == ledger == SIGNUP_GRANT
+                print(f"  {'동작함' if ok else '실패!!'} 가입 하트의 잔액=원장  "
+                      f"(잔액={bal}, 원장={ledger})")
+                if not ok:
+                    failures.append("[온보딩] 하트 잔액과 원장이 어긋남")
+            except Exception as e:
+                print(f"  실패!! 온보딩 RPC 호출  ({type(e).__name__}: {e})")
+                failures.append("[온보딩] complete_onboarding 호출 실패")
+            finally:
+                cur.execute("ROLLBACK TO SAVEPOINT onboarding")
+                cur.execute("SET LOCAL ROLE postgres")
 
             # ---------------------------------------------------------
             # 반대 방향 — 정상 동작이 막히지 않았는가

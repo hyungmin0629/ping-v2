@@ -103,10 +103,9 @@ CREATE POLICY read_own_user ON public.app_user
     FOR SELECT TO authenticated
     USING (auth_user_id = auth.uid());
 
--- 온보딩: 자기 자신의 행만 만들 수 있다
-CREATE POLICY insert_own_user ON public.app_user
-    FOR INSERT TO authenticated
-    WITH CHECK (auth_user_id = auth.uid());
+-- 온보딩(가입)은 여기서 열지 않는다. onboarding.sql 의 complete_onboarding()
+-- 으로만 한다 — INSERT 를 열면 heart_balance·is_synthetic 을 같은 문장에
+-- 끼워 넣을 수 있고, RLS 는 행 단위라 그걸 막지 못하기 때문이다.
 
 -- 닉네임·소속 변경만 허용. heart_balance 등은 RPC 로만 바뀐다.
 -- (컬럼 단위 제한은 RLS 로 불가능하므로 UPDATE 권한 자체를 컬럼으로 제한한다)
