@@ -19,26 +19,27 @@
 ```bash
 docker run -d --name pgtest \
   -e POSTGRES_PASSWORD=test -e POSTGRES_DB=pingv2 \
-  -p 5433:5432 postgres:16
+  -p 5433:5432 --shm-size=1g postgres:16
 ```
+
+> `--shm-size=1g` 를 빠뜨리지 말 것. 도커 기본값은 64MB 이고, 그 상태로 합성
+> 786만 행에 정합성 검사를 돌리면 병렬 워커가
+> `could not resize shared memory segment ... No space left on device` 로 죽는다.
+> 디스크가 아니라 공유메모리 문제다.
 
 ### 2. 스키마 만들기
 
 ```bash
-cd db/ddl
-cat 00_enums.sql 10_reference_user.sql 20_social.sql 30_question_vote.sql \
-    40_heart_report.sql 50_school_service.sql 60_board.sql 90_seed_master.sql \
-  | docker exec -i pgtest psql -U postgres -d pingv2 -v ON_ERROR_STOP=1
+python db/apply.py --target local
 ```
 
-확인:
+`42`개 테이블이 나오면 정상이다.
 
-```bash
-docker exec -i pgtest psql -U postgres -d pingv2 -c \
-  "SELECT count(*) FROM information_schema.tables WHERE table_schema='public';"
-```
-
-`42`가 나오면 정상.
+> **`cat db/ddl/*.sql | psql` 로 만들지 말 것.** 그 경로에는 `db/migrations/` 가
+> 빠져서 `neis_office_code` · `info_school_id` · `padded_count` 가 없는 반쪽
+> 스키마가 나온다. 실제로 로컬 DB 가 이 상태로 3개 마이그레이션 뒤처져 있었고,
+> 정합성 검사가 `padded_count` 를 못 찾아 통째로 실패했다(2026-07-30).
+> `apply.py` 는 DDL 과 마이그레이션을 순서대로 다 적용한다.
 
 > `70_deferred_v2.sql`은 **일부러 빼놓았다.** MVP에서 만들지 않는 테이블이다
 > (연락처 동기화 — 전화번호를 받지 않기로 했다). 자세한 이유는 파일 안 주석 참조.
@@ -119,9 +120,8 @@ ping-v2/
 
 ```bash
 docker exec pgtest psql -U postgres -c "DROP DATABASE IF EXISTS pingv2;" -c "CREATE DATABASE pingv2;"
+python db/apply.py --target local
 ```
-
-그 다음 위의 `2. 스키마 만들기`를 다시 실행.
 
 **대량 적재 후 (필수 · 두 개 다)**
 

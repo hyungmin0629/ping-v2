@@ -43,6 +43,21 @@ BATCH_ROWS = 50_000
 
 STATE_TABLE = "_load_state"
 
+# 워터마크를 스냅샷 시각보다 이만큼 뒤로 물려 저장한다.
+#
+# 왜 필요한가 — 워터마크 경합.
+#   updated_at 은 트리거가 now() 로 채우는데, now() 는 **트랜잭션이 시작한
+#   시각**이다. 쓰기 트랜잭션 W 가 09:00:00 에 시작해 updated_at=09:00:00 을
+#   박고 09:00:02 에 커밋한다고 하자. 적재가 09:00:01 에 스냅샷을 뜨면
+#   W 는 아직 커밋 전이라 **보이지 않는다.** 그런데 워터마크는 09:00:01 로
+#   전진한다. 다음 적재는 `updated_at > 09:00:01` 을 뜨므로 W 의 행
+#   (updated_at=09:00:00)은 **영원히 걸리지 않는다.**
+#
+#   그래서 워터마크를 5분 물려 저장하고, 매번 최근 5분치를 다시 읽는다.
+#   MERGE 는 같은 행을 몇 번 읽어도 결과가 같으므로(멱등) 손해는 재읽기뿐이다.
+#   5분은 이 앱의 트랜잭션 길이(RPC 하나, 밀리초 단위)보다 압도적으로 길다.
+WATERMARK_LAG = timedelta(minutes=5)
+
 # Postgres 타입 → BigQuery 타입.
 # 열거형(USER-DEFINED)과 배열은 문자열로 눕힌다. raw 층은 원본 보존이 목적이고,
 # 의미 부여는 stg 층에서 한다.
@@ -468,7 +483,8 @@ def main() -> int:
                 total += n
                 if spec["mode"] == "incremental":
                     write_watermark(
-                        bq, state_id, args.source, name, snapshot_at, n, args.full_refresh
+                        bq, state_id, args.source, name,
+                        snapshot_at - WATERMARK_LAG, n, args.full_refresh,
                     )
                 print(f"  {how:4} {name:26} {n:>9,}행")
 

@@ -305,8 +305,12 @@ ping-v2/
 │   ├── rls/               # ★ 신규 — RLS 정책
 │   └── migrations/
 ├── generator/             # 합성 데이터 생성
-├── airflow/               # 파이프라인 (후순위)
-├── bigquery/
+├── pipeline/              # ★ P4 — Postgres → BigQuery 적재
+│   ├── tables.yaml        #   테이블별 적재 방식 (full 12 / incremental 30)
+│   ├── extract_load.py
+│   └── verify_load.py     #   행 수 대조
+├── airflow/               # docker-compose + ping_raw_load DAG
+├── bigquery/              # stg / mart 변환 SQL (P6)
 ├── qa/checks/
 └── data/synthetic/
 ```
@@ -374,10 +378,15 @@ MVP에서는 이를 감수하고, 안내 문구로 알린다. 복구 코드 기�
 
 | 스크립트 | 역할 |
 |---|---|
+| `db/apply.py` | DDL + 마이그레이션 적용. **로컬 DB 도 이걸로만 만든다** |
 | `generator/generate.py` | 합성 데이터 생성 |
-| `generator/load.py` | CSV → Postgres 적재 + 시퀀스 재동기화 |
+| `generator/load.py` | CSV → Postgres 적재 + 시퀀스 재동기화 + 워터마크 되돌리기 |
+| `pipeline/extract_load.py` | Postgres → BigQuery raw 적재 |
+| `pipeline/verify_load.py` | 원천 ↔ BigQuery 행 수 대조 |
 | `qa/checks/integrity.sql` | 정합성 17종 |
-| `db/rls/verify.sql` | RLS 침투 시험 |
+| `db/rls/verify.py` | RLS 침투·동작 시험 86항목 |
+
+> 위 "스킬" 표는 **아직 만들지 않은 것**이다. 지금은 전부 스크립트를 직접 부른다.
 
 ## 3.6 산출물 형식
 
@@ -411,6 +420,11 @@ MVP에서는 이를 감수하고, 안내 문구로 알린다. 복구 코드 기�
 | 9 | P3 NEIS 수집 | 학교·학급·급식 **완료** · DAG 화는 남음 | 일부 |
 | 10 | **P4 BigQuery 적재** | 42테이블 789만 행 · 원천별 행 수 대조 통과 | **완료** |
 | 11~13 | P5 품질검증 → P6 stg/mart → P7 대시보드 | | |
+
+> **P6 의 첫 작업은 대리키다.** 두 원천의 id 가 실제로 겹친다
+> (`app_user` 16개, `vote_item` 26개). raw 를 `JOIN ... USING(id)` 로 조인하면
+> 실유저의 투표에 합성 유저의 프로필이 붙고, **오류는 나지 않는다.**
+> stg 층에서 `_source || '-' || id` 형태의 키를 만들어 이 실수를 구조적으로 막는다.
 | 14 | W8 학교 정보 | 급식표 **완료** · 시간표·공지는 남음 | |
 
 **예상 기간** — W0~W7까지 주 10~15시간 기준 **3~5주**. 가장 오래 걸리는 단계는 W5(투표)다.

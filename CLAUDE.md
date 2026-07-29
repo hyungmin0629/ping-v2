@@ -296,6 +296,20 @@ docker run -d --name pgtest -e POSTGRES_PASSWORD=test -e POSTGRES_DB=pingv2 -p 5
   `reset_users.py` 이후 BigQuery 행이 더 많은 것은 정상이다.
 - 정기 적재: `docker compose -f airflow/docker-compose.yml up -d` → http://localhost:8080
 
+### 증분 적재의 함정 (2026-07-30 점검에서 실제로 걸린 것들)
+
+- ⚠️ **분석 조인에는 `_source` 를 반드시 넣는다.** 두 원천의 id 가 실제로 겹친다
+  — `app_user` 16개, `vote_item` 26개. `JOIN ... USING(id)` 만 쓰면 실유저와
+  합성이 조용히 섞인다. P6 stg 층에서 대리키를 만들어 이 실수를 막아야 한다.
+- ⚠️ **스키마를 바꿔도 워터마크는 움직이지 않는다.** `ALTER TABLE ADD COLUMN` 은
+  트리거를 발동시키지 않아 `updated_at` 이 그대로다. 증분은 아무것도 못 잡고
+  새 컬럼이 NULL 로 남는다. 실제로 `vote_item.padded_count` 가 합성 803,187행
+  전부 NULL 이었다. **컬럼을 추가한 뒤에는 그 테이블을 `--full-refresh` 한다.**
+- ⚠️ **값을 과거 시각으로 되돌리는 변경도 증분이 못 잡는다.**
+  `96_backfill_updated_at.sql` 이 그렇다. 돌린 뒤에는 `--full-refresh` 한다.
+- 워터마크는 스냅샷 시각보다 **5분 뒤로 물려** 저장한다. 그래야 적재 중에
+  커밋된 트랜잭션이 영영 누락되지 않는다. 경위는 [[DECISIONS]].
+
 ## 확정된 제약
 
 - 합성 데이터 규모: **유저 5,000명 / 3개월치**
