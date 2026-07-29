@@ -148,8 +148,8 @@ Supabase 대시보드에서 **Authentication → Sign In / Providers → Allow a
 |---|---|
 | `block_record`, `friend_recommendation` | MVP 화면 범위 밖 |
 | `report`, `sanction` | MVP 화면 범위 밖 (설정값은 yaml에 준비됨) |
-| `meal_plan`, `timetable`, `school_notice`, `school_event`, `external_sync_log` | P3 NEIS 연동에서 채운다 |
-| `post`, `post_comment`, `post_like`, `comment_like` | 익명 게시판 v2 |
+| `meal_plan`, `timetable`, `school_notice`, `school_event`, `external_sync_log` | P3 NEIS 연동에서 채운다. **화면은 W8** |
+| `post`, `post_comment`, `post_like`, `comment_like` | 익명 게시판 v2 (재검토 조건은 [[DECISIONS]]) |
 
 ## 스키마 적용 시 주의
 
