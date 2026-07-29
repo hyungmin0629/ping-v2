@@ -1,0 +1,18 @@
+# =====================================================================
+# airflow/requirements.txt · Airflow 컨테이너에 추가로 설치할 패키지
+# =====================================================================
+# Airflow 본체는 docker-compose.yml 의 이미지에 이미 들어 있다.
+# 여기에는 "추가로 필요한 것"만 적는다.
+#
+# ⚠️ Airflow는 의존성이 매우 까다롭다.
+#    버전을 올릴 때는 반드시 공식 constraints 파일과 함께 설치해야 한다:
+#    https://raw.githubusercontent.com/apache/airflow/constraints-2.10.4/constraints-3.11.txt
+# =====================================================================
+
+apache-airflow-providers-postgres==5.14.0
+apache-airflow-providers-google==11.0.0
+apache-airflow-providers-http==5.0.0
+
+requests==2.32.3
+tenacity==9.0.0
+PyYAML==6.0.2
