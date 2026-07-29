@@ -126,6 +126,62 @@ BigQuery 적재 시 `is_synthetic` 플래그로 구분한다. 합성 규모는 �
 
 ---
 
+## 2026-07-29 · Supabase 연결은 Session pooler 를 쓴다
+
+**결정** — 직접 연결(`db.<ref>.supabase.co`) 대신 Session pooler
+(`aws-1-ap-northeast-2.pooler.supabase.com:5432`)로 접속한다.
+
+**이유** — 무료 플랜의 직접 연결 엔드포인트는 **IPv6 전용**이다. DNS 조회 결과가
+AAAA 레코드뿐이라 IPv4 환경에서는 호스트 이름 해석 자체가 실패한다.
+Supabase 는 IPv4 전용 애드온($4/월)을 팔지만 **Pro 플랜($25/월) 가입이 전제**라
+"무료 티어를 벗어나지 않는다"는 제약과 충돌한다.
+공유 pooler 는 IPv4 를 기본 지원하며 추가 비용이 없다.
+
+**대안** — Transaction pooler(6543). 기각. 상태를 유지하지 않는 연결이라
+대량 적재나 준비된 구문에서 문제가 생긴다.
+
+**함께 겪은 것** — DB 비밀번호에 `@` 가 들어 있어 접속 URI 가 잘못 파싱됐다.
+URI 안의 비밀번호는 퍼센트 인코딩이 필요하다(`@` → `%40`).
+`db/apply.py` 등은 `.env` 값을 그대로 쓰므로 인코딩된 상태로 보관한다.
+
+---
+
+## 2026-07-29 · 클라이언트에 쓰기 권한을 거의 주지 않는다
+
+**결정** — RLS 는 읽기 위주로 열고, 하트·투표처럼 규칙이 있는 조작은
+클라이언트가 직접 INSERT/UPDATE 하지 못하게 막는다. 나중에 RPC 함수로 처리한다.
+
+**이유** — Supabase 는 브라우저가 DB에 직접 말을 건다. `heart_transaction` INSERT 를
+열어주면 누구나 하트를 무한정 만들 수 있고, `app_user.heart_balance` UPDATE 를
+열어주면 잔액을 마음대로 바꿀 수 있다. 실제로 침투 시험에서 두 시도 모두
+`InsufficientPrivilege` 로 막히는 것을 확인했다.
+
+**구현** — `REVOKE UPDATE ON app_user FROM authenticated` 후
+`GRANT UPDATE (nickname, class_id, gender)` 로 **컬럼 단위**로만 허용했다.
+RLS 는 행 단위라 컬럼을 제한할 수 없어 GRANT 와 함께 써야 한다.
+
+---
+
+## 2026-07-29 · 투표자 신원은 뷰로만 노출한다
+
+**결정** — `vote_received` 테이블은 클라이언트가 직접 조회할 수 없다(정책 없음 = 차단).
+대신 `my_vote_received` 뷰로만 접근하며, 이 뷰가 `reveal_status` 에 따라
+`voter_id` 를 가린다.
+
+**이유** — "누가 나를 뽑았는가"가 하트를 받고 파는 유료 정보다.
+지목당한 사람이 테이블을 직접 읽을 수 있으면 서비스의 수익 구조가 무너진다.
+**RLS 는 행 단위라 컬럼을 숨길 수 없다.** 그래서 테이블 접근을 막고
+필요한 컬럼만 계산해 내보내는 뷰를 둔다.
+
+- `HIDDEN` → 아무 정보 없음
+- `PARTIAL` → 닉네임 첫 글자만 (`voter_initial`)
+- `REVEALED` → `voter_id` 공개
+
+침투 시험에서 미공개 상태의 `voter_id` 조회가 막히고,
+부분공개에서는 초성만 나오는 것을 확인했다.
+
+---
+
 ## 2026-07-29 · 웹앱을 최우선 트랙으로 재편
 
 **결정** — 파이프라인(P3~P7)을 뒤로 미루고 웹앱 MVP를 먼저 만든다.
