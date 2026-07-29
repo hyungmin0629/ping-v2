@@ -61,3 +61,32 @@ export async function listMeals(year: number, month: number): Promise<Meal[]> {
       .map((d) => d.dish_name),
   }));
 }
+
+export type SchoolSource = {
+  schoolName: string;
+  infoSchoolName: string;
+  /** 다른 학교의 정보를 빌려 쓰는가 */
+  borrowed: boolean;
+};
+
+/**
+ * 내 학교가 어디 정보를 쓰는지.
+ *
+ * 빌려 쓰는 조직(테스트 조직)에만 출처 문구를 띄우기 위해 필요하다.
+ * 실제 학교 소속에게는 "OO고등학교 공개 데이터"가 오히려 혼란스럽다.
+ */
+export async function getSchoolSource(): Promise<SchoolSource | null> {
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .from("my_school_source")
+    .select("school_name, info_school_name, borrowed")
+    .maybeSingle();
+
+  if (error) throw error;
+  if (!data) return null;
+  return {
+    schoolName: data.school_name,
+    infoSchoolName: data.info_school_name,
+    borrowed: data.borrowed,
+  };
+}

@@ -133,6 +133,16 @@ export function VotePanel({ onClose }: { onClose: () => void }) {
         <h2 className="text-2xl leading-snug font-semibold text-balance">
           {current.text}
         </h2>
+        {/*
+          범위 안 친구가 4명이 안 되면 다른 친구로 채운다. 그 사실을 숨기면
+          "우리 반에서" 라고 해놓고 다른 반 친구가 나와 이상하게 보인다.
+        */}
+        {current.paddedCount > 0 && (
+          <p className="text-xs leading-relaxed text-neutral-500">
+            이 범위의 친구가 모자라 다른 친구 {current.paddedCount}명이 후보에
+            들어갔습니다.
+          </p>
+        )}
       </div>
 
       {phase === "ad" ? (

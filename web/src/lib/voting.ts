@@ -26,6 +26,8 @@ export type VoteQuestion = {
   scope: Scope;
   /** 셔플을 이미 썼는가 (문항당 1회) */
   shuffled: boolean;
+  /** 스코프 밖 친구로 채운 후보 수. 0 이면 전부 그 범위 안에서 뽑혔다 */
+  paddedCount: number;
   voted: boolean;
   candidates: Candidate[];
 };
@@ -43,7 +45,7 @@ export async function loadSession(sessionId: number): Promise<VoteQuestion[]> {
 
   const { data: items, error: itemErr } = await supabase
     .from("vote_item")
-    .select("id, position, question_id, candidate_scope, shuffle_count, voted_at")
+    .select("id, position, question_id, candidate_scope, shuffle_count, voted_at, padded_count")
     .eq("session_id", sessionId)
     .order("position");
   if (itemErr) throw itemErr;
@@ -77,6 +79,7 @@ export async function loadSession(sessionId: number): Promise<VoteQuestion[]> {
     text: textOf.get(item.question_id) ?? "",
     scope: item.candidate_scope as Scope,
     shuffled: item.shuffle_count > 0,
+    paddedCount: item.padded_count ?? 0,
     voted: item.voted_at !== null,
     candidates: rows
       // 셔플했다면 새 라운드의 후보만 보여준다. 이전 라운드는 분석용으로 남는다.

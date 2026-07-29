@@ -593,8 +593,9 @@ def main() -> int:
                        expect_error(cur, A_AUTH, "SELECT shuffle_candidates(%s)", (item2,)),
                        "DB 제약이 막음")
 
-                # --- 스코프 하향 -------------------------------------------
+                # --- 후보 채우기 -------------------------------------------
                 # 같은 반 친구를 다른 반으로 옮기면 CLASS 후보가 모자라진다.
+                # 스코프를 낮추는 대신 다른 친구로 채워야 한다.
                 cur.execute("SAVEPOINT downgrade")
                 cur.execute("INSERT INTO grade_class (school_id, grade, class_num) "
                             "SELECT school_id, 2, 1 FROM grade_class WHERE id=%s RETURNING id",
@@ -608,20 +609,32 @@ def main() -> int:
                 session2 = rpc(cur, A_AUTH, "SELECT start_vote_session()")
                 cur.execute("""
                     SELECT count(*) FILTER (WHERE q.scope='CLASS'),
-                           count(*) FILTER (WHERE q.scope='CLASS' AND v.candidate_scope='CLASS')
+                           count(*) FILTER (WHERE q.scope='CLASS' AND v.candidate_scope<>'CLASS'),
+                           coalesce(sum(v.padded_count) FILTER (WHERE q.scope='CLASS'), 0)
                       FROM vote_item v JOIN question q ON q.id = v.question_id
                      WHERE v.session_id = %s
                 """, (session2,))
-                class_items, still_class = cur.fetchone()
-                vcheck("후보가 모자란 CLASS 질문은 스코프가 낮아짐",
-                       still_class == 0, f"CLASS 질문 {class_items}개 중 그대로인 것 {still_class}개")
+                class_items, downgraded, padded = cur.fetchone()
+                vcheck("스코프는 낮추지 않고 유지된다",
+                       downgraded == 0, f"CLASS 질문 {class_items}개 중 바뀐 것 {downgraded}개")
+                vcheck("모자란 자리는 다른 친구로 채운다",
+                       class_items == 0 or padded > 0, f"채운 후보 {padded}명")
 
-                # 친구가 전부 사라지면 GLOBAL 에서도 4명을 못 채운다 → 세션이 열리지 않는다
+                # 채운 후보까지 포함해 언제나 4명이어야 한다
+                cur.execute("""
+                    SELECT count(*) FROM vote_item v
+                     WHERE v.session_id = %s
+                       AND (SELECT count(*) FROM vote_candidate c
+                             WHERE c.vote_item_id = v.id AND c.shuffle_round = 0) <> 4
+                """, (session2,))
+                vcheck("채운 뒤에도 후보는 4명", cur.fetchone()[0] == 0)
+
+                # 친구가 전부 사라지면 4명을 못 채운다 → 세션이 열리지 않는다
                 cur.execute("UPDATE app_user SET status='WITHDRAWN' WHERE id = ANY(%s)",
                             (friends,))
                 cur.execute("UPDATE vote_session SET status='COMPLETED', completed_at=now() "
                             "WHERE id=%s", (session2,))
-                vcheck("GLOBAL 에서도 4명이 안 되면 질문을 내지 않음",
+                vcheck("친구 전체로도 4명이 안 되면 질문을 내지 않음",
                        expect_error(cur, A_AUTH, "SELECT start_vote_session()"), "예외 기대")
 
                 cur.execute("ROLLBACK TO SAVEPOINT downgrade")

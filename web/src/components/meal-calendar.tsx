@@ -2,11 +2,13 @@
 
 import { useCallback, useEffect, useState } from "react";
 import {
+  getSchoolSource,
   listMeals,
   MEAL_LABEL,
   MEAL_ORDER,
   type Meal,
   type MealType,
+  type SchoolSource,
 } from "@/lib/meals";
 
 const WEEKDAYS = ["일", "월", "화", "수", "목", "금", "토"];
@@ -28,6 +30,7 @@ export function MealCalendar() {
   // 어느 달을 다 불러왔는지로 로딩을 판단한다. effect 본문에서 곧바로
   // setState 하면 렌더가 연쇄로 도는 패턴이라 린트가 막는다.
   const [loadedKey, setLoadedKey] = useState<string | null>(null);
+  const [source, setSource] = useState<SchoolSource | null>(null);
   const key = `${year}-${month}`;
   const loading = loadedKey !== key;
 
@@ -55,6 +58,12 @@ export function MealCalendar() {
   useEffect(() => {
     load();
   }, [load]);
+
+  useEffect(() => {
+    getSchoolSource()
+      .then(setSource)
+      .catch(() => setSource(null));
+  }, []);
 
   function move(step: number) {
     const next = new Date(year, month - 1 + step, 1);
@@ -188,12 +197,16 @@ export function MealCalendar() {
       )}
 
       {/*
-        보이는 급식은 실제 서울고등학교 학생들의 것이다. 공개 데이터지만
+        다른 학교 정보를 빌려 쓰는 조직에만 출처를 밝힌다. 공개 데이터지만
         아무 설명 없이 "우리 학교 급식"으로 읽히면 사실과 다르다.
+        실제 학교 소속에게는 자기 학교 급식이므로 이 문구가 오히려 혼란스럽다.
       */}
-      <p className="border-t border-neutral-200 pt-3 text-xs leading-relaxed text-neutral-500 dark:border-neutral-800">
-        급식 정보는 서울고등학교의 공개 데이터(NEIS 교육정보 개방포털)입니다.
-      </p>
+      {source?.borrowed && (
+        <p className="border-t border-neutral-200 pt-3 text-xs leading-relaxed text-neutral-500 dark:border-neutral-800">
+          급식 정보는 {source.infoSchoolName}의 공개 데이터(NEIS 교육정보
+          개방포털)입니다.
+        </p>
+      )}
     </div>
   );
 }

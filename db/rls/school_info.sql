@@ -74,3 +74,27 @@ CREATE POLICY read_own_school_event ON public.school_event
 -- 급식은 수집기(서버)만 넣는다.
 REVOKE INSERT, UPDATE, DELETE ON public.meal_plan FROM authenticated;
 REVOKE INSERT, UPDATE, DELETE ON public.meal_menu_item FROM authenticated;
+
+
+-- ---------------------------------------------------------------------
+-- 5. 내 학교가 어디 정보를 빌려 쓰는가
+-- ---------------------------------------------------------------------
+-- 화면에 "이 급식은 OO고등학교 공개 데이터입니다"를 띄우려면 앱이 그 사실을
+-- 알아야 한다. 빌려 쓰지 않는 보통 학교에는 그 문구가 필요 없으므로,
+-- 앱이 판단할 수 있도록 두 이름을 함께 내보낸다.
+CREATE OR REPLACE VIEW public.my_school_source
+WITH (security_invoker = false) AS
+SELECT
+    s.id                                            AS school_id,
+    s.name_masked                                   AS school_name,
+    i.id                                            AS info_school_id,
+    i.name_masked                                   AS info_school_name,
+    (s.info_school_id IS NOT NULL
+     AND s.info_school_id <> s.id)                  AS borrowed
+FROM public.app_user u
+JOIN public.grade_class g ON g.id = u.class_id
+JOIN public.school s      ON s.id = g.school_id
+JOIN public.school i      ON i.id = coalesce(s.info_school_id, s.id)
+WHERE u.id = public.current_app_user_id();
+
+GRANT SELECT ON public.my_school_source TO authenticated;

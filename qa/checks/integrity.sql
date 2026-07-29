@@ -116,25 +116,37 @@ WHERE NOT EXISTS (
 
 UNION ALL
 
--- 13. CLASS 스코프인데 다른 반 후보
-SELECT 'CLASS 스코프에 타반 후보', 'HIGH', count(*)
-FROM vote_candidate c
-JOIN vote_item v ON v.id = c.vote_item_id
-JOIN app_user voter ON voter.id = v.user_id
-JOIN app_user cand ON cand.id = c.candidate_user_id
-WHERE v.candidate_scope = 'CLASS' AND voter.class_id <> cand.class_id
+-- 13. CLASS 스코프인데 다른 반 후보가 채운 수보다 많다
+--     같은 반 친구가 4명이 안 되면 다른 친구로 채운다(vote_item.padded_count).
+--     그래서 "타반 후보가 있다"가 아니라 "채운 것보다 많다"를 결함으로 본다.
+SELECT 'CLASS 스코프에 설명 안 되는 타반 후보', 'HIGH', count(*)
+FROM (
+    SELECT v.id
+    FROM vote_item v
+    JOIN app_user voter ON voter.id = v.user_id
+    JOIN vote_candidate c ON c.vote_item_id = v.id
+    JOIN app_user cand ON cand.id = c.candidate_user_id
+    WHERE v.candidate_scope = 'CLASS'
+    GROUP BY v.id, v.padded_count, voter.class_id
+    HAVING count(*) FILTER (WHERE cand.class_id <> voter.class_id) > v.padded_count
+) t
 
 UNION ALL
 
--- 14. SCHOOL 스코프인데 다른 학교 후보
-SELECT 'SCHOOL 스코프에 타교 후보', 'HIGH', count(*)
-FROM vote_candidate c
-JOIN vote_item v ON v.id = c.vote_item_id
-JOIN app_user voter ON voter.id = v.user_id
-JOIN grade_class vc ON vc.id = voter.class_id
-JOIN app_user cand ON cand.id = c.candidate_user_id
-JOIN grade_class cc ON cc.id = cand.class_id
-WHERE v.candidate_scope = 'SCHOOL' AND vc.school_id <> cc.school_id
+-- 14. SCHOOL 스코프인데 다른 학교 후보가 채운 수보다 많다 (13번과 같은 이유)
+SELECT 'SCHOOL 스코프에 설명 안 되는 타교 후보', 'HIGH', count(*)
+FROM (
+    SELECT v.id
+    FROM vote_item v
+    JOIN app_user voter ON voter.id = v.user_id
+    JOIN grade_class vc ON vc.id = voter.class_id
+    JOIN vote_candidate c ON c.vote_item_id = v.id
+    JOIN app_user cand ON cand.id = c.candidate_user_id
+    JOIN grade_class cc ON cc.id = cand.class_id
+    WHERE v.candidate_scope = 'SCHOOL'
+    GROUP BY v.id, v.padded_count, vc.school_id
+    HAVING count(*) FILTER (WHERE cc.school_id <> vc.school_id) > v.padded_count
+) t
 
 UNION ALL
 

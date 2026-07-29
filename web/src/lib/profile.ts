@@ -154,6 +154,29 @@ export async function listSchools(): Promise<School[]> {
   return (data ?? []).map((s) => ({ id: s.id, name: s.name_masked }));
 }
 
+/**
+ * 학교 이름으로 찾는다.
+ *
+ * 전국 학교를 목록으로 내리면 한 번에 1,000행 제한에 걸리고 고르기도 어렵다.
+ * 검색은 **고를 수 있는 학교**(학급이 등록된 곳) 안에서만 한다 — 학급이 없는
+ * 학교를 고르면 반을 못 골라 온보딩을 끝내지 못한다.
+ */
+export async function searchSchools(term: string): Promise<School[]> {
+  const keyword = term.trim();
+  if (keyword.length < 1) return [];
+
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .from("selectable_school")
+    .select("id, name_masked")
+    .ilike("name_masked", `%${keyword}%`)
+    .order("name_masked")
+    .limit(20);
+
+  if (error) throw error;
+  return (data ?? []).map((s) => ({ id: s.id, name: s.name_masked }));
+}
+
 export async function listClasses(schoolId: number): Promise<ClassOption[]> {
   const supabase = createClient();
   const { data, error } = await supabase

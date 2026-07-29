@@ -6,6 +6,7 @@ import {
   completeOnboarding,
   listClasses,
   listSchools,
+  searchSchools,
   GENDER_LABEL,
   type ClassOption,
   type Gender,
@@ -21,6 +22,8 @@ import {
  */
 export function OnboardingForm({ onDone }: { onDone: (p: Profile) => void }) {
   const [schools, setSchools] = useState<School[]>([]);
+  const [query, setQuery] = useState("");
+  const [matches, setMatches] = useState<School[]>([]);
   const [classes, setClasses] = useState<ClassOption[]>([]);
   const [schoolId, setSchoolId] = useState<number | null>(null);
   const [grade, setGrade] = useState<number | null>(null);
@@ -36,8 +39,11 @@ export function OnboardingForm({ onDone }: { onDone: (p: Profile) => void }) {
       .then((rows) => {
         if (cancelled) return;
         setSchools(rows);
-        // 클로즈드 테스트 기간에는 학교가 하나뿐이다. 고를 것이 없으면 미리 고른다.
-        if (rows.length === 1) setSchoolId(rows[0].id);
+        // 고를 수 있는 학교가 하나뿐이면 고민할 것이 없다.
+        if (rows.length === 1) {
+          setSchoolId(rows[0].id);
+          setQuery(rows[0].name);
+        }
       })
       .catch((e) => !cancelled && setError(messageOf(e)));
     return () => {
@@ -139,19 +145,45 @@ export function OnboardingForm({ onDone }: { onDone: (p: Profile) => void }) {
           </div>
         </Field>
 
-        <Field label="학교">
-          <select
-            value={schoolId ?? ""}
-            onChange={(e) => chooseSchool(Number(e.target.value) || null)}
-            className="w-full rounded border border-neutral-300 bg-transparent px-3 py-2.5 outline-none focus:border-neutral-900 dark:border-neutral-700 dark:bg-neutral-950 dark:focus:border-neutral-100"
-          >
-            <option value="">선택하세요</option>
-            {schools.map((s) => (
-              <option key={s.id} value={s.id}>
-                {s.name}
-              </option>
-            ))}
-          </select>
+        <Field label="학교" hint={schools.length > 1 ? "이름을 입력하세요" : undefined}>
+          <input
+            type="text"
+            value={query}
+            onChange={(e) => {
+              const text = e.target.value;
+              setQuery(text);
+              chooseSchool(null);
+              // 목록이 짧으면 굳이 서버에 묻지 않는다.
+              if (schools.length <= 20) {
+                setMatches(
+                  schools.filter((s) => s.name.includes(text.trim())),
+                );
+              } else {
+                searchSchools(text).then(setMatches).catch(() => setMatches([]));
+              }
+            }}
+            placeholder="학교 이름"
+            className="w-full rounded border border-neutral-300 bg-transparent px-3 py-2.5 outline-none focus:border-neutral-900 dark:border-neutral-700 dark:focus:border-neutral-100"
+          />
+          {schoolId === null && matches.length > 0 && (
+            <ul className="max-h-48 overflow-y-auto rounded border border-neutral-200 dark:border-neutral-800">
+              {matches.map((s) => (
+                <li key={s.id}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      chooseSchool(s.id);
+                      setQuery(s.name);
+                      setMatches([]);
+                    }}
+                    className="w-full px-3 py-2 text-left text-sm hover:bg-neutral-100 dark:hover:bg-neutral-900"
+                  >
+                    {s.name}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
         </Field>
 
         <div className="flex gap-3">

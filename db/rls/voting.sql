@@ -5,11 +5,18 @@
 -- 직접 넣을 수 있으면 후보를 자기 마음대로 만들 수 있고, heart_transaction 을
 -- 넣을 수 있으면 하트를 무한정 만들 수 있다.
 --
--- 후보 규칙 (설계서 2.4):
+-- 후보 규칙:
 --   세 스코프 모두 "친구" 안에서의 범위다. 모르는 사람은 어떤 경우에도 뜨지 않는다.
 --     CLASS  = 같은 반 친구 / SCHOOL = 같은 학교 친구 / GLOBAL = 친구 전체
---   후보가 4명이 안 되면 스코프를 한 단계 낮추고, GLOBAL 에서도 모자라면
---   그 질문은 내지 않는다. 친구가 5명이어도 같은 반 친구가 2명뿐일 수 있기 때문이다.
+--
+--   **스코프 안에서 4명이 안 되면 친구 중 다른 사람으로 채운다**(2026-07-30 변경).
+--   같은 반 친구가 둘뿐이어도 "우리 반에서" 질문을 낼 수 있다. 채운 인원 수는
+--   vote_item.padded_count 에 남겨 분석과 정합성 검사가 구분할 수 있게 한다.
+--   친구 전체가 4명이 안 되면 그 질문은 내지 않는다(친구 5명 게이트가 하한이다).
+--
+--   이전에는 스코프를 CLASS→SCHOOL→GLOBAL 로 낮췄다. 그러면 학교가 다른
+--   이용자끼리 섞일 때 CLASS·SCHOOL 질문이 전부 GLOBAL 로 내려가 세 스코프를
+--   나눈 의미가 사라진다.
 --
 -- 하트 (generator/config/distribution.yaml · 구 서비스 실측):
 --   투표 1건당 5~15개를 투표자와 지목당한 사람 **양쪽**에 지급한다.
@@ -48,65 +55,60 @@ REVOKE ALL ON FUNCTION public.grant_hearts(bigint, int, text, bigint) FROM publi
 -- ---------------------------------------------------------------------
 -- 2. 후보 뽑기 (내부용)
 -- ---------------------------------------------------------------------
--- 친구 중에서 스코프 조건에 맞는 ACTIVE 유저를 무작위 4명.
+-- 스코프 안에서 먼저 뽑고, 4명이 안 되면 친구 중 다른 사람으로 채운다.
+-- padded = true 인 행이 채워 넣은 후보다.
+--
 -- p_exclude 는 셔플에서 쓴다 — 직전 후보를 뒤로 미뤄 다른 얼굴이 나오게 한다.
 -- 뺄 만큼 넉넉하지 않으면 다시 나올 수도 있다(4명을 채우는 쪽이 우선이다).
-CREATE OR REPLACE FUNCTION public.pick_candidates(
+DROP FUNCTION IF EXISTS public.pick_candidates(bigint, public.question_scope, bigint[]);
+CREATE FUNCTION public.pick_candidates(
     p_user bigint, p_scope public.question_scope, p_exclude bigint[] DEFAULT '{}')
-RETURNS TABLE (candidate_user_id bigint)
+RETURNS TABLE (candidate_user_id bigint, padded boolean)
 LANGUAGE sql VOLATILE SECURITY DEFINER SET search_path = ''
-AS $$
+AS $FN$
     WITH me AS (
         SELECT u.class_id, g.school_id
           FROM public.app_user u
           JOIN public.grade_class g ON g.id = u.class_id
          WHERE u.id = p_user
     ), friends AS (
-        SELECT CASE WHEN f.user_low_id = p_user THEN f.user_high_id
-                    ELSE f.user_low_id END AS id
+        SELECT u.id, u.class_id, g.school_id
           FROM public.friendship f
+          JOIN public.app_user u
+            ON u.id = CASE WHEN f.user_low_id = p_user THEN f.user_high_id
+                           ELSE f.user_low_id END
+           AND u.status = 'ACTIVE'
+          JOIN public.grade_class g ON g.id = u.class_id
          WHERE f.user_low_id = p_user OR f.user_high_id = p_user
+    ), in_scope AS (
+        SELECT fr.id
+          FROM friends fr CROSS JOIN me
+         WHERE p_scope = 'GLOBAL'
+            OR (p_scope = 'SCHOOL' AND fr.school_id = me.school_id)
+            OR (p_scope = 'CLASS'  AND fr.class_id  = me.class_id)
+         ORDER BY (fr.id = ANY(p_exclude)), random()
+         LIMIT 4
+    ), padding AS (
+        SELECT fr.id
+          FROM friends fr
+         WHERE fr.id NOT IN (SELECT id FROM in_scope)
+         ORDER BY (fr.id = ANY(p_exclude)), random()
+         LIMIT GREATEST(0, 4 - (SELECT count(*) FROM in_scope))
     )
-    SELECT u.id
-      FROM friends fr
-      JOIN public.app_user u   ON u.id = fr.id AND u.status = 'ACTIVE'
-      JOIN public.grade_class g ON g.id = u.class_id
-     CROSS JOIN me
-     WHERE p_scope = 'GLOBAL'
-        OR (p_scope = 'SCHOOL' AND g.school_id = me.school_id)
-        OR (p_scope = 'CLASS'  AND u.class_id  = me.class_id)
-     ORDER BY (u.id = ANY(p_exclude)), random()
-     LIMIT 4
-$$;
+    SELECT id, false FROM in_scope
+    UNION ALL
+    SELECT id, true  FROM padding
+$FN$;
 
 REVOKE ALL ON FUNCTION public.pick_candidates(bigint, public.question_scope, bigint[]) FROM public;
 
 
 -- ---------------------------------------------------------------------
--- 3. 실제로 쓸 스코프 결정 (내부용)
+-- 3. 스코프 하향은 폐기했다
 -- ---------------------------------------------------------------------
--- 요청 스코프에서 후보가 4명이 안 되면 CLASS → SCHOOL → GLOBAL 로 낮춘다.
--- GLOBAL 에서도 모자라면 NULL — 그 질문은 내지 않는다.
-CREATE OR REPLACE FUNCTION public.effective_scope(
-    p_user bigint, p_scope public.question_scope)
-RETURNS public.question_scope
-LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path = ''
-AS $$
-DECLARE v_scope public.question_scope := p_scope;
-BEGIN
-    LOOP
-        IF (SELECT count(*) FROM public.pick_candidates(p_user, v_scope)) >= 4 THEN
-            RETURN v_scope;
-        END IF;
-        IF    v_scope = 'CLASS'  THEN v_scope := 'SCHOOL';
-        ELSIF v_scope = 'SCHOOL' THEN v_scope := 'GLOBAL';
-        ELSE  RETURN NULL;
-        END IF;
-    END LOOP;
-END;
-$$;
-
-REVOKE ALL ON FUNCTION public.effective_scope(bigint, public.question_scope) FROM public;
+-- 예전에는 후보가 모자라면 CLASS→SCHOOL→GLOBAL 로 낮췄다. 지금은 스코프를
+-- 유지한 채 다른 친구로 채운다(위 pick_candidates). 남아 있으면 헷갈리므로 지운다.
+DROP FUNCTION IF EXISTS public.effective_scope(bigint, public.question_scope);
 
 
 -- ---------------------------------------------------------------------
@@ -123,8 +125,9 @@ DECLARE
     v_me      bigint := public.current_app_user_id();
     v_session bigint;
     v_item    bigint;
-    v_scope   public.question_scope;
     v_pos     smallint := 0;
+    v_picked  int;
+    v_padded  int;
     r         record;
 BEGIN
     IF v_me IS NULL THEN
@@ -154,18 +157,29 @@ BEGIN
     LOOP
         EXIT WHEN v_pos >= 10;
 
-        v_scope := public.effective_scope(v_me, r.scope);
-        CONTINUE WHEN v_scope IS NULL;
+        -- 친구 전체로도 4명이 안 되면 낼 수 없는 질문이다.
+        SELECT count(*) INTO v_picked FROM public.pick_candidates(v_me, r.scope) c;
+        CONTINUE WHEN v_picked < 4;
 
         v_pos := v_pos + 1;
         INSERT INTO public.vote_item
             (session_id, user_id, question_id, candidate_scope, position)
-        VALUES (v_session, v_me, r.id, v_scope, v_pos)
+        VALUES (v_session, v_me, r.id, r.scope, v_pos)
         RETURNING id INTO v_item;
 
+        -- 위에서 센 것과 실제로 넣는 것은 각각 무작위라 다시 뽑는다.
+        CREATE TEMP TABLE IF NOT EXISTS picked_now
+            (candidate_user_id bigint, padded boolean, slot int) ON COMMIT DROP;
+        DELETE FROM picked_now;
+        INSERT INTO picked_now
+        SELECT c.candidate_user_id, c.padded, row_number() OVER ()
+          FROM public.pick_candidates(v_me, r.scope) c;
+
         INSERT INTO public.vote_candidate (vote_item_id, candidate_user_id, shuffle_round, slot)
-        SELECT v_item, c.candidate_user_id, 0, row_number() OVER ()
-          FROM public.pick_candidates(v_me, v_scope) c;
+        SELECT v_item, p.candidate_user_id, 0, p.slot FROM picked_now p;
+
+        SELECT count(*) FILTER (WHERE p.padded) INTO v_padded FROM picked_now p;
+        UPDATE public.vote_item SET padded_count = v_padded WHERE id = v_item;
     END LOOP;
 
     IF v_pos = 0 THEN
@@ -287,9 +301,19 @@ BEGIN
       FROM public.vote_candidate c
      WHERE c.vote_item_id = p_item_id AND c.shuffle_round = 0;
 
-    INSERT INTO public.vote_candidate (vote_item_id, candidate_user_id, shuffle_round, slot)
-    SELECT p_item_id, c.candidate_user_id, 1, row_number() OVER ()
+    CREATE TEMP TABLE IF NOT EXISTS picked_now
+        (candidate_user_id bigint, padded boolean, slot int) ON COMMIT DROP;
+    DELETE FROM picked_now;
+    INSERT INTO picked_now
+    SELECT c.candidate_user_id, c.padded, row_number() OVER ()
       FROM public.pick_candidates(v_me, v_scope, coalesce(v_prev, '{}')) c;
+
+    INSERT INTO public.vote_candidate (vote_item_id, candidate_user_id, shuffle_round, slot)
+    SELECT p_item_id, p.candidate_user_id, 1, p.slot FROM picked_now p;
+
+    UPDATE public.vote_item
+       SET padded_count = (SELECT count(*) FILTER (WHERE p.padded) FROM picked_now p)
+     WHERE id = p_item_id;
 END;
 $$;
 
