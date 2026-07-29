@@ -116,9 +116,11 @@ export default function PrivacyPage() {
       </Section>
 
       <Section title="7. 문의처">
-        {/* TODO: 클로즈드 테스트 시작 전에 실제 연락처로 바꿀 것 */}
-        <p className="rounded border border-dashed border-neutral-300 px-4 py-3 text-sm text-neutral-500 dark:border-neutral-700">
-          (연락받을 이메일 주소를 여기에 적습니다)
+        <p className="text-sm leading-relaxed text-neutral-600 dark:text-neutral-400">
+          열람·삭제 요청을 비롯한 문의는 아래로 보내주세요.
+        </p>
+        <p className="rounded border border-neutral-200 px-4 py-3 font-mono text-sm dark:border-neutral-800">
+          khm99629@gmail.com
         </p>
       </Section>
 
