@@ -130,10 +130,17 @@ export async function lookupClassLabels(
   );
 }
 
+/**
+ * 고를 수 있는 학교만 가져온다.
+ *
+ * NEIS 전국 목록(5,700여 개)을 그대로 내리면 한 번에 1,000행까지만 와서
+ * 정작 필요한 학교가 잘려나간다. 학급이 등록된 학교만 뷰로 거른다.
+ * (db/rls/school_picker.sql)
+ */
 export async function listSchools(): Promise<School[]> {
   const supabase = createClient();
   const { data, error } = await supabase
-    .from("school")
+    .from("selectable_school")
     .select("id, name_masked")
     .order("name_masked");
 
