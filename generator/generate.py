@@ -148,7 +148,13 @@ def make_invite_code(rng: random.Random, taken: set[str]) -> str:
 
 
 def masked_name(rng: random.Random) -> str:
-    """교사명 등 실명 계열에만 쓴다. 김민수 → 김*수"""
+    """
+    실명 계열 마스킹. 김민수 → 김*수
+
+    유저에게는 쓰지 않는다(유저는 nickname). 시간표의 교사명처럼
+    실명을 다뤄야 하는 곳에서만 쓴다. 해당 데이터는 NEIS 연동(P3)에서 생성되므로
+    현재는 호출되는 곳이 없다.
+    """
     sur = rng.choice(SURNAMES)
     given = rng.choice(GIVEN)
     if len(given) <= 1:

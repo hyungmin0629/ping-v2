@@ -72,6 +72,17 @@ W0에서 적용된 것: `app_user`가 `nickname` + `invite_code` 구조가 됐�
 
 웹앱 단계(W0~W7)와 파이프라인 단계(P3~P7)는 [[design-spec]] 4장 참조.
 
+## 합성 데이터가 없는 테이블
+
+생성기가 아직 다루지 않아 비어 있다. 필요해지면 그때 만든다.
+
+| 테이블 | 이유 |
+|---|---|
+| `block_record`, `friend_recommendation` | MVP 화면 범위 밖 |
+| `report`, `sanction` | MVP 화면 범위 밖 (설정값은 yaml에 준비됨) |
+| `meal_plan`, `timetable`, `school_notice`, `school_event`, `external_sync_log` | P3 NEIS 연동에서 채운다 |
+| `post`, `post_comment`, `post_like`, `comment_like` | 익명 게시판 v2 |
+
 ## 스키마 적용 시 주의
 
 `db/ddl/70_deferred_v2.sql`은 **적용하지 않는다.** MVP 대상이 아니다.
