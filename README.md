@@ -78,11 +78,10 @@ ping-v2/
 ├── generator/             # 합성 데이터 생성
 │   ├── config/            # 분포 파라미터 (yaml)
 │   └── output/            # 생성 결과 (git 제외)
-├── airflow/
+├── airflow/               # P4 에서 채운다 (지금은 빈 스캐폴딩)
 │   ├── dags/
 │   ├── plugins/
-│   ├── requirements.txt   # Airflow 컨테이너 추가 패키지
-│   └── docker-compose.yml
+│   └── requirements.txt   # Airflow 컨테이너 추가 패키지
 ├── bigquery/
 │   ├── staging/           # stg 변환 SQL
 │   └── mart/              # mart 집계 SQL
@@ -130,8 +129,8 @@ id를 직접 지정해서 넣으면 시퀀스가 전진하지 않는다. 이걸 
 | W2 | 앱 뼈대 · 익명 로그인 | **완료** |
 | W3 | 온보딩 · 초대 코드 발급 | **완료** |
 | W4 | 친구 (코드 교환, 5명 게이트) | **완료** |
-| W5 | 투표 | 다음 |
-| W6 | 받은 투표 · 힌트 구매 | |
+| W5 | 투표 | **완료** |
+| W6 | 받은 투표 · 힌트 구매 | 다음 |
 | W7 | 배포 · 클로즈드 테스트 | |
 | W8 | 학교 정보 (급식·시간표·공지) | P3 이후 |
 

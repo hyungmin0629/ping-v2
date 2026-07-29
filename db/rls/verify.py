@@ -71,6 +71,19 @@ def rpc(cur, who: uuid.UUID, sql: str, params: tuple = ()):
     return row[0] if row else None
 
 
+def expect_error(cur, who: uuid.UUID, sql: str, params: tuple = ()) -> bool:
+    """실패해야 하는 호출. 막혔으면 True. 시도 자체는 되돌린다."""
+    cur.execute("SAVEPOINT probe")
+    try:
+        rpc(cur, who, sql, params)
+        return False
+    except Exception:
+        return True
+    finally:
+        cur.execute("ROLLBACK TO SAVEPOINT probe")
+        cur.execute("SET LOCAL ROLE postgres")
+
+
 def setup(cur):
     cur.execute("SET LOCAL ROLE postgres")
     cur.execute("INSERT INTO auth.users (id) VALUES (%s), (%s), (%s) ON CONFLICT DO NOTHING",
@@ -211,6 +224,20 @@ def main() -> int:
                 ("A 가 친구 관계를 직접 생성",
                  A_AUTH, "INSERT INTO friendship (user_low_id,user_high_id,source) "
                          "VALUES (%s,%s,'INVITE_CODE')", (min(A, B), max(A, B))),
+                # 후보를 직접 만들 수 있으면 아무나 지목할 수 있다
+                ("A 가 투표 후보를 직접 생성",
+                 A_AUTH, "INSERT INTO vote_candidate (vote_item_id,candidate_user_id,slot) "
+                         "VALUES (%s,%s,1)", (ctx["item"], B)),
+                ("A 가 지목 기록을 직접 생성",
+                 A_AUTH, "INSERT INTO vote_received (vote_item_id,voter_id,receiver_id,question_id) "
+                         "VALUES (%s,%s,%s,%s)",
+                 (ctx["item"], A, B, ctx["question"])),
+                ("A 가 셔플 횟수를 직접 되돌림",
+                 A_AUTH, "UPDATE vote_item SET shuffle_count=0 WHERE user_id=%s", (A,)),
+                # 접속 시각을 조작할 수 있으면 리텐션 지표가 통째로 오염된다
+                ("A 가 접속 기록을 직접 생성(과거 시각으로)",
+                 A_AUTH, "INSERT INTO user_session (user_id,platform,app_version,started_at) "
+                         "VALUES (%s,'WEB','1.0','2020-01-01')", (A,)),
             ]
             for desc, who, sql, params in write_tests:
                 cur.execute("SAVEPOINT sp")
@@ -408,6 +435,226 @@ def main() -> int:
                 failures.append("[친구] RPC 호출 실패")
             finally:
                 cur.execute("ROLLBACK TO SAVEPOINT friends")
+                cur.execute("SET LOCAL ROLE postgres")
+
+            # ---------------------------------------------------------
+            # 투표 — 후보 규칙과 하트가 맞는가 (W5)
+            # ---------------------------------------------------------
+            print()
+            print("투표 시험 (W5)")
+
+            def vcheck(desc: str, ok: bool, detail=""):
+                print(f"  {'동작함' if ok else '실패!!'} {desc}  ({detail})")
+                if not ok:
+                    failures.append(f"[투표] {desc}")
+
+            cur.execute("SAVEPOINT voting")
+            try:
+                friends = [B, ids["D1"], ids["D2"], ids["D3"], ids["D4"]]
+
+                # setup 이 만들어 둔 세션은 후보가 없는 더미다(RLS 시험용).
+                # 닫아두지 않으면 start_vote_session 이 "진행 중인 세션"으로
+                # 그걸 이어받아 버린다 — 함수가 아니라 시험 데이터의 문제다.
+                cur.execute("UPDATE vote_session SET status='COMPLETED', completed_at=now() "
+                            "WHERE user_id=%s AND status='IN_PROGRESS'", (A,))
+
+                # 게이트 — 친구가 없으면 투표 자체가 열리지 않는다
+                vcheck("친구 5명 미만이면 투표가 잠김",
+                       expect_error(cur, A_AUTH, "SELECT start_vote_session()"),
+                       "예외 기대")
+
+                # 친구 5명을 붙인다 (맺는 절차 자체는 W4 에서 확인했다)
+                for fid in friends:
+                    cur.execute("INSERT INTO friendship (user_low_id,user_high_id,source) "
+                                "VALUES (LEAST(%s,%s),GREATEST(%s,%s),'INVITE_CODE') "
+                                "ON CONFLICT DO NOTHING", (A, fid, A, fid))
+                    cur.execute("SELECT refresh_friend_state(%s)", (fid,))
+                cur.execute("SELECT refresh_friend_state(%s)", (A,))
+
+                session = rpc(cur, A_AUTH, "SELECT start_vote_session()")
+                cur.execute("SELECT item_count FROM vote_session WHERE id=%s", (session,))
+                items = cur.fetchone()[0]
+                vcheck("세션이 열리고 문항이 만들어짐", items > 0, f"{items}문항")
+
+                cur.execute("""
+                    SELECT count(*) FROM vote_item v
+                     WHERE v.session_id = %s
+                       AND (SELECT count(*) FROM vote_candidate c
+                             WHERE c.vote_item_id = v.id AND c.shuffle_round = 0) <> 4
+                """, (session,))
+                vcheck("모든 문항의 후보가 정확히 4명",
+                       cur.fetchone()[0] == 0, f"{items}문항 검사")
+
+                cur.execute("""
+                    SELECT count(*) FROM vote_candidate c
+                      JOIN vote_item v ON v.id = c.vote_item_id
+                     WHERE v.session_id = %s
+                       AND (c.candidate_user_id = %s
+                            OR NOT public.is_friend(%s, c.candidate_user_id))
+                """, (session, A, A))
+                strangers = cur.fetchone()[0]
+                vcheck("후보는 전부 내 친구이고 나 자신은 없음",
+                       strangers == 0, f"규칙 위반 {strangers}명")
+
+                vcheck("다시 열면 진행 중인 세션을 이어받음",
+                       rpc(cur, A_AUTH, "SELECT start_vote_session()") == session,
+                       f"세션 {session}")
+
+                # --- 투표 제출 -------------------------------------------
+                cur.execute("SELECT id FROM vote_item WHERE session_id=%s "
+                            "ORDER BY position LIMIT 1", (session,))
+                item = cur.fetchone()[0]
+                cur.execute("SELECT candidate_user_id FROM vote_candidate "
+                            "WHERE vote_item_id=%s AND shuffle_round=0 LIMIT 1", (item,))
+                pick = cur.fetchone()[0]
+
+                cur.execute("SELECT id FROM app_user WHERE id <> %s AND id NOT IN "
+                            "(SELECT candidate_user_id FROM vote_candidate WHERE vote_item_id=%s) "
+                            "LIMIT 1", (A, item))
+                outsider = cur.fetchone()
+                if outsider:
+                    vcheck("후보에 없는 사람은 지목할 수 없음",
+                           expect_error(cur, A_AUTH, "SELECT submit_vote(%s,%s)",
+                                        (item, outsider[0])), "예외 기대")
+
+                cur.execute("SELECT heart_balance FROM app_user WHERE id IN (%s,%s) ORDER BY id",
+                            (A, pick))
+                before = [r[0] for r in cur.fetchall()]
+
+                reward = rpc(cur, A_AUTH, "SELECT submit_vote(%s,%s)", (item, pick))
+                cur.execute("SELECT heart_balance FROM app_user WHERE id IN (%s,%s) ORDER BY id",
+                            (A, pick))
+                after = [r[0] for r in cur.fetchall()]
+
+                vcheck("투표하면 하트가 적립됨 (5~15)",
+                       5 <= reward <= 15, f"+{reward}")
+                vcheck("투표자와 지목당한 사람 양쪽에 지급",
+                       all(a > b for a, b in zip(after, before)),
+                       f"{before} → {after}")
+
+                # 잔액을 바꾼 자리에서 원장도 썼는가
+                cur.execute("""
+                    SELECT count(*) FROM heart_transaction t
+                      JOIN app_user u ON u.id = t.user_id
+                     WHERE t.vote_item_id = %s AND t.balance_after <> u.heart_balance
+                """, (item,))
+                vcheck("원장의 balance_after 가 실제 잔액과 일치",
+                       cur.fetchone()[0] == 0, "2건 검사")
+
+                cur.execute("SELECT voter_id, receiver_id FROM vote_received WHERE vote_item_id=%s",
+                            (item,))
+                got = cur.fetchone()
+                vcheck("지목 기록이 남음", got == (A, pick), str(got))
+
+                vcheck("같은 문항에 다시 투표할 수 없음",
+                       expect_error(cur, A_AUTH, "SELECT submit_vote(%s,%s)", (item, pick)),
+                       "예외 기대")
+
+                # --- 셔플 -------------------------------------------------
+                cur.execute("SELECT id FROM vote_item WHERE session_id=%s AND voted_at IS NULL "
+                            "ORDER BY position LIMIT 1", (session,))
+                item2 = cur.fetchone()[0]
+                rpc(cur, A_AUTH, "SELECT shuffle_candidates(%s)", (item2,))
+
+                cur.execute("SELECT count(*) FROM vote_candidate "
+                            "WHERE vote_item_id=%s AND shuffle_round=1", (item2,))
+                vcheck("셔플하면 새 후보 4명이 뽑힘", cur.fetchone()[0] == 4)
+
+                cur.execute("SELECT count(*) FROM vote_shuffle s "
+                            "JOIN ad_impression a ON a.id = s.ad_impression_id "
+                            "WHERE s.vote_item_id=%s AND a.status='COMPLETED'", (item2,))
+                vcheck("셔플에는 광고 시청 기록이 따라붙음", cur.fetchone()[0] == 1)
+
+                vcheck("셔플은 문항당 1회뿐",
+                       expect_error(cur, A_AUTH, "SELECT shuffle_candidates(%s)", (item2,)),
+                       "DB 제약이 막음")
+
+                # --- 스코프 하향 -------------------------------------------
+                # 같은 반 친구를 다른 반으로 옮기면 CLASS 후보가 모자라진다.
+                cur.execute("SAVEPOINT downgrade")
+                cur.execute("INSERT INTO grade_class (school_id, grade, class_num) "
+                            "SELECT school_id, 2, 1 FROM grade_class WHERE id=%s RETURNING id",
+                            (ctx["class"],))
+                class2 = cur.fetchone()[0]
+                cur.execute("UPDATE app_user SET class_id=%s WHERE id = ANY(%s)",
+                            (class2, [ids["D1"], ids["D2"], ids["D3"], ids["D4"]]))
+                cur.execute("UPDATE vote_session SET status='COMPLETED', completed_at=now() "
+                            "WHERE id=%s", (session,))
+
+                session2 = rpc(cur, A_AUTH, "SELECT start_vote_session()")
+                cur.execute("""
+                    SELECT count(*) FILTER (WHERE q.scope='CLASS'),
+                           count(*) FILTER (WHERE q.scope='CLASS' AND v.candidate_scope='CLASS')
+                      FROM vote_item v JOIN question q ON q.id = v.question_id
+                     WHERE v.session_id = %s
+                """, (session2,))
+                class_items, still_class = cur.fetchone()
+                vcheck("후보가 모자란 CLASS 질문은 스코프가 낮아짐",
+                       still_class == 0, f"CLASS 질문 {class_items}개 중 그대로인 것 {still_class}개")
+
+                # 친구가 전부 사라지면 GLOBAL 에서도 4명을 못 채운다 → 세션이 열리지 않는다
+                cur.execute("UPDATE app_user SET status='WITHDRAWN' WHERE id = ANY(%s)",
+                            (friends,))
+                cur.execute("UPDATE vote_session SET status='COMPLETED', completed_at=now() "
+                            "WHERE id=%s", (session2,))
+                vcheck("GLOBAL 에서도 4명이 안 되면 질문을 내지 않음",
+                       expect_error(cur, A_AUTH, "SELECT start_vote_session()"), "예외 기대")
+
+                cur.execute("ROLLBACK TO SAVEPOINT downgrade")
+                cur.execute("SET LOCAL ROLE postgres")
+            except Exception as e:
+                print(f"  실패!! 투표 RPC 호출  ({type(e).__name__}: {e})")
+                failures.append("[투표] RPC 호출 실패")
+            finally:
+                cur.execute("ROLLBACK TO SAVEPOINT voting")
+                cur.execute("SET LOCAL ROLE postgres")
+
+            # ---------------------------------------------------------
+            # 접속 로그 — 리텐션을 실측할 재료가 실제로 쌓이는가
+            # ---------------------------------------------------------
+            print()
+            print("접속 로그 시험")
+
+            def scheck(desc: str, ok: bool, detail=""):
+                print(f"  {'동작함' if ok else '실패!!'} {desc}  ({detail})")
+                if not ok:
+                    failures.append(f"[접속로그] {desc}")
+
+            def session_count() -> int:
+                cur.execute("SELECT count(*) FROM user_session WHERE user_id=%s", (A,))
+                return cur.fetchone()[0]
+
+            cur.execute("SAVEPOINT sessionlog")
+            try:
+                cur.execute("DELETE FROM user_session WHERE user_id=%s", (A,))
+                cur.execute("UPDATE app_user SET last_active_at=NULL WHERE id=%s", (A,))
+
+                s1 = rpc(cur, A_AUTH, "SELECT touch_session('WEB','test')")
+                cur.execute("SELECT last_active_at IS NOT NULL FROM app_user WHERE id=%s", (A,))
+                active = cur.fetchone()[0]
+                scheck("접속하면 세션이 기록되고 마지막 활동 시각이 찍힘",
+                       s1 is not None and session_count() == 1 and active,
+                       f"세션 {session_count()}개")
+
+                s2 = rpc(cur, A_AUTH, "SELECT touch_session('WEB','test')")
+                scheck("새로고침해도 세션이 늘어나지 않음",
+                       s2 == s1 and session_count() == 1, "30분 안은 같은 세션")
+
+                # 30분이 지나면 새 세션으로 센다
+                cur.execute("UPDATE user_session SET started_at = now() - interval '2 hours', "
+                            "ended_at = now() - interval '2 hours' WHERE user_id=%s", (A,))
+                s3 = rpc(cur, A_AUTH, "SELECT touch_session('WEB','test')")
+                scheck("30분이 지나면 새 세션", s3 != s1 and session_count() == 2, "2개 기대")
+
+                # 온보딩 전(프로필 없음)에는 조용히 넘어가야 한다
+                scheck("프로필이 없으면 오류 없이 넘어감",
+                       rpc(cur, C_AUTH, "SELECT touch_session('WEB','test')") is None,
+                       "NULL 반환")
+            except Exception as e:
+                print(f"  실패!! 접속 로그 RPC  ({type(e).__name__}: {e})")
+                failures.append("[접속로그] touch_session 호출 실패")
+            finally:
+                cur.execute("ROLLBACK TO SAVEPOINT sessionlog")
                 cur.execute("SET LOCAL ROLE postgres")
 
             # ---------------------------------------------------------

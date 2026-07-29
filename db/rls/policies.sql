@@ -121,9 +121,8 @@ CREATE POLICY read_own_session ON public.user_session
     FOR SELECT TO authenticated
     USING (user_id = public.current_app_user_id());
 
-CREATE POLICY insert_own_session ON public.user_session
-    FOR INSERT TO authenticated
-    WITH CHECK (user_id = public.current_app_user_id());
+-- 접속 기록은 여기서 열지 않는다. session_log.sql 의 touch_session() 으로만 한다
+-- — started_at 을 클라이언트가 정할 수 있으면 리텐션 지표가 통째로 오염된다.
 
 CREATE POLICY insert_own_withdrawal ON public.user_withdrawal
     FOR INSERT TO authenticated

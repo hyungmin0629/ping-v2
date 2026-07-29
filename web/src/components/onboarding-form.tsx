@@ -150,6 +150,15 @@ export function OnboardingForm({ onDone }: { onDone: (p: Profile) => void }) {
       >
         {submitting ? "만드는 중…" : "시작하기"}
       </button>
+
+      {/*
+        생년월일을 받지 않으므로 나이를 확인할 방법이 없다. 받는 순간
+        개인정보 수집이 되므로, 고지로 갈음하는 것이 이 설계의 일관된 선택이다.
+      */}
+      <p className="text-xs leading-relaxed text-neutral-500">
+        만 14세 미만은 가입할 수 없습니다. 시작하기를 누르면 만 14세 이상임을
+        확인한 것으로 봅니다.
+      </p>
     </form>
   );
 }

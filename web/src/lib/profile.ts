@@ -14,6 +14,8 @@ export type Profile = {
   inviteCode: string;
   heartBalance: number;
   friendCount: number;
+  /** 친구 5명을 채워 투표가 열렸는가 */
+  unlocked: boolean;
   /** 화면에 보여줄 소속. 예: "코드잇 DA 14기 · 1팀" */
   belonging: string;
 };
@@ -38,7 +40,7 @@ function one<T>(v: T | T[] | null | undefined): T | null {
 }
 
 const PROFILE_COLUMNS = `
-  id, nickname, invite_code, heart_balance, friend_count,
+  id, nickname, invite_code, heart_balance, friend_count, service_unlocked_at,
   grade_class ( grade, class_num, label, school ( name_masked ) )
 `;
 
@@ -48,6 +50,7 @@ type ProfileRow = {
   invite_code: string;
   heart_balance: number;
   friend_count: number;
+  service_unlocked_at: string | null;
   grade_class:
     | {
         grade: number;
@@ -79,6 +82,7 @@ function toProfile(row: ProfileRow): Profile {
     inviteCode: row.invite_code,
     heartBalance: row.heart_balance,
     friendCount: row.friend_count,
+    unlocked: row.service_unlocked_at !== null,
     belonging,
   };
 }

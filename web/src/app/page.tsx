@@ -4,21 +4,24 @@ import { useCallback, useEffect, useState } from "react";
 import { FriendsPanel } from "@/components/friends-panel";
 import { OnboardingForm } from "@/components/onboarding-form";
 import { ProfileCard } from "@/components/profile-card";
+import { VotePanel } from "@/components/vote-panel";
 import { ensureAnonymousSession } from "@/lib/supabase/session";
+import { touchSession } from "@/lib/session-log";
 import { getMyProfile, type Profile } from "@/lib/profile";
 
 /**
- * 접속하면 익명 계정이 생기고(W2), 아직 온보딩 전이면 온보딩 화면을,
- * 마쳤으면 프로필을 보여준다(W3).
+ * 접속하면 익명 계정이 생기고(W2), 온보딩 전이면 온보딩을(W3),
+ * 마쳤으면 프로필·친구·투표를 보여준다(W4·W5).
  *
- * 화면 이동 없이 한 페이지에서 갈라진다. 온보딩은 한 번뿐이라 주소를 나눌 이유가 없다.
+ * 화면 이동 대신 상태로 갈라진다. 주소를 나눌 만큼 화면이 많지 않고,
+ * 투표는 시작하면 끝까지 가는 흐름이라 뒤로가기가 오히려 방해가 된다.
  */
 export default function Home() {
   const [profile, setProfile] = useState<Profile | null>(null);
+  const [voting, setVoting] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  // 친구를 수락하면 친구 수와 게이트 상태가 바뀐다. 그때 다시 읽는다.
   const refresh = useCallback(() => {
     getMyProfile()
       .then((p) => p && setProfile(p))
@@ -34,6 +37,8 @@ export default function Home() {
         const mine = await getMyProfile();
         if (cancelled) return;
         setProfile(mine);
+        // 리텐션을 실측할 재료. 실패해도 화면을 막지 않는다.
+        touchSession();
       } catch (e) {
         if (cancelled) return;
         setError(e instanceof Error ? e.message : String(e));
@@ -46,6 +51,11 @@ export default function Home() {
       cancelled = true;
     };
   }, []);
+
+  function finishVoting() {
+    setVoting(false);
+    refresh();
+  }
 
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col justify-center px-6 py-16">
@@ -64,10 +74,41 @@ export default function Home() {
         </div>
       )}
 
-      {!loading && !error && !profile && <OnboardingForm onDone={setProfile} />}
-      {!loading && !error && profile && (
+      {!loading && !error && !profile && (
+        <OnboardingForm
+          onDone={(p) => {
+            setProfile(p);
+            touchSession();
+          }}
+        />
+      )}
+
+      {!loading && !error && profile && voting && (
+        <VotePanel onClose={finishVoting} />
+      )}
+
+      {!loading && !error && profile && !voting && (
         <div className="flex flex-col gap-10">
           <ProfileCard profile={profile} />
+
+          <section className="flex flex-col gap-3">
+            {profile.unlocked ? (
+              <button
+                type="button"
+                onClick={() => setVoting(true)}
+                className="rounded bg-neutral-900 px-4 py-4 font-medium text-white dark:bg-neutral-100 dark:text-neutral-900"
+              >
+                투표하러 가기
+              </button>
+            ) : (
+              <p className="rounded border border-dashed border-neutral-300 px-4 py-6 text-center text-sm leading-relaxed text-neutral-500 dark:border-neutral-700">
+                친구를 {Math.max(0, 5 - profile.friendCount)}명 더 모으면
+                <br />
+                투표가 열립니다
+              </p>
+            )}
+          </section>
+
           <hr className="border-neutral-200 dark:border-neutral-800" />
           <FriendsPanel myId={profile.id} onChanged={refresh} />
         </div>
