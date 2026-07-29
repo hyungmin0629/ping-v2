@@ -59,12 +59,11 @@
 
 ## 현재 단계
 
-**P0·P1·P2·W0~W8 완료** (2026-07-30) → 다음은 **P4 BigQuery 적재**
+**P0·P1·P2·P4·W0~W8 완료** (2026-07-30) → 다음은 **P5 품질 검증** 또는 **지인 초대**
 
-앱은 배포돼 있고 실데이터가 쌓이는 상태다. 남은 것은 파이프라인 트랙(P4~P7)과
-지인 초대. **P4 를 먼저 하고 그 위에서 초대하는 편이 낫다** — 초대 후에 만들면
-그동안 쌓인 데이터를 소급 적재해야 하고, 증분 적재를 시험하기에는 처음부터
-흐르게 두는 쪽이 깔끔하다.
+앱은 배포돼 있고, 실데이터가 BigQuery 까지 흐른다. 초대를 미룰 이유가 없어졌다
+— P4 를 먼저 한 것은 초대 후에 만들면 그동안 쌓인 데이터를 소급 적재해야 했기 때문이다.
+이제 초대해도 증분이 처음부터 흐른다.
 
 | 완료 | 결과 |
 |---|---|
@@ -79,8 +78,9 @@
 | W5 투표 | 후보 추출·투표·셔플 RPC + 화면. 질문 24개 시드, 접속 로그 추가. 시험 67종 통과 |
 | W6 받은 투표 | 힌트 4단계(성별→초성→반→공개, 200·300·500·1000) + 내가 한 투표 목록 |
 | W7 배포 | Vercel 배포, 개인정보처리방침, 초대 링크(`/add?code=`) |
-| P3 NEIS (일부) | 전국 중·고 5,724개 · 학교 19곳의 학급과 급식(2,938건). DAG 화는 P4 |
+| P3 NEIS (일부) | 전국 중·고 5,724개 · 학교 19곳의 학급과 급식(2,938건). DAG 화는 남음 |
 | W8 급식표 | 메인 토글 → 월 캘린더 · 끼니 선택. **시간표·공지는 남음** |
+| P4 BigQuery 적재 | 42테이블 · 789만 행 (실유저 29,761 + 합성 786만). 갱신 감지 실증, Airflow DAG 실행 확인 |
 
 ## 스크립트
 
@@ -94,6 +94,8 @@
 | `python db/neis_meals.py --school <코드>` | 급식 |
 | `python db/seed_test_friends.py --for <초대코드> [--votes N]` | 더미 친구·받은 투표 |
 | `python db/reset_users.py --yes` | 유저 데이터 전체 삭제 (마스터는 보존) |
+| `python pipeline/extract_load.py --source supabase` | BigQuery raw 증분 적재 |
+| `python pipeline/verify_load.py --source supabase` | **적재 후 행 수 대조. 증분은 조용히 틀린다** |
 
 정합성 검사는 `qa/checks/integrity.sql` 을 Supabase 에 그대로 돌린다(17종, 위반 0이어야 한다).
 
@@ -263,9 +265,36 @@ docker run -d --name pgtest -e POSTGRES_PASSWORD=test -e POSTGRES_DB=pingv2 -p 5
 
 ## 적재 시 주의
 
-**대량 적재 후 `db/ddl/95_resync_sequences.sql`을 반드시 실행한다.**
-identity 컬럼에 id를 직접 지정해 넣으면 시퀀스가 전진하지 않아서,
-이후 실유저 가입 시 id=1을 발급하려다 PK 충돌로 실패한다. 실제로 재현된 문제다.
+**대량 적재 후 두 파일을 반드시 실행한다.**
+
+`db/ddl/95_resync_sequences.sql` — identity 컬럼에 id를 직접 지정해 넣으면
+시퀀스가 전진하지 않아서, 이후 실유저 가입 시 id=1을 발급하려다 PK 충돌로
+실패한다. 실제로 재현된 문제다.
+
+`db/ddl/96_backfill_updated_at.sql` — 증분 워터마크(`updated_at`)의 기본값이
+`now()` 라, COPY 로 부어 넣으면 786만 행이 전부 "적재한 순간"이 된다.
+3개월치가 하루에 뭉치고 BigQuery 파티션이 무의미해진다. 각 행의 원래 시각으로
+되돌린다. 경위는 [[DECISIONS]].
+
+## BigQuery
+
+| 항목 | 값 |
+|---|---|
+| 프로젝트 | `ping-v2-503916` · 리전 `asia-northeast3` |
+| 데이터셋 | `raw` (원본 보존) · `stg`·`mart` 는 P6 |
+| 인증 | 서비스 계정 `airflow-loader` · 키는 `credentials.json` (커밋 금지) |
+| 결제 | **연결돼 있다.** 데이터셋·테이블에 만료 설정이 없는 것으로 확인(2026-07-30) |
+
+- 저장 10GiB · 쿼리 1TiB/월 까지 무료다. 현재 raw 전체가 **450MB** 라 한도의 5% 미만.
+  다만 결제가 붙어 있으면 한도를 넘을 때 막히지 않고 **과금된다.** 예산 알림을 걸어둔다.
+- GCS 를 경유하지 않는다. 파이썬이 행을 JSON 으로 만들어 BigQuery API 에 직접 올린다.
+  `.env` 의 `GCS_BUCKET` 은 비어 있어도 된다. 이 규모에서 버킷은 설정만 늘린다.
+- 실유저와 합성 데이터가 **같은 테이블**에 들어간다. 둘 다 id 가 1부터라
+  `_source` 컬럼으로 키를 나눈다 — 실유저만 보려면 `WHERE _source = 'supabase'`.
+- 적재 방식(full / incremental)은 `pipeline/tables.yaml` 이 정한다.
+- **원천의 삭제는 전파하지 않는다.** raw 는 이력을 지우지 않으므로
+  `reset_users.py` 이후 BigQuery 행이 더 많은 것은 정상이다.
+- 정기 적재: `docker compose -f airflow/docker-compose.yml up -d` → http://localhost:8080
 
 ## 확정된 제약
 

@@ -1,0 +1,71 @@
+# =====================================================================
+# airflow/docker-compose.yml · 로컬 Airflow
+# =====================================================================
+# 띄우기:   docker compose -f airflow/docker-compose.yml up -d
+# 화면:     http://localhost:8080  (초기 비밀번호는 아래 참조)
+# 내리기:   docker compose -f airflow/docker-compose.yml down
+#
+# 공식 배포판의 docker-compose 는 서비스가 8개다(webserver / scheduler /
+# triggerer / worker / redis / flower / init / postgres). CeleryExecutor 를
+# 전제하기 때문인데, **하루 한 번 42개 테이블을 옮기는 일**에 워커 큐는 필요 없다.
+# 여기서는 standalone(웹+스케줄러 한 프로세스) + 메타DB 두 개만 띄운다.
+#
+# 메타DB 를 SQLite 로 더 줄일 수도 있지만 그러면 SequentialExecutor 로 묶여
+# 병렬 실행이 아예 막힌다. Postgres 하나 더 띄우는 값이 그보다 싸다.
+# =====================================================================
+
+x-airflow-env: &airflow-env
+  AIRFLOW__CORE__EXECUTOR: LocalExecutor
+  AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@airflow-db:5432/airflow
+  AIRFLOW__CORE__LOAD_EXAMPLES: "false"
+  AIRFLOW__CORE__DAGS_FOLDER: /opt/project/airflow/dags
+  AIRFLOW__CORE__DEFAULT_TIMEZONE: Asia/Seoul
+  AIRFLOW__WEBSERVER__EXPOSE_CONFIG: "false"
+  # 합성 데이터가 있는 로컬 Postgres 는 **컨테이너 밖**에 있다.
+  # .env 의 PGHOST=localhost 는 컨테이너 안에서 자기 자신을 가리키므로 덮어쓴다.
+  # (load_dotenv 는 이미 있는 환경변수를 덮지 않아서 이 값이 이긴다)
+  PGHOST: host.docker.internal
+
+services:
+  airflow-db:
+    image: postgres:16
+    container_name: ping-airflow-db
+    environment:
+      POSTGRES_USER: airflow
+      POSTGRES_PASSWORD: airflow
+      POSTGRES_DB: airflow
+    volumes:
+      - airflow-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "airflow"]
+      interval: 5s
+      retries: 10
+    restart: unless-stopped
+
+  airflow:
+    image: apache/airflow:2.10.4-python3.11
+    container_name: ping-airflow
+    depends_on:
+      airflow-db:
+        condition: service_healthy
+    environment: *airflow-env
+    # 프로젝트를 통째로 마운트한다. DAG 가 pipeline/ 의 스크립트를 그대로 부르고,
+    # .env 와 credentials.json 도 같은 경로에서 찾는다.
+    # ⚠️ credentials.json 이 컨테이너 안으로 들어간다. 이 컴포즈를 외부에
+    #    노출된 호스트에 올리지 않는다 — 로컬 전용이다.
+    volumes:
+      - ..:/opt/project
+      - airflow-logs:/opt/airflow/logs
+    ports:
+      - "8080:8080"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"   # 리눅스에서도 호스트를 찾게 한다
+    # 패키지 목록을 컴포즈에 베껴 적지 않는다. requirements.txt 하나만 고치면 된다.
+    command: >-
+      bash -c "pip install --quiet -r /opt/project/airflow/requirements.txt
+      && exec airflow standalone"
+    restart: unless-stopped
+
+volumes:
+  airflow-db-data:
+  airflow-logs:

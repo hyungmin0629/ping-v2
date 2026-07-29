@@ -92,8 +92,13 @@ ping-v2/
 ├── generator/             # 합성 데이터 생성
 │   ├── config/            # 분포 파라미터 (yaml)
 │   └── output/            # 생성 결과 (git 제외)
-├── airflow/               # P4 에서 채운다 (지금은 빈 스캐폴딩)
-│   ├── dags/
+├── pipeline/              # Postgres → BigQuery 적재 (P4)
+│   ├── tables.yaml        # 테이블별 적재 방식 (full / incremental)
+│   ├── extract_load.py    # 추출·적재
+│   └── verify_load.py     # 행 수 대조
+├── airflow/
+│   ├── docker-compose.yml # 로컬 Airflow (standalone + 메타DB)
+│   ├── dags/              # ping_raw_load
 │   ├── plugins/
 │   └── requirements.txt   # Airflow 컨테이너 추가 패키지
 ├── bigquery/
@@ -118,14 +123,39 @@ docker exec pgtest psql -U postgres -c "DROP DATABASE IF EXISTS pingv2;" -c "CRE
 
 그 다음 위의 `2. 스키마 만들기`를 다시 실행.
 
-**대량 적재 후 (필수)**
+**대량 적재 후 (필수 · 두 개 다)**
 
 ```bash
 docker exec -i pgtest psql -U postgres -d pingv2 < db/ddl/95_resync_sequences.sql
+docker exec -i pgtest psql -U postgres -d pingv2 < db/ddl/96_backfill_updated_at.sql
 ```
 
-id를 직접 지정해서 넣으면 시퀀스가 전진하지 않는다. 이걸 안 돌리면
+`95` — id를 직접 지정해서 넣으면 시퀀스가 전진하지 않는다. 이걸 안 돌리면
 나중에 새 행을 넣을 때 PK 충돌이 난다.
+
+`96` — 증분 워터마크(`updated_at`)의 기본값이 `now()` 라, COPY 로 부어 넣으면
+786만 행이 전부 "적재한 순간"이 된다. 3개월치가 하루에 뭉치고 BigQuery
+파티션이 무의미해진다. 각 행의 원래 시각으로 되돌린다.
+
+---
+
+## BigQuery 적재 (P4)
+
+```bash
+python pipeline/extract_load.py --source supabase     # 실유저 (증분)
+python pipeline/extract_load.py --source local        # 합성 786만 행
+python pipeline/verify_load.py  --source supabase     # 행 수 대조
+```
+
+두 원천이 **같은 BigQuery 테이블**로 흐른다. 둘 다 id 가 1부터라 그대로
+섞으면 서로를 덮어쓰므로, 적재 시 `_source` 컬럼을 붙이고 키를
+`(_source, id)` 로 쓴다. 분석에서 실유저만 보려면 `WHERE _source = 'supabase'`.
+
+정기 적재는 Airflow 가 한다:
+
+```bash
+docker compose -f airflow/docker-compose.yml up -d    # http://localhost:8080
+```
 
 ---
 
@@ -155,8 +185,8 @@ id를 직접 지정해서 넣으면 시퀀스가 전진하지 않는다. 이걸 
 | P0 | 스키마·DDL | **완료** |
 | P1 | 합성 데이터 생성 | **완료** |
 | P2 | Postgres 적재 | **완료** |
-| P3 | NEIS 수집 | 학교·학급·급식 **완료** · DAG 화는 P4 |
-| P4 | BigQuery 적재 DAG | |
+| P3 | NEIS 수집 | 학교·학급·급식 **완료** · DAG 화는 남음 |
+| P4 | BigQuery 적재 DAG | **완료** — 42테이블 789만 행 · 행 수 대조 통과 |
 | P5 | 품질 검증 | |
 | P6 | stg / mart | |
 | P7 | 대시보드 | |

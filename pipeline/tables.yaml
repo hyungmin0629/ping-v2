@@ -1,0 +1,89 @@
+# =====================================================================
+# tables.yaml · BigQuery raw 적재 매니페스트
+# =====================================================================
+# 42개 테이블을 어떻게 적재할지 정한다. 기준은 하나다 —
+# **매번 통째로 옮기는 게 싼가, 바뀐 것만 골라내는 게 싼가.**
+#
+#   full         작고 거의 안 변한다. 매번 지우고 새로 넣는다(truncate + load).
+#                워터마크도 상태도 필요 없어서 틀릴 여지가 없다.
+#
+#   incremental  유저 활동이 쌓인다. updated_at 워터마크로 바뀐 행만 뽑아
+#                id 기준 MERGE 로 덮어쓴다. (마이그레이션 004 참조)
+#
+# 두 원천(supabase=실유저 / local=합성)이 **같은 BigQuery 테이블**로 흐른다.
+# 둘 다 id 가 1부터 시작하는 identity 라 그대로 섞으면 서로를 덮어쓴다.
+# 그래서 적재 시 `_source` 컬럼을 붙이고 키를 (_source, id) 로 쓴다.
+# 워터마크도 원천별로 따로 관리한다.
+# =====================================================================
+
+defaults:
+  pk: id            # 42개 전부 단일 컬럼 PK. 아래 예외만 code.
+  watermark: updated_at
+
+# 마스터·참조 — 통째로 교체 -------------------------------------------
+# 가장 큰 school 도 5,725행이다. 증분을 걸 이유가 없다.
+full:
+  - region                  # 266
+  - school                  # 5,725 (NEIS 전국 중·고)
+  - grade_class             # 538
+  - question                # 24
+  - question_category       # 8
+  - heart_product           # 4
+  - heart_transaction_type  # 8   · pk: code
+  - report_reason           # 13  · pk: code
+  - withdrawal_reason       # 6   · pk: code
+  - sanction_policy         # 5
+  - board_category          # 5
+  - admin_user              # 0
+
+# 활동 데이터 — 바뀐 것만 -----------------------------------------------
+incremental:
+  # 유저·세션
+  - app_user
+  - user_session
+  - user_withdrawal
+  # 친구·차단
+  - friend_request
+  - friendship
+  - friend_recommendation
+  - block_record
+  # 질문 제안
+  - question_request
+  # 투표
+  - vote_session
+  - vote_item
+  - vote_candidate
+  - vote_shuffle
+  - vote_received
+  # 광고·힌트
+  - ad_impression
+  - hint_purchase
+  # 하트
+  - heart_purchase
+  - heart_transaction
+  # 신고·제재
+  - report
+  - sanction
+  # 게시판 (v2. 테이블만 있고 화면은 없다)
+  - post
+  - post_comment
+  - post_like
+  - comment_like
+  # 학교 정보 (NEIS 동기화)
+  - meal_plan
+  - meal_menu_item
+  - timetable
+  - school_notice
+  - school_notice_read
+  - school_event
+  - external_sync_log
+
+# pk 가 id 가 아닌 것 (전부 full 이라 실제로는 MERGE 에 쓰이지 않는다)
+pk_overrides:
+  heart_transaction_type: code
+  report_reason: code
+  withdrawal_reason: code
+
+# 적재하지 않는 것 -----------------------------------------------------
+# 없다. 비어 있는 테이블도 스키마째 만들어 둔다 —
+# 나중에 채워질 때 파이프라인을 고칠 필요가 없고, 빈 테이블은 저장비가 0이다.

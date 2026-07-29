@@ -2,17 +2,22 @@
 # airflow/requirements.txt · Airflow 컨테이너에 추가로 설치할 패키지
 # =====================================================================
 # Airflow 본체는 docker-compose.yml 의 이미지에 이미 들어 있다.
-# 여기에는 "추가로 필요한 것"만 적는다.
+# 여기에는 "추가로 필요한 것"만 적는다. 컨테이너가 뜰 때 이 파일을 설치한다.
 #
-# ⚠️ Airflow는 의존성이 매우 까다롭다.
-#    버전을 올릴 때는 반드시 공식 constraints 파일과 함께 설치해야 한다:
+# provider 패키지를 하나도 쓰지 않는다.
+#   DAG 은 pipeline/ 의 스크립트를 BashOperator 로 부를 뿐이고,
+#   적재는 google-cloud-bigquery 를, Postgres 접속은 psycopg 를 직접 쓴다.
+#   Airflow 의 Connection 에 접속 정보를 넣으면 **Airflow 없이는 같은 명령을
+#   돌릴 수 없게 된다.** 디버깅할 때 그게 제일 아프다.
+#   (전 버전은 postgres·google·http provider 를 미리 적어뒀지만 결국 안 썼다)
+#
+# ⚠️ 버전은 루트 requirements.txt 와 맞춰 둔다.
+#    로컬에서 되는 것이 컨테이너에서 안 되는 상황을 만들지 않는다.
+# ⚠️ Airflow 본체 버전을 올릴 때는 공식 constraints 와 함께 설치한다:
 #    https://raw.githubusercontent.com/apache/airflow/constraints-2.10.4/constraints-3.11.txt
 # =====================================================================
 
-apache-airflow-providers-postgres==5.14.0
-apache-airflow-providers-google==11.0.0
-apache-airflow-providers-http==5.0.0
-
-requests==2.32.3
-tenacity==9.0.0
-PyYAML==6.0.2
+psycopg[binary]==3.3.4
+python-dotenv==1.2.2
+PyYAML==6.0.1
+google-cloud-bigquery==3.27.0

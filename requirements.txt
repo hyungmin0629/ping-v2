@@ -14,7 +14,8 @@
 
 psycopg[binary]==3.3.4      # PostgreSQL 드라이버 (적재, RLS 검증)
 python-dotenv==1.2.2        # .env 읽기
-PyYAML==6.0.1               # 합성 데이터 분포 파라미터
+PyYAML==6.0.1               # 합성 데이터 분포 파라미터, 적재 매니페스트
+google-cloud-bigquery==3.27.0   # P4 BigQuery 적재
 
 
 # ---------------------------------------------------------------------
@@ -23,8 +24,9 @@ PyYAML==6.0.1               # 합성 데이터 분포 파라미터
 # P3 NEIS 수집:
 #   requests, tenacity
 #
-# P4 BigQuery 적재:
-#   google-cloud-bigquery, google-cloud-storage, pyarrow
+# P4 에서 쓰지 않기로 한 것:
+#   google-cloud-storage, pyarrow — GCS 를 경유하지 않고 JSON 으로 바로 올린다.
+#   이 규모(실유저 3.5만 행)에서는 중간 저장소가 이득 없이 설정만 늘린다.
 #
 # 데이터 분석이 필요해지면:
 #   pandas, numpy
