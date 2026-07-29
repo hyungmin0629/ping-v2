@@ -76,6 +76,35 @@
 - ⚠️ **v16 부터 `middleware.ts` 가 `proxy.ts` 로 바뀌었다.** 인증 미들웨어를 붙일 때 주의.
 - `web/AGENTS.md` 지시대로, 코드 작성 전 `node_modules/next/dist/docs/` 를 확인할 것.
 
+## 조직 데이터 (임시)
+
+Supabase 에는 클로즈드 테스트용 조직 하나만 넣어두었다. `db/seed_org.sql`
+
+| 학교 | 학급 |
+|---|---|
+| 코드잇 DA 14기 | 1팀 / 2팀 / 3팀 / 4팀 |
+
+⚠️ **임시다.** 테스터가 성인 지인이라 실제 학교를 고를 수 없어 대신 둔 것이고,
+**P3 NEIS 연동 후 실제 학교 목록으로 교체한다.** 그때 온보딩 화면은 손댈 필요가 없다
+(학교를 목록에서 고르는 구조는 그대로이므로).
+
+`grade_class.label` 컬럼이 표시명을 담는다. 비어 있으면 앱이 "N학년 M반"으로 조립하므로,
+NEIS 학교는 `label` 을 비워두면 된다.
+
+## 초기화
+
+테스트하다 쌓인 계정을 치우려면:
+
+```
+python db/reset_users.py --yes     # 프로필·활동·익명계정 삭제 (마스터는 보존)
+```
+
+브라우저 세션도 지워야 완전히 초기화된다 —
+개발자도구(F12) → Application → Storage → Clear site data, 또는 시크릿 창.
+
+지우지 않아도 앱이 알아서 새 계정을 만든다(`ensureAnonymousSession` 이 서버에
+토큰 유효성을 확인하고, 계정이 사라졌으면 다시 발급받는다).
+
 ## 익명 로그인 설정
 
 Supabase 대시보드에서 **Authentication → Sign In / Providers → Allow anonymous sign-ins**
