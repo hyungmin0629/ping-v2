@@ -139,17 +139,10 @@ CREATE POLICY read_own_friend_request ON public.friend_request
     USING (sender_id = public.current_app_user_id()
         OR receiver_id = public.current_app_user_id());
 
--- 요청은 본인 명의로만 보낼 수 있다
-CREATE POLICY insert_own_friend_request ON public.friend_request
-    FOR INSERT TO authenticated
-    WITH CHECK (sender_id = public.current_app_user_id()
-            AND sender_id <> receiver_id);
-
--- 수락·거절은 받은 사람만
-CREATE POLICY respond_friend_request ON public.friend_request
-    FOR UPDATE TO authenticated
-    USING (receiver_id = public.current_app_user_id())
-    WITH CHECK (receiver_id = public.current_app_user_id());
+-- 요청 보내기·수락·거절은 여기서 열지 않는다. friends.sql 의 함수로만 한다 —
+-- app_user.id 가 1부터 이어지는 정수라, INSERT 를 열면 receiver_id 를
+-- 바꿔가며 전체 가입자에게 요청을 뿌릴 수 있다. 상대를 지목하는 수단은
+-- 초대 코드 하나여야 한다.
 
 -- 내가 낀 친구 관계만 보인다
 CREATE POLICY read_own_friendship ON public.friendship

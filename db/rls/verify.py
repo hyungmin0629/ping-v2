@@ -37,6 +37,15 @@ B_AUTH = uuid.UUID("bbbbbbbb-0000-4000-8000-000000000002")
 # app_user 행이 없는 익명 계정이 하나 필요하다.
 C_AUTH = uuid.UUID("cccccccc-0000-4000-8000-000000000003")
 
+# D1~D4 는 5명 게이트를 시험하기 위한 친구들이다.
+# A 가 B 까지 5명을 채우는 순간 service_unlocked_at 이 찍혀야 한다.
+D_USERS = [
+    (uuid.UUID(f"dddddddd-0000-4000-8000-00000000000{n}"), f"시험친구D{n}", code)
+    for n, code in enumerate(["TESTDA", "TESTDB", "TESTDC", "TESTDD"], start=4)
+]
+
+FRIEND_GATE = 5   # friends.sql 의 refresh_friend_state 와 같은 값
+
 INVITE_CODE_RE = re.compile(r"^[A-HJ-NP-Z2-9]{6,8}$")   # DDL 의 ck_invite_code 와 같다
 SIGNUP_GRANT = 300                                       # onboarding.sql 이 지급하는 양
 
@@ -53,10 +62,21 @@ def as_user(cur, auth_uuid: uuid.UUID | None):
                     (json.dumps({"sub": str(auth_uuid), "role": "authenticated"}), ))
 
 
+def rpc(cur, who: uuid.UUID, sql: str, params: tuple = ()):
+    """해당 유저를 가장해 한 줄짜리 조회를 실행하고 첫 값을 돌려준다."""
+    as_user(cur, who)
+    cur.execute(sql, params)
+    row = cur.fetchone()
+    cur.execute("SET LOCAL ROLE postgres")
+    return row[0] if row else None
+
+
 def setup(cur):
     cur.execute("SET LOCAL ROLE postgres")
     cur.execute("INSERT INTO auth.users (id) VALUES (%s), (%s), (%s) ON CONFLICT DO NOTHING",
                 (A_AUTH, B_AUTH, C_AUTH))
+    for auth_id, _, _ in D_USERS:
+        cur.execute("INSERT INTO auth.users (id) VALUES (%s) ON CONFLICT DO NOTHING", (auth_id,))
 
     cur.execute("INSERT INTO region (sido, sigungu) VALUES ('시험','구') RETURNING id")
     rid = cur.fetchone()[0]
@@ -75,6 +95,12 @@ def setup(cur):
             "VALUES (%s, %s, %s, %s, 5000) RETURNING id",
             (auth_id, nick, code, cid))
         ids[label] = cur.fetchone()[0]
+
+    for n, (auth_id, nick, code) in enumerate(D_USERS, start=1):
+        cur.execute(
+            "INSERT INTO app_user (auth_user_id, nickname, invite_code, class_id) "
+            "VALUES (%s, %s, %s, %s) RETURNING id", (auth_id, nick, code, cid))
+        ids[f"D{n}"] = cur.fetchone()[0]
 
     # B 의 민감 데이터를 만들어 둔다 — A 가 이걸 훔쳐보려 시도할 것이다
     cur.execute("INSERT INTO heart_transaction (user_id, type_code, delta, balance_after) "
@@ -176,6 +202,15 @@ def main() -> int:
                 ("A 가 남의 명의로 친구요청 생성",
                  A_AUTH, "INSERT INTO friend_request (sender_id,receiver_id,source) "
                          "VALUES (%s,%s,'INVITE_CODE')", (B, A)),
+                # 코드를 몰라도 id 만 바꿔가며 아무에게나 요청을 뿌릴 수 있으면 안 된다
+                ("A 가 코드 없이 id 로 친구요청 생성",
+                 A_AUTH, "INSERT INTO friend_request (sender_id,receiver_id,source) "
+                         "VALUES (%s,%s,'INVITE_CODE')", (A, B)),
+                ("A 가 요청 상태를 직접 수락으로 변경",
+                 A_AUTH, "UPDATE friend_request SET status='ACCEPTED' WHERE receiver_id=%s", (A,)),
+                ("A 가 친구 관계를 직접 생성",
+                 A_AUTH, "INSERT INTO friendship (user_low_id,user_high_id,source) "
+                         "VALUES (%s,%s,'INVITE_CODE')", (min(A, B), max(A, B))),
             ]
             for desc, who, sql, params in write_tests:
                 cur.execute("SAVEPOINT sp")
@@ -275,6 +310,104 @@ def main() -> int:
                 failures.append("[온보딩] complete_onboarding 호출 실패")
             finally:
                 cur.execute("ROLLBACK TO SAVEPOINT onboarding")
+                cur.execute("SET LOCAL ROLE postgres")
+
+            # ---------------------------------------------------------
+            # 친구 맺기 — 초대 코드 말고는 상대를 지목할 수 없는가 (W4)
+            # ---------------------------------------------------------
+            print()
+            print("친구 시험 (W4)")
+
+            def check(desc: str, ok: bool, detail=""):
+                print(f"  {'동작함' if ok else '실패!!'} {desc}  ({detail})")
+                if not ok:
+                    failures.append(f"[친구] {desc}")
+
+            cur.execute("SAVEPOINT friends")
+            try:
+                check("A 가 B 의 코드로 요청",
+                      rpc(cur, A_AUTH, "SELECT send_friend_request('TESTBB')") == "SENT", "SENT")
+                check("같은 요청을 또 보냄",
+                      rpc(cur, A_AUTH, "SELECT send_friend_request('TESTBB')") == "ALREADY_SENT",
+                      "ALREADY_SENT 기대")
+                check("내 코드를 입력",
+                      rpc(cur, A_AUTH, "SELECT send_friend_request('TESTAA')") == "SELF",
+                      "SELF 기대")
+                check("없는 코드를 입력",
+                      rpc(cur, A_AUTH, "SELECT send_friend_request('ZZZZZZ')") == "NOT_FOUND",
+                      "NOT_FOUND 기대")
+
+                # 아직 친구가 아닌 상대의 닉네임이 요청 목록에는 보여야 한다
+                as_user(cur, B_AUTH)
+                cur.execute("SELECT id, direction, counterpart_nickname "
+                            "FROM my_friend_request WHERE status='PENDING'")
+                rows = cur.fetchall()
+                cur.execute("SET LOCAL ROLE postgres")
+                ok = (len(rows) == 1 and rows[0][1] == "INCOMING"
+                      and rows[0][2] == "시험유저A")
+                check("B 가 받은 요청에서 A 를 봄", ok, rows)
+                req_id = rows[0][0] if rows else None
+
+                # 남이 받은 요청을 제3자가 대신 수락할 수 없다
+                check("제3자가 남의 요청을 수락 시도",
+                      rpc(cur, D_USERS[0][0],
+                          "SELECT accept_friend_request(%s)", (req_id,)) == "NOT_FOUND",
+                      "NOT_FOUND 기대")
+
+                check("B 가 수락",
+                      rpc(cur, B_AUTH,
+                          "SELECT accept_friend_request(%s)", (req_id,)) == "ACCEPTED",
+                      "ACCEPTED 기대")
+
+                cur.execute("SELECT friend_count, service_unlocked_at FROM app_user WHERE id=%s",
+                            (A,))
+                cnt, unlocked = cur.fetchone()
+                check("친구 1명 · 투표는 아직 잠김", cnt == 1 and unlocked is None,
+                      f"{cnt}명, 해금={unlocked is not None}")
+
+                # 5명을 채운다. 게이트는 수락 시점에 열려야 한다.
+                for n, (d_auth, _, d_code) in enumerate(D_USERS, start=1):
+                    sent = rpc(cur, A_AUTH, "SELECT send_friend_request(%s)", (d_code,))
+                    rid = rpc(cur, d_auth, "SELECT id FROM my_friend_request "
+                                           "WHERE status='PENDING' AND direction='INCOMING'")
+                    acc = rpc(cur, d_auth, "SELECT accept_friend_request(%s)", (rid,))
+                    if sent != "SENT" or acc != "ACCEPTED":
+                        failures.append(f"[친구] D{n} 와의 요청·수락 실패 ({sent}/{acc})")
+
+                cur.execute("SELECT friend_count, service_unlocked_at FROM app_user WHERE id=%s",
+                            (A,))
+                cnt, unlocked = cur.fetchone()
+                check(f"{FRIEND_GATE}명째에 투표가 열림",
+                      cnt == FRIEND_GATE and unlocked is not None,
+                      f"{cnt}명, 해금={unlocked is not None}")
+
+                check("이미 친구인 코드를 다시 입력",
+                      rpc(cur, A_AUTH, "SELECT send_friend_request('TESTBB')") == "ALREADY_FRIEND",
+                      "ALREADY_FRIEND 기대")
+
+                check("친구 목록에 5명 + 나",
+                      rpc(cur, A_AUTH, "SELECT count(*) FROM friend_profile") == FRIEND_GATE + 1,
+                      f"{FRIEND_GATE + 1}행 기대")
+
+                # 서로 코드를 주고받으면 수락을 기다리지 않고 맺어진다
+                b_sent = rpc(cur, B_AUTH, "SELECT send_friend_request(%s)", (D_USERS[1][2],))
+                auto = rpc(cur, D_USERS[1][0], "SELECT send_friend_request('TESTBB')")
+                check("서로 코드를 입력하면 바로 친구",
+                      b_sent == "SENT" and auto == "ACCEPTED", f"{b_sent} → {auto}")
+
+                # 거절하면 관계가 만들어지지 않는다
+                rpc(cur, B_AUTH, "SELECT send_friend_request(%s)", (D_USERS[2][2],))
+                rid = rpc(cur, D_USERS[2][0], "SELECT id FROM my_friend_request "
+                                              "WHERE status='PENDING' AND direction='INCOMING'")
+                rejected = rpc(cur, D_USERS[2][0], "SELECT reject_friend_request(%s)", (rid,))
+                cur.execute("SELECT public.is_friend(%s, %s)", (B, ids["D3"]))
+                check("거절하면 친구가 되지 않음",
+                      rejected == "REJECTED" and cur.fetchone()[0] is False, rejected)
+            except Exception as e:
+                print(f"  실패!! 친구 RPC 호출  ({type(e).__name__}: {e})")
+                failures.append("[친구] RPC 호출 실패")
+            finally:
+                cur.execute("ROLLBACK TO SAVEPOINT friends")
                 cur.execute("SET LOCAL ROLE postgres")
 
             # ---------------------------------------------------------

@@ -95,6 +95,28 @@ export async function getMyProfile(): Promise<Profile | null> {
   return data ? toProfile(data) : null;
 }
 
+/**
+ * 학급 id → 표시명. 친구 목록·요청 목록에서 상대의 소속을 보여주는 데 쓴다.
+ * 학급은 마스터 데이터라 누구나 읽을 수 있다(온보딩에서 골라야 하므로).
+ */
+export async function lookupClassLabels(
+  ids: number[],
+): Promise<Map<number, string>> {
+  const unique = [...new Set(ids)];
+  if (unique.length === 0) return new Map();
+
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .from("grade_class")
+    .select("id, grade, class_num, label")
+    .in("id", unique);
+
+  if (error) throw error;
+  return new Map(
+    (data ?? []).map((c) => [c.id, classLabel(c.grade, c.class_num, c.label)]),
+  );
+}
+
 export async function listSchools(): Promise<School[]> {
   const supabase = createClient();
   const { data, error } = await supabase

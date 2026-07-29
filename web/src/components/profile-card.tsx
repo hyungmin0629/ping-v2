@@ -50,7 +50,8 @@ export function ProfileCard({ profile }: { profile: Profile }) {
           </button>
         </div>
         <p className="text-xs leading-relaxed text-neutral-500">
-          이 코드를 친구에게 알려주세요. 친구가 코드를 입력하면 서로 친구가 됩니다.
+          이 코드를 친구에게 알려주세요. 친구가 코드를 입력하면 요청이 오고,
+          내가 수락하면 친구가 됩니다.
         </p>
       </section>
 
@@ -69,8 +70,7 @@ export function ProfileCard({ profile }: { profile: Profile }) {
       </p>
 
       <p className="text-xs leading-relaxed text-neutral-500">
-        친구 추가 화면은 준비 중입니다(W4). 브라우저 저장소를 지우면 계정이
-        사라지니, 초대 코드를 적어두세요.
+        브라우저 저장소를 지우면 계정이 사라지니, 초대 코드를 적어두세요.
       </p>
     </div>
   );

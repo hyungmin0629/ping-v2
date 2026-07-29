@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { FriendsPanel } from "@/components/friends-panel";
 import { OnboardingForm } from "@/components/onboarding-form";
 import { ProfileCard } from "@/components/profile-card";
 import { ensureAnonymousSession } from "@/lib/supabase/session";
@@ -16,6 +17,13 @@ export default function Home() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+
+  // 친구를 수락하면 친구 수와 게이트 상태가 바뀐다. 그때 다시 읽는다.
+  const refresh = useCallback(() => {
+    getMyProfile()
+      .then((p) => p && setProfile(p))
+      .catch((e) => setError(e instanceof Error ? e.message : String(e)));
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -57,7 +65,13 @@ export default function Home() {
       )}
 
       {!loading && !error && !profile && <OnboardingForm onDone={setProfile} />}
-      {!loading && !error && profile && <ProfileCard profile={profile} />}
+      {!loading && !error && profile && (
+        <div className="flex flex-col gap-10">
+          <ProfileCard profile={profile} />
+          <hr className="border-neutral-200 dark:border-neutral-800" />
+          <FriendsPanel myId={profile.id} onChanged={refresh} />
+        </div>
+      )}
     </main>
   );
 }
