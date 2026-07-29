@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { FriendsPanel } from "@/components/friends-panel";
 import { InboxPanel } from "@/components/inbox-panel";
@@ -129,6 +130,13 @@ export default function Home() {
 
           <hr className="border-neutral-200 dark:border-neutral-800" />
           <FriendsPanel myId={profile.id} onChanged={refresh} />
+
+          <Link
+            href="/privacy"
+            className="text-xs text-neutral-500 underline underline-offset-4"
+          >
+            개인정보처리방침
+          </Link>
         </div>
       )}
     </main>

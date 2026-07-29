@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import {
   completeOnboarding,
@@ -179,7 +180,11 @@ export function OnboardingForm({ onDone }: { onDone: (p: Profile) => void }) {
       */}
       <p className="text-xs leading-relaxed text-neutral-500">
         만 14세 미만은 가입할 수 없습니다. 시작하기를 누르면 만 14세 이상임을
-        확인한 것으로 봅니다.
+        확인하고{" "}
+        <Link href="/privacy" className="underline underline-offset-2">
+          개인정보처리방침
+        </Link>
+        에 동의한 것으로 봅니다.
       </p>
     </form>
   );
