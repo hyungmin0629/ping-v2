@@ -46,73 +46,92 @@ ROOT = Path(__file__).resolve().parent.parent
 # ck_invite_code 와 같은 문자 집합 (헷갈리는 0·O·1·I·L 제외)
 CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
 
-# 더미가 남길 수 있는 흔적을 자식 → 부모 순으로 지운다.
-# 더미는 투표하지 않지만, 내가 더미를 후보로 뽑은 기록은 남는다.
+# 더미가 남길 수 있는 흔적을 지운다.
+#
+# 삭제 순서를 짜다 세 번 걸렸다. 셋 다 같은 뿌리에서 나왔다 — 지울 대상을
+# 단계마다 다시 계산하면, 앞 단계가 지운 행 때문에 뒤 단계의 계산 결과가 달라진다.
+#   1. 힌트를 산 것은 나(실유저)라 heart_transaction 이 남고 hint_purchase 삭제가 막혔다
+#   2. 더미가 후보인 문항을 지우려는데 vote_received 가 붙잡았다
+#   3. 후보를 먼저 지우자 "더미가 후보인 문항"이 조회되지 않아 문항 90개가 고아로 남았다
+#
+# 그래서 지울 대상을 **임시 테이블에 먼저 고정**하고, 모든 단계가 그것만 본다.
+SYN = "(SELECT id FROM app_user WHERE is_synthetic)"
+
+# 지울 문항: 더미가 투표했거나, 더미가 후보로 들어갔거나, 이미 부서진 것.
+# 부서진 것까지 넣는 이유는 예전 실행이 남긴 고아 문항을 여기서 함께 정리하기 위해서다.
+DOOMED_ITEMS = f"""
+    SELECT v.id FROM vote_item v
+     WHERE v.user_id IN {SYN}
+        OR EXISTS (SELECT 1 FROM vote_candidate c
+                    WHERE c.vote_item_id = v.id AND c.candidate_user_id IN {SYN})
+        OR (SELECT count(*) FROM vote_candidate c
+             WHERE c.vote_item_id = v.id AND c.shuffle_round = 0) < 4
+        OR (v.voted_at IS NOT NULL
+            AND NOT EXISTS (SELECT 1 FROM vote_candidate c
+                             WHERE c.vote_item_id = v.id AND c.is_chosen))"""
+
+DOOMED_RECV = f"""
+    SELECT r.id FROM vote_received r
+     WHERE r.voter_id IN {SYN}
+        OR r.receiver_id IN {SYN}
+        OR r.vote_item_id IN (SELECT id FROM doomed_items)"""
+
+DOOMED_HINTS = f"""
+    SELECT p.id FROM hint_purchase p
+     WHERE p.user_id IN {SYN}
+        OR p.vote_received_id IN (SELECT id FROM doomed_recv)"""
+
 CLEAN_STEPS = [
-    ("heart_transaction", """
+    ("heart_transaction", f"""
         DELETE FROM heart_transaction
-         WHERE user_id IN (SELECT id FROM app_user WHERE is_synthetic)
-            OR vote_item_id IN (SELECT vote_item_id FROM vote_candidate
-                                 WHERE candidate_user_id IN
-                                       (SELECT id FROM app_user WHERE is_synthetic))"""),
-    ("hint_purchase", """
-        DELETE FROM hint_purchase
-         WHERE user_id IN (SELECT id FROM app_user WHERE is_synthetic)
-            OR vote_received_id IN (SELECT id FROM vote_received
-                                     WHERE receiver_id IN (SELECT id FROM app_user WHERE is_synthetic)
-                                        OR voter_id IN (SELECT id FROM app_user WHERE is_synthetic))"""),
-    ("vote_received", """
-        DELETE FROM vote_received
-         WHERE voter_id IN (SELECT id FROM app_user WHERE is_synthetic)
-            OR receiver_id IN (SELECT id FROM app_user WHERE is_synthetic)"""),
-    ("vote_shuffle", """
-        DELETE FROM vote_shuffle
-         WHERE vote_item_id IN (SELECT vote_item_id FROM vote_candidate
-                                 WHERE candidate_user_id IN
-                                       (SELECT id FROM app_user WHERE is_synthetic))"""),
-    ("vote_candidate", """
+         WHERE user_id IN {SYN}
+            OR vote_item_id IN (SELECT id FROM doomed_items)
+            OR hint_purchase_id IN (SELECT id FROM doomed_hints)"""),
+    ("hint_purchase",  "DELETE FROM hint_purchase WHERE id IN (SELECT id FROM doomed_hints)"),
+    ("vote_received",  "DELETE FROM vote_received WHERE id IN (SELECT id FROM doomed_recv)"),
+    ("vote_shuffle",   "DELETE FROM vote_shuffle WHERE vote_item_id IN (SELECT id FROM doomed_items)"),
+    ("vote_candidate", f"""
         DELETE FROM vote_candidate
-         WHERE candidate_user_id IN (SELECT id FROM app_user WHERE is_synthetic)
-            OR vote_item_id IN (SELECT vote_item_id FROM vote_candidate
-                                 WHERE candidate_user_id IN
-                                       (SELECT id FROM app_user WHERE is_synthetic))"""),
-    # 후보가 사라져 4명이 되지 않는 아이템은 통째로 지운다. 반쪽짜리 투표
-    # 기록을 남기면 정합성 검사가 그걸 결함으로 잡는다.
-    ("vote_item", """
-        DELETE FROM vote_item v
-         WHERE v.user_id IN (SELECT id FROM app_user WHERE is_synthetic)
-            OR (SELECT count(*) FROM vote_candidate c
-                 WHERE c.vote_item_id = v.id AND c.shuffle_round = 0) < 4"""),
-    ("vote_session", """
+         WHERE vote_item_id IN (SELECT id FROM doomed_items)
+            OR candidate_user_id IN {SYN}"""),
+    ("vote_item",      "DELETE FROM vote_item WHERE id IN (SELECT id FROM doomed_items)"),
+    ("vote_session", f"""
         DELETE FROM vote_session s
-         WHERE s.user_id IN (SELECT id FROM app_user WHERE is_synthetic)
+         WHERE s.user_id IN {SYN}
             OR NOT EXISTS (SELECT 1 FROM vote_item v WHERE v.session_id = s.id)"""),
-    ("ad_impression", """
-        DELETE FROM ad_impression
-         WHERE user_id IN (SELECT id FROM app_user WHERE is_synthetic)"""),
-    ("friendship", """
-        DELETE FROM friendship
-         WHERE user_low_id IN (SELECT id FROM app_user WHERE is_synthetic)
-            OR user_high_id IN (SELECT id FROM app_user WHERE is_synthetic)"""),
-    ("friend_request", """
-        DELETE FROM friend_request
-         WHERE sender_id IN (SELECT id FROM app_user WHERE is_synthetic)
-            OR receiver_id IN (SELECT id FROM app_user WHERE is_synthetic)"""),
-    ("friend_recommendation", """
+    ("ad_impression", f"DELETE FROM ad_impression WHERE user_id IN {SYN}"),
+    ("friendship", f"DELETE FROM friendship WHERE user_low_id IN {SYN} OR user_high_id IN {SYN}"),
+    ("friend_request", f"DELETE FROM friend_request WHERE sender_id IN {SYN} OR receiver_id IN {SYN}"),
+    ("friend_recommendation", f"""
         DELETE FROM friend_recommendation
-         WHERE user_id IN (SELECT id FROM app_user WHERE is_synthetic)
-            OR recommended_user_id IN (SELECT id FROM app_user WHERE is_synthetic)"""),
-    ("block_record", """
-        DELETE FROM block_record
-         WHERE user_id IN (SELECT id FROM app_user WHERE is_synthetic)
-            OR blocked_user_id IN (SELECT id FROM app_user WHERE is_synthetic)"""),
-    ("user_session", """
-        DELETE FROM user_session
-         WHERE user_id IN (SELECT id FROM app_user WHERE is_synthetic)"""),
-    ("school_notice_read", """
-        DELETE FROM school_notice_read
-         WHERE user_id IN (SELECT id FROM app_user WHERE is_synthetic)"""),
+         WHERE user_id IN {SYN} OR recommended_user_id IN {SYN}"""),
+    ("block_record", f"DELETE FROM block_record WHERE user_id IN {SYN} OR blocked_user_id IN {SYN}"),
+    ("user_session", f"DELETE FROM user_session WHERE user_id IN {SYN}"),
+    ("school_notice_read", f"DELETE FROM school_notice_read WHERE user_id IN {SYN}"),
     ("app_user", "DELETE FROM app_user WHERE is_synthetic"),
+]
+
+# 원장에서 행을 빼면 잔액과 누적합이 어긋난다. 지운 뒤 남은 기록만으로 다시 맞춘다.
+# 실서비스에서는 원장을 지우지 않는다 — 이건 시험 데이터를 되감는 도구다.
+REPAIR_STEPS = [
+    ("원장 누적합 재계산", """
+        WITH running AS (
+            SELECT id, sum(delta) OVER (PARTITION BY user_id ORDER BY id, created_at) AS bal
+              FROM heart_transaction)
+        UPDATE heart_transaction t SET balance_after = r.bal
+          FROM running r WHERE r.id = t.id AND t.balance_after <> r.bal"""),
+    ("잔액 재계산", """
+        UPDATE app_user u
+           SET heart_balance = coalesce((SELECT sum(t.delta) FROM heart_transaction t
+                                          WHERE t.user_id = u.id), 0),
+               updated_at = now()
+         WHERE u.heart_balance <> coalesce((SELECT sum(t.delta) FROM heart_transaction t
+                                             WHERE t.user_id = u.id), 0)"""),
+    # 게이트는 한 번 열리면 유지하는 것이 서비스 규칙이지만(refresh_friend_state),
+    # 여기서는 친구를 인위적으로 걷어낸 것이라 상태를 되감는 쪽이 맞다.
+    ("게이트 되감기", """
+        UPDATE app_user SET service_unlocked_at = NULL
+         WHERE service_unlocked_at IS NOT NULL AND friend_count < 5"""),
 ]
 
 
@@ -137,6 +156,11 @@ def clean(cur) -> int:
         print("지울 더미가 없습니다.")
         return 0
 
+    # 지울 대상을 먼저 고정한다. 삭제가 진행되면 조건이 달라지기 때문이다.
+    cur.execute(f"CREATE TEMP TABLE doomed_items ON COMMIT DROP AS {DOOMED_ITEMS}")
+    cur.execute(f"CREATE TEMP TABLE doomed_recv  ON COMMIT DROP AS {DOOMED_RECV}")
+    cur.execute(f"CREATE TEMP TABLE doomed_hints ON COMMIT DROP AS {DOOMED_HINTS}")
+
     for name, sql in CLEAN_STEPS:
         cur.execute(sql)
         if cur.rowcount:
@@ -146,6 +170,11 @@ def clean(cur) -> int:
     cur.execute("SELECT id FROM app_user")
     for (uid,) in cur.fetchall():
         cur.execute("SELECT refresh_friend_state(%s)", (uid,))
+
+    for name, sql in REPAIR_STEPS:
+        cur.execute(sql)
+        if cur.rowcount:
+            print(f"  {name}: {cur.rowcount}행")
 
     print(f"\n더미 {before}명을 지웠습니다.")
     return before
