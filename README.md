@@ -1,7 +1,10 @@
 # ping-v2
 
-학교 기반 소셜 투표 서비스의 **데이터 파이프라인 프로젝트**.
-합성 데이터와 NEIS 실데이터를 Airflow로 BigQuery에 적재한다.
+학교 기반 소셜 투표 **웹서비스 MVP**와 그 위의 데이터 파이프라인.
+구 서비스 DB의 구조적 결함을 닫은 스키마 위에 개인정보를 받지 않는 웹앱을 올리고,
+거기서 나온 실데이터와 합성 데이터를 Airflow로 BigQuery까지 적재한다.
+
+- 배포: https://ping-v2-lac.vercel.app (지인 대상 비공개 시험)
 
 - 프로젝트 컨텍스트 → [CLAUDE.md](CLAUDE.md)
 - 설계서 → [docs/design-spec.md](docs/design-spec.md)
@@ -55,6 +58,17 @@ python -m venv .venv
 .venv\Scripts\activate
 pip install -r requirements.txt
 ```
+
+### 5. 웹앱 띄우기
+
+```bash
+cd web
+npm install
+npm run dev          # http://localhost:3000
+```
+
+`web/.env.local` 이 필요하다. 루트 `.env` 의 Supabase URL 과 **anon 키**만 옮겨 적는다
+— service_role 키는 넣지 않는다.
 
 ---
 

@@ -59,7 +59,8 @@
 
 ## 현재 단계
 
-**P0·P1·P2·W0~W6 완료** (2026-07-29) → 다음은 **W7 배포**
+**P0·P1·P2·W0~W6 완료, W7 진행 중** (2026-07-30)
+→ 배포와 개인정보처리방침은 끝났고, 초대 링크와 초대 직전 정리가 남았다.
 
 | 완료 | 결과 |
 |---|---|
@@ -72,12 +73,17 @@
 | W3 온보딩 | 가입 RPC + 화면. 온보딩 시험 4종 추가, 브라우저에서 실가입 확인 |
 | W4 친구 | 요청·수락·거절 RPC + 화면. 시험 42종 통과, 창 두 개로 실제 교환 확인 |
 | W5 투표 | 후보 추출·투표·셔플 RPC + 화면. 질문 24개 시드, 접속 로그 추가. 시험 67종 통과 |
-| W6 받은 투표 | 힌트 4단계(누진 200·300·500·1000) + 내가 한 투표 목록. 시험 86종 통과 |
+| W6 받은 투표 | 힌트 4단계(성별→초성→반→공개, 200·300·500·1000) + 내가 한 투표 목록 |
+| W7 배포 (진행 중) | Vercel 배포, 개인정보처리방침. 초대 링크는 남음 |
 
 ## 웹앱 (web/)
 
 - Next.js 16.2 / React 19.2 / Turbopack / Tailwind / TypeScript
+- **배포: https://ping-v2-lac.vercel.app** (Vercel · GitHub `main` push 시 자동 배포)
+  - Vercel 프로젝트의 **Root Directory 는 `web`** 이다. 저장소 루트에는 package.json 이 없다.
+  - 환경변수는 `NEXT_PUBLIC_` 두 개뿐. service_role 키는 넣지 않는다.
 - 개발 서버: `cd web && npm run dev` → http://localhost:3000
+- ⚠️ 익명 계정은 **주소마다 따로**다. localhost 계정과 배포본 계정은 서로 다른 사람이다.
 - `web/.env.local` 은 루트 `.env` 에서 생성한다. **service_role 키는 절대 넣지 않는다.**
 - ⚠️ **v16 부터 `middleware.ts` 가 `proxy.ts` 로 바뀌었다.** 인증 미들웨어를 붙일 때 주의.
 - `web/AGENTS.md` 지시대로, 코드 작성 전 `node_modules/next/dist/docs/` 를 확인할 것.
@@ -180,7 +186,7 @@ Supabase 대시보드에서 **Authentication → Sign In / Providers → Allow a
 | 용도 | 위치 | 비고 |
 |---|---|---|
 | 합성 데이터 DB | 로컬 Docker `pgtest` (포트 5433) | `postgres:16`, DB `pingv2`, 계정 `postgres`/`test` |
-| 실유저 DB | Supabase | 미구축 |
+| 실유저 DB | Supabase | 구축·운영 중. 접속은 Session pooler 로만 |
 | 구 서비스 분석 DB | Docker `mysql` (포트 3307) | `final`/`hackle`. **읽기만** |
 
 로컬 DB 재생성:

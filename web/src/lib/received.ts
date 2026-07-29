@@ -13,8 +13,8 @@ import type { Scope } from "./voting";
 /** 누진 요금. 구 서비스 실측값 그대로다. */
 export const HINT_COSTS = [200, 300, 500, 1000];
 export const HINT_LABELS = [
-  "초성 보기",
   "성별 보기",
+  "초성 보기",
   "어느 반인지 보기",
   "누구인지 보기",
 ];

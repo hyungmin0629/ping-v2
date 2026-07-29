@@ -6,10 +6,13 @@
 -- 그 컬럼이 값을 치르기 전에 새어 나가면 서비스가 성립하지 않는다.
 --
 -- 힌트 단계 (4단계, 구 서비스 실측 누진 요금):
---   1  INITIAL    닉네임 초성      200
---   2  GENDER     성별             300
+--   1  GENDER     성별             200
+--   2  INITIAL    닉네임 초성      300
 --   3  CLASS      상대의 반        500
 --   4  FULL_NAME  닉네임 전체     1000
+--
+--   성별을 먼저 여는 이유: 초성보다 좁히는 폭이 작아 첫 단계로 적당하다.
+--   초성은 후보를 몇 명으로 줄여버려서, 그다음 단계를 살 이유가 약해진다.
 --
 --   온보딩에서 성별을 받기로 하면서(2026-07-29) GENDER 단계를 되살렸다.
 --   성별이 비어 있던 동안에는 팔 수 있는 정보가 아니라 3단계로 줄여두었다.
@@ -44,12 +47,12 @@ SELECT
     -- 완전히 공개된 경우에만 실제 투표자를 알려준다
     CASE WHEN r.reveal_status = 'REVEALED' THEN r.voter_id END        AS voter_id,
     CASE WHEN r.reveal_status = 'REVEALED' THEN v.nickname END        AS voter_nickname,
-    -- 1단계: 초성
+    -- 1단계: 성별
     CASE WHEN h.steps >= 1 OR r.reveal_status IN ('PARTIAL', 'REVEALED')
-         THEN left(v.nickname, 1) END                                 AS voter_initial,
-    -- 2단계: 성별
-    CASE WHEN h.steps >= 2 OR r.reveal_status = 'REVEALED'
          THEN v.gender END                                            AS voter_gender,
+    -- 2단계: 초성
+    CASE WHEN h.steps >= 2 OR r.reveal_status = 'REVEALED'
+         THEN left(v.nickname, 1) END                                 AS voter_initial,
     -- 3단계: 반
     CASE WHEN h.steps >= 3 OR r.reveal_status = 'REVEALED'
          THEN v.class_id END                                          AS voter_class_id
@@ -140,7 +143,7 @@ BEGIN
     END IF;
 
     v_cost := (ARRAY[200, 300, 500, 1000])[v_step];
-    v_type := (ARRAY['INITIAL', 'GENDER', 'CLASS', 'FULL_NAME']::public.hint_type[])[v_step];
+    v_type := (ARRAY['GENDER', 'INITIAL', 'CLASS', 'FULL_NAME']::public.hint_type[])[v_step];
 
     SELECT heart_balance INTO v_balance
       FROM public.app_user WHERE id = v_me FOR UPDATE;

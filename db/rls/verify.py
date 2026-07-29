@@ -652,7 +652,7 @@ def main() -> int:
             try:
                 # 아무것도 사지 않은 상태 — 투표자에 대한 어떤 단서도 없어야 한다
                 as_user(cur, B_AUTH)
-                cur.execute("SELECT voter_id, voter_nickname, voter_initial, voter_gender, "
+                cur.execute("SELECT voter_id, voter_nickname, voter_gender, voter_initial, "
                             "voter_class_id, hint_steps, is_read "
                             "FROM my_vote_received WHERE id=%s", (recv,))
                 row = cur.fetchone()
@@ -669,17 +669,17 @@ def main() -> int:
                 cur.execute("SELECT heart_balance FROM app_user WHERE id=%s", (B,))
                 start_balance = cur.fetchone()[0]
 
-                # 1단계 — 초성
+                # 1단계 — 성별
                 step = rpc(cur, B_AUTH, "SELECT buy_hint(%s)", (recv,))
                 as_user(cur, B_AUTH)
-                cur.execute("SELECT voter_initial, voter_gender, voter_class_id, voter_id "
+                cur.execute("SELECT voter_gender, voter_initial, voter_class_id, voter_id "
                             "FROM my_vote_received WHERE id=%s", (recv,))
-                initial, gender, cls, vid = cur.fetchone()
+                gender, initial, cls, vid = cur.fetchone()
                 cur.execute("SET LOCAL ROLE postgres")
-                rcheck("1단계: 초성만 열림",
-                       step == 1 and initial is not None
-                       and gender is None and cls is None and vid is None,
-                       f"초성={initial!r}")
+                rcheck("1단계: 성별만 열림",
+                       step == 1 and gender == "F"
+                       and initial is None and cls is None and vid is None,
+                       f"성별={gender}")
 
                 cur.execute("SELECT heart_balance FROM app_user WHERE id=%s", (B,))
                 rcheck("하트가 200 차감됨",
@@ -693,15 +693,16 @@ def main() -> int:
                 """, (recv,))
                 rcheck("힌트 구매마다 원장이 남음", cur.fetchone()[0] == 0, "원장 없는 구매 0건")
 
-                # 2단계 — 성별
+                # 2단계 — 초성
                 rpc(cur, B_AUTH, "SELECT buy_hint(%s)", (recv,))
                 as_user(cur, B_AUTH)
-                cur.execute("SELECT voter_gender, voter_class_id, voter_id "
+                cur.execute("SELECT voter_initial, voter_class_id, voter_id "
                             "FROM my_vote_received WHERE id=%s", (recv,))
-                gender, cls, vid = cur.fetchone()
+                initial, cls, vid = cur.fetchone()
                 cur.execute("SET LOCAL ROLE postgres")
-                rcheck("2단계: 성별까지 열림",
-                       gender == "F" and cls is None and vid is None, f"성별={gender}")
+                rcheck("2단계: 초성까지 열림",
+                       initial is not None and cls is None and vid is None,
+                       f"초성={initial!r}")
 
                 # 3단계 — 반
                 rpc(cur, B_AUTH, "SELECT buy_hint(%s)", (recv,))
@@ -851,15 +852,15 @@ def main() -> int:
             # 부분공개일 때 초성은 보이고 투표자 id 는 안 보여야 한다
             cur.execute("SAVEPOINT sp")
             as_user(cur, B_AUTH)
-            cur.execute("SELECT voter_id, voter_initial FROM my_vote_received")
+            cur.execute("SELECT voter_id, voter_gender FROM my_vote_received")
             row = cur.fetchone()
             cur.execute("ROLLBACK TO SAVEPOINT sp")
             cur.execute("SET LOCAL ROLE postgres")
             ok = bool(row) and row[0] is None and row[1] is not None
             shown_id = row[0] if row else "?"
-            shown_initial = repr(row[1]) if row else "?"
-            print(f"  {'동작함' if ok else '실패!!'} 부분공개는 초성만 노출 "
-                  f"(voter_id={shown_id}, 초성={shown_initial})")
+            shown_gender = row[1] if row else "?"
+            print(f"  {'동작함' if ok else '실패!!'} 부분공개는 성별만 노출 "
+                  f"(voter_id={shown_id}, 성별={shown_gender})")
             if not ok:
                 failures.append("[정상동작] 부분공개 힌트")
 
