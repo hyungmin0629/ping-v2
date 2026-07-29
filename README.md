@@ -157,6 +157,28 @@ python pipeline/verify_load.py  --source supabase     # 행 수 대조
 docker compose -f airflow/docker-compose.yml up -d    # http://localhost:8080
 ```
 
+### 합성 데이터를 다시 만들 때
+
+생성기를 고쳐 데이터를 새로 만들어도 **실유저 데이터는 건드리지 않는다.**
+BigQuery 에서 지우는 범위가 `WHERE _source = 'local'` 로 걸려 있다.
+
+```bash
+python generator/generate.py                                    # CSV 생성
+python generator/load.py --truncate                             # 로컬 DB 재적재
+                                                                #  (95·96 은 자동 실행)
+python pipeline/extract_load.py --source local --full-refresh   # BigQuery 재적재
+python pipeline/verify_load.py  --source local                  # 행 수 대조
+```
+
+`--full-refresh` 는 워터마크를 무시하고 `_source='local'` 행을 지운 뒤 새로 넣는다.
+행 수가 줄어도, 컬럼이 늘어도 따라간다 — 원천에 새 컬럼이 생기면 BigQuery
+테이블에도 자동으로 추가한다.
+
+**따라가지 못하는 변경 하나** — 기존 컬럼의 **타입**이 바뀌면(예: `int` → `text`)
+적재가 거부된다. 그때는 해당 테이블을 BigQuery 에서 지우고 다시 적재한다.
+원천에서 컬럼이 **사라지는** 것은 문제없다. BigQuery 에는 남고 이후 행은 NULL 이 된다
+— raw 는 과거를 지우지 않는다.
+
 ---
 
 ## 진행 상태

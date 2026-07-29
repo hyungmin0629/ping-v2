@@ -3,8 +3,11 @@
 
 FK 때문에 순서가 중요하다. 부모 테이블이 먼저 들어가야 한다.
 
-적재 후 시퀀스 재동기화(95_resync_sequences.sql)를 자동으로 실행한다.
-id를 직접 지정해 넣었기 때문에 이걸 안 하면 이후 자동 발급이 PK 충돌로 실패한다.
+적재 후 두 가지를 자동으로 실행한다.
+  95_resync_sequences.sql   id를 직접 지정해 넣었으므로, 안 하면 이후 자동 발급이
+                            PK 충돌로 실패한다.
+  96_backfill_updated_at.sql  증분 워터마크를 각 행의 원래 시각으로 되돌린다.
+                            안 하면 3개월치가 적재한 날 하루로 뭉친다.
 
 사용법:
     python generator/load.py                      # .env 설정으로 적재
@@ -25,6 +28,7 @@ from dotenv import load_dotenv
 ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_IN = ROOT / "data" / "synthetic"
 RESYNC_SQL = ROOT / "db" / "ddl" / "95_resync_sequences.sql"
+BACKFILL_SQL = ROOT / "db" / "ddl" / "96_backfill_updated_at.sql"
 
 # 부모 → 자식 순서. FK 제약을 만족하려면 이 순서를 지켜야 한다.
 LOAD_ORDER = [
@@ -119,9 +123,20 @@ def main() -> int:
     with conn.cursor() as cur:
         cur.execute(RESYNC_SQL.read_text(encoding="utf-8"))
     conn.commit()
+
+    # 워터마크 되돌리기 — updated_at 의 기본값이 now() 라, 방금 부어 넣은 행이
+    # 전부 "적재한 순간"이 된다. 3개월치가 하루에 뭉치고 BigQuery 파티션이
+    # 무의미해진다. 각 행의 원래 시각으로 되돌린다.
+    if BACKFILL_SQL.exists():
+        print("워터마크 되돌리기...")
+        with conn.cursor() as cur:
+            cur.execute(BACKFILL_SQL.read_text(encoding="utf-8"))
+        conn.commit()
+
     conn.close()
 
     print(f"\n적재 완료 — 총 {total:,} 행")
+    print("다음: python pipeline/extract_load.py --source local --full-refresh")
     return 0
 
 

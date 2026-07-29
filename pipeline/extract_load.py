@@ -190,9 +190,26 @@ def ensure_table(
     bq: bigquery.Client, table_id: str, schema: list[bigquery.SchemaField], partition_on: str | None
 ) -> bigquery.Table:
     try:
-        return bq.get_table(table_id)
+        table = bq.get_table(table_id)
     except NotFound:
-        pass
+        table = None
+
+    if table is not None:
+        # 원천에 컬럼이 생겼으면 따라간다.
+        # 합성 데이터 생성기를 다시 만들면 스키마가 같이 바뀐다. 그때마다
+        # 손으로 ALTER 하게 두면 적재가 "컬럼이 없다"로 죽는다.
+        have = {f.name for f in table.schema}
+        added = [f for f in schema if f.name not in have]
+        if added:
+            # 이미 행이 있는 테이블에는 REQUIRED 를 붙일 수 없다(기존 행이 NULL).
+            table.schema = list(table.schema) + [
+                bigquery.SchemaField(f.name, f.field_type, mode="NULLABLE") for f in added
+            ]
+            table = bq.update_table(table, ["schema"])
+            print(f"  컬럼 추가  {table_id.split('.')[-1]} ← {', '.join(f.name for f in added)}")
+        # 사라진 컬럼은 지우지 않는다. 지우면 과거 데이터를 잃는다.
+        # 앞으로 들어오는 행에서 NULL 로 남을 뿐이다.
+        return table
     table = bigquery.Table(table_id, schema=schema)
     # updated_at 으로 나눈다. 행이 갱신되면 파티션을 옮겨 다니지만,
     # "최근 바뀐 것"이 분석의 기본 질문이라 이쪽이 맞다.
@@ -231,15 +248,29 @@ def read_watermarks(bq: bigquery.Client, state_id: str, source: str) -> dict[str
 
 
 def write_watermark(
-    bq: bigquery.Client, state_id: str, source: str, table: str, watermark, rows: int
+    bq: bigquery.Client,
+    state_id: str,
+    source: str,
+    table: str,
+    watermark,
+    rows: int,
+    reset: bool,
 ) -> None:
+    """워터마크를 전진시킨다.
+
+    row_count 는 **그 원천에서 지금까지 옮긴 누적 행 수**다. 테이블의 현재
+    크기가 아니다(갱신된 행은 여러 번 세어진다). 전체 재적재는 앞의 기록을
+    무의미하게 만들므로 그때는 누적을 0부터 다시 센다.
+    """
     bq.query(
         f"""
         MERGE `{state_id}` T
         USING (SELECT @src AS source, @tbl AS table_name) S
           ON T.source = S.source AND T.table_name = S.table_name
         WHEN MATCHED THEN UPDATE SET
-            watermark = @wm, row_count = T.row_count + @rows, loaded_at = CURRENT_TIMESTAMP()
+            watermark = @wm,
+            row_count = IF(@reset, @rows, T.row_count + @rows),
+            loaded_at = CURRENT_TIMESTAMP()
         WHEN NOT MATCHED THEN INSERT (source, table_name, watermark, row_count, loaded_at)
             VALUES (@src, @tbl, @wm, @rows, CURRENT_TIMESTAMP())
         """,
@@ -249,6 +280,7 @@ def write_watermark(
                 bigquery.ScalarQueryParameter("tbl", "STRING", table),
                 bigquery.ScalarQueryParameter("wm", "TIMESTAMP", watermark),
                 bigquery.ScalarQueryParameter("rows", "INT64", rows),
+                bigquery.ScalarQueryParameter("reset", "BOOL", reset),
             ]
         ),
     ).result()
@@ -330,7 +362,11 @@ def load_table(
     mode = spec["mode"]
     incremental = mode == "incremental" and not full_refresh
 
-    ensure_table(bq, target_id, schema, "updated_at" if mode == "incremental" else None)
+    target = ensure_table(bq, target_id, schema, "updated_at" if mode == "incremental" else None)
+    # 대상 테이블에 적재할 때는 **대상의 스키마**를 쓴다. 원천에서 사라진 컬럼이
+    # BigQuery 에는 남아 있을 수 있는데, 그걸 뺀 스키마로 올리면 적재가 거부된다.
+    # 없는 값은 NULL 로 들어간다.
+    target_schema = list(target.schema)
 
     if incremental and watermark is not None:
         sql = (
@@ -357,7 +393,7 @@ def load_table(
                         query_parameters=[bigquery.ScalarQueryParameter("s", "STRING", source)]
                     ),
                 ).result()
-            return load_batches(bq, target_id, schema, batches), "전체"
+            return load_batches(bq, target_id, target_schema, batches), "전체"
 
         # 증분 — 임시 테이블에 받아서 MERGE 한다.
         # 중간에 죽어도 남지 않도록 만료를 걸어 둔다.
@@ -431,7 +467,9 @@ def main() -> int:
                 )
                 total += n
                 if spec["mode"] == "incremental":
-                    write_watermark(bq, state_id, args.source, name, snapshot_at, n)
+                    write_watermark(
+                        bq, state_id, args.source, name, snapshot_at, n, args.full_refresh
+                    )
                 print(f"  {how:4} {name:26} {n:>9,}행")
 
     print(f"\n적재 완료 — {args.source} → {dataset_id}")
