@@ -16,8 +16,12 @@ NEIS 교육정보 개방포털에서 학교와 학급을 받아 온다. (P3)
 
 사용법:
     python db/neis_schools.py --schools                 # 전국 중·고 목록 적재
-    python db/neis_schools.py --classes "가락고등학교"    # 그 학교의 학급 적재
-    python db/neis_schools.py --classes 7010057          # 표준학교코드로도 된다
+    python db/neis_schools.py --classes "서울고등학교"    # 그 학교의 학급 적재
+    python db/neis_schools.py --classes 7010083          # 표준학교코드로도 된다
+
+    # 실제 학교의 학급을 다른 조직에 넣는다(테스트 조직이 실제 학교를 빌려 쓸 때).
+    # 정보 출처(info_school_id)도 함께 연결한다.
+    python db/neis_schools.py --classes "서울고등학교" --into "코드잇 DA 14기"
 """
 
 from __future__ import annotations
@@ -127,7 +131,7 @@ def load_schools(cur, key: str) -> None:
     print(f"\n적재 완료 — NEIS 학교 {cur.fetchone()[0]}개")
 
 
-def load_classes(cur, key: str, needle: str) -> None:
+def find_school(cur, needle: str):
     cur.execute("""
         SELECT id, name_masked, neis_school_code, neis_office_code
           FROM school
@@ -135,7 +139,6 @@ def load_classes(cur, key: str, needle: str) -> None:
          ORDER BY id LIMIT 2
     """, (needle, needle))
     found = cur.fetchall()
-
     if not found:
         cur.execute("SELECT id, name_masked, neis_school_code, neis_office_code "
                     "FROM school WHERE name_masked LIKE %s ORDER BY id LIMIT 6",
@@ -149,15 +152,31 @@ def load_classes(cur, key: str, needle: str) -> None:
         for _, name, code, _ in found:
             print(f"  {name}  ({code})")
         sys.exit(1)
+    return found[0]
 
-    school_id, name, school_code, office_code = found[0]
+
+def load_classes(cur, key: str, needle: str, into: str | None = None) -> None:
+    source_id, name, school_code, office_code = find_school(cur, needle)
     if not office_code:
         sys.exit(f"{name} 에 교육청코드가 없습니다. --schools 를 다시 실행하세요.")
+
+    # 학급을 넣을 곳. 기본은 그 학교 자신이고, --into 면 다른 조직에 넣는다.
+    target_id, target_name = source_id, name
+    if into:
+        target_id, target_name, _, _ = find_school(cur, into)
+        cur.execute("UPDATE school SET info_school_id = %s, updated_at = now() "
+                    "WHERE id = %s", (source_id, target_id))
+        print(f"{target_name} 의 정보 출처를 {name} 로 연결했습니다.")
 
     rows = call("classInfo", key,
                 ATPT_OFCDC_SC_CODE=office_code, SD_SCHUL_CODE=school_code)
     if not rows:
         sys.exit(f"{name} 의 학급 정보가 없습니다. (분교·특수학교일 수 있습니다)")
+
+    # classInfo 는 학년도별로 행을 준다. 지난해 학급까지 넣으면 반이 두 배가 된다.
+    latest = max(r["AY"] for r in rows)
+    rows = [r for r in rows if r["AY"] == latest]
+    print(f"  {latest}학년도 학급 {len(rows)}개")
 
     made = 0
     for row in rows:
@@ -174,11 +193,11 @@ def load_classes(cur, key: str, needle: str) -> None:
             VALUES (%s, %s, %s, %s)
             ON CONFLICT (school_id, grade, class_num) DO UPDATE
                SET label = EXCLUDED.label
-        """, (school_id, grade, class_num, label))
+        """, (target_id, grade, class_num, label))
         made += 1
 
-    cur.execute("SELECT count(*) FROM grade_class WHERE school_id = %s", (school_id,))
-    print(f"{name} — 학급 {cur.fetchone()[0]}개 적재 (받은 행 {made})")
+    cur.execute("SELECT count(*) FROM grade_class WHERE school_id = %s", (target_id,))
+    print(f"{target_name} — 학급 {cur.fetchone()[0]}개 (이번에 {made}개 반영)")
 
 
 def main() -> int:
@@ -190,6 +209,8 @@ def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--schools", action="store_true", help="전국 중·고 목록 적재")
     ap.add_argument("--classes", metavar="학교명|학교코드", help="그 학교의 학급 적재")
+    ap.add_argument("--into", metavar="조직명",
+                    help="학급을 다른 조직에 넣고 정보 출처로 연결한다")
     args = ap.parse_args()
 
     if not args.schools and not args.classes:
@@ -202,7 +223,7 @@ def main() -> int:
             if args.schools:
                 load_schools(cur, key)
             if args.classes:
-                load_classes(cur, key, args.classes)
+                load_classes(cur, key, args.classes, args.into)
         conn.commit()
     return 0
 

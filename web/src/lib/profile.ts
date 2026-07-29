@@ -21,7 +21,13 @@ export type Profile = {
 };
 
 export type School = { id: number; name: string };
-export type ClassOption = { id: number; label: string };
+export type ClassOption = {
+  id: number;
+  grade: number;
+  classNum: number;
+  /** "1학년 3반" 또는 조직이 정한 표시명 */
+  label: string;
+};
 
 /** app_user.gender 와 같은 값. 힌트로 파는 정보라 온보딩에서 반드시 받는다. */
 export type Gender = "F" | "M" | "X";
@@ -160,6 +166,8 @@ export async function listClasses(schoolId: number): Promise<ClassOption[]> {
   if (error) throw error;
   return (data ?? []).map((c) => ({
     id: c.id,
+    grade: c.grade,
+    classNum: c.class_num,
     label: classLabel(c.grade, c.class_num, c.label),
   }));
 }
