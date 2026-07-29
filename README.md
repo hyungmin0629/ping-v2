@@ -6,6 +6,7 @@
 
 - 배포: https://ping-v2-lac.vercel.app (지인 대상 비공개 시험)
 
+- **처음 clone 했다면 → [docs/ONBOARDING.md](docs/ONBOARDING.md)** (계정 없이 되는 데까지 20분)
 - 프로젝트 컨텍스트 → [CLAUDE.md](CLAUDE.md)
 - 설계서 → [docs/design-spec.md](docs/design-spec.md)
 - 결정 이력 → [DECISIONS.md](DECISIONS.md)
@@ -13,6 +14,9 @@
 ---
 
 ## 처음 시작할 때
+
+> 아래는 요약이다. **처음이라면 [docs/ONBOARDING.md](docs/ONBOARDING.md) 를 보라**
+> — 계정이 없어도 어디까지 되는지, 막히면 무슨 뜻인지가 함께 적혀 있다.
 
 ### 1. 로컬 DB 띄우기
 
