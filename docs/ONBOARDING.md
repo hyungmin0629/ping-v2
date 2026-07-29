@@ -112,6 +112,17 @@ python generator/generate.py
 유저 5,000명 / 3개월치를 만듭니다. **25초쯤** 걸리고 `data/synthetic/` 에
 CSV 가 쌓입니다. 작게 시험하려면 `--users 500 --months 1` 을 붙이세요.
 
+규모와 분포는 두 군데서 정해집니다.
+
+| 무엇 | 어디 |
+|---|---|
+| 규모 (인원·기간·학교 수·시드) | `.env` 의 `SYNTHETIC_*`, 또는 명령행 옵션 |
+| 분포 (하트 금액, 투표 빈도 등) | `generator/config/distribution.yaml` |
+
+**시드가 같으면 같은 데이터가 나옵니다**(`SYNTHETIC_SEED`). 재현이 되므로
+"내 쪽에서만 이상하다" 를 가릴 수 있습니다. 분포 값은 구 서비스 실측치에서
+가져온 것이라, 바꾸면 정합성 검사가 걸릴 수 있습니다.
+
 ```bash
 python generator/load.py --truncate
 ```
@@ -213,7 +224,69 @@ python db/rls/verify.py
 "열려 있어야 할 것"도 함께 시험합니다 — 전부 막아버려도 침투 시험은
 통과하기 때문입니다.
 
-## B-3. 웹앱 띄우기
+## B-3. 학교 데이터 받아오기 (NEIS)
+
+**여기까지만 해도 앱은 돕니다.** `seed_org.sql` 이 테스트 조직
+"코드잇 DA 14기"(1~4팀)를 하나 만들어두기 때문에, 가입하고 투표하는 데는
+문제가 없습니다.
+
+다만 이 상태에서는:
+
+- 온보딩에서 고를 수 있는 학교가 **그 하나뿐**입니다
+- **급식표 화면(W8)이 빈 상태**입니다
+
+실제 학교와 급식을 넣으려면 NEIS 를 붙입니다.
+
+### 인증키 발급
+
+1. https://open.neis.go.kr 가입 (무료)
+2. **인증키 신청** — 신청하면 바로 나옵니다
+3. `.env` 에 넣기
+
+```
+NEIS_API_KEY=발급받은키
+```
+
+### 받아오기
+
+```bash
+python db/neis_schools.py --schools
+```
+
+전국 중·고 5,700여 개가 `school` 테이블에 들어갑니다. 한 번만 받으면 됩니다.
+
+> 이걸 받아도 **온보딩 목록에는 바로 안 나옵니다.** 학교 목록은
+> `selectable_school` 뷰를 거치는데, 이 뷰는 **학급이 등록된 학교만**
+> 내보냅니다. 반을 고를 수 없는 학교를 보여주면 온보딩을 끝낼 수 없기 때문입니다.
+>
+> 학급은 학교마다 API 를 한 번씩 불러야 해서 5,700개를 미리 받을 수 없습니다
+> (개발계정 일일 호출 한도). **필요한 학교만** 받습니다.
+
+```bash
+python db/neis_schools.py --classes "서울고등학교" --into "코드잇 DA 14기"
+```
+
+서울고의 실제 학급(1~3학년 × 1~14반)을 테스트 조직에 넣고, 정보 출처
+(`info_school_id`)로 서울고를 연결합니다. 조직 이름은 테스터에게 익숙한
+것으로 유지하면서 급식·시간표는 실제 학교 것을 빌려 쓰는 구조입니다.
+
+> ⚠️ 학교는 **표준학교코드로 지정하는 편이 안전합니다.** 이름으로 하면
+> 동명이교에 걸립니다(실제로 "한영고"를 지정하다 여수 학교가 들어왔습니다).
+> 코드는 `python db/neis_schools.py --schools` 결과에서 찾을 수 있고,
+> `--classes 7010083` 처럼 코드로도 받습니다.
+
+```bash
+python db/neis_meals.py --school "서울고등학교"
+```
+
+올해 급식을 받아옵니다(2,900건 정도). **급식은 데이터를 준 학교 아래에
+저장합니다** — 조직마다 복사하면 같은 급식이 조직 수만큼 늘어납니다.
+RLS 가 `info_school_id` 를 따라가 조직 소속 유저에게 보여줍니다.
+
+**확인** — Supabase 대시보드 → Table Editor 에서 `grade_class` 와 `meal_plan` 에
+행이 있으면 됩니다. 앱에서는 온보딩의 학교 목록과 메인의 급식 토글로 확인됩니다.
+
+## B-4. 웹앱 띄우기
 
 ```bash
 cd web
@@ -244,7 +317,7 @@ http://localhost:3000 을 엽니다.
 > 확인이 불가능해서, 이 프로젝트는 **동적 라우트 대신 쿼리스트링**을 씁니다
 > (초대 링크가 `/add?code=...` 인 이유).
 
-## B-4. 혼자서 투표까지 해보기
+## B-5. 혼자서 투표까지 해보기
 
 투표는 **친구 5명**이 있어야 열리고, 질문마다 후보 4명이 필요합니다.
 창을 다섯 개 띄울 수는 없으니 더미 친구를 붙입니다.
@@ -260,7 +333,7 @@ python db/seed_test_friends.py --for <초대코드>
 
 지울 때는 `python db/seed_test_friends.py --clean` 입니다.
 
-## B-5. BigQuery 적재 (선택)
+## B-6. BigQuery 적재 (선택)
 
 1. https://console.cloud.google.com 에서 프로젝트 생성
 2. **IAM 및 관리자 → 서비스 계정 → 만들기**, 역할 **BigQuery 관리자**
@@ -284,7 +357,7 @@ python pipeline/verify_load.py  --source supabase             # 행 수 대조
 > 한도의 6% 정도입니다. 그래도 **예산 알림**은 걸어두세요
 > (결제 → 예산 및 알림 → 월 1,000원 정도).
 
-## B-6. Airflow (선택)
+## B-7. Airflow (선택)
 
 ```bash
 docker compose -f airflow/docker-compose.yml up -d
@@ -299,6 +372,20 @@ docker exec ping-airflow cat /opt/airflow/standalone_admin_password.txt
 `ping_raw_load` DAG 이 하나 있습니다. 처음엔 꺼져 있으니 토글을 켜야
 스케줄(매일 새벽 4시)이 돕니다.
 
+## B-8. 배포 (선택)
+
+Vercel 에 GitHub 저장소를 연결하면 `main` push 마다 자동 배포됩니다.
+
+> ⚠️ **Root Directory 를 `web` 으로 지정하세요.** 저장소 루트에는
+> `package.json` 이 없어서, 기본값(루트)으로 두면 빌드가 실패합니다.
+
+환경변수는 `NEXT_PUBLIC_` 두 개만 넣습니다. `SUPABASE_SERVICE_KEY` 는
+넣지 않습니다.
+
+> ⚠️ **익명 계정은 주소마다 따로입니다.** `localhost:3000` 에서 만든 계정과
+> 배포본에서 만든 계정은 서로 다른 사람입니다. 배포본에서 시험하려면
+> 친구 맺기도 배포본에서 다시 해야 합니다.
+
 ---
 
 ## 자주 걸리는 오류
@@ -310,8 +397,14 @@ docker exec ping-airflow cat /opt/airflow/standalone_admin_password.txt
 | `No space left on device` (정합성 검사 중) | 디스크가 아니라 공유메모리입니다. 컨테이너를 `--shm-size=1g` 로 다시 만드세요 |
 | `column v.padded_count does not exist` | 스키마가 반쪽입니다. `python db/apply.py --target local` 로 다시 만드세요 |
 | 앱에 접속해도 계정이 안 생김 | Supabase 에서 **Allow anonymous sign-ins** 를 켜고 **저장** 눌렀는지 확인 |
+| 온보딩에 학교가 안 보임 | `selectable_school` 은 **학급이 있는 학교만** 냅니다. `--classes` 를 안 돌렸거나 `seed_org.sql` 을 안 올렸습니다 |
+| 학교는 골랐는데 반이 없음 | 같은 원인입니다. 그 학교의 학급을 `db/neis_schools.py --classes` 로 받으세요 |
+| NEIS 응답이 비어 있음 | 인증키 미승인이거나 일일 호출 한도 초과입니다. 하루 뒤 다시 시도 |
+| 급식 토글이 비어 있음 | 조직이 `info_school_id` 로 실제 학교를 가리키는지 확인 (`--classes ... --into` 로 연결됨) |
 | `Jest worker ... exceeding retry limit` (웹) | 개발 서버의 동적 라우트 문제입니다. 쿼리스트링을 쓰세요 |
+| Vercel 빌드 실패 (`package.json` 없음) | **Root Directory 를 `web`** 으로 지정하세요 |
 | BigQuery `403 Permission denied` | 서비스 계정 역할이 **BigQuery 관리자**인지 확인 |
+| 마이그레이션 후 BigQuery 새 컬럼이 전부 NULL | `ALTER TABLE` 은 워터마크를 안 움직입니다. 그 테이블을 `--full-refresh` 하세요 |
 
 ## 자주 쓰는 초기화
 
@@ -324,6 +417,29 @@ python db/seed_test_friends.py --clean  # 더미 친구만 삭제
 개발자도구(F12) → Application → Storage → Clear site data, 또는 시크릿 창.
 
 ---
+
+## 저장소 둘러보기
+
+어디를 봐야 할지만 짚습니다.
+
+| 폴더 | 무엇이 있나 |
+|---|---|
+| `db/ddl/` | **테이블 정의. 여기가 스키마의 진실입니다** — 주석에 "왜 이렇게 했는지"가 붙어 있습니다 |
+| `db/migrations/` | 스키마 변경 이력. DDL 을 처음부터 올려도 여기까지 적용해야 현재 스키마가 됩니다 |
+| `db/rls/` | 보안 정책과 RPC 함수. **`verify.py` 가 침투 시험 86항목** |
+| `generator/` | 합성 데이터 생성. `config/distribution.yaml` 이 분포 파라미터 |
+| `pipeline/` | Postgres → BigQuery 적재. `tables.yaml` 이 테이블별 적재 방식 |
+| `qa/checks/integrity.sql` | 정합성 17종 |
+| `web/src/` | Next.js 화면. `lib/` 이 Supabase 호출, `components/` 가 화면 |
+| `airflow/dags/` | 스케줄 정의 |
+
+`db/ddl/*.sql` 의 주석부터 읽어보시길 권합니다. 이 프로젝트는 구 서비스 DB 의
+결함을 하나씩 닫으면서 설계한 것이라, 각 테이블 위에 **어떤 문제를 막으려고
+이 구조가 됐는지**가 실제 수치와 함께 적혀 있습니다.
+
+> 웹 코드를 고칠 일이 있으면 `web/AGENTS.md` 를 먼저 보세요.
+> Next.js 16 은 자료가 적어서, 코드 작성 전에
+> `node_modules/next/dist/docs/` 를 확인하라는 규칙이 있습니다.
 
 ## 다음에 읽을 것
 
