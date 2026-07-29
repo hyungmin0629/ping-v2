@@ -57,7 +57,7 @@
 
 ## 현재 단계
 
-**P0·P1·P2·W0·W1 완료** (2026-07-29) → 다음은 **W2 앱 뼈대 (Next.js)**
+**P0·P1·P2·W0·W1·W2 완료** (2026-07-29) → 다음은 **W3 온보딩**
 
 | 완료 | 결과 |
 |---|---|
@@ -65,7 +65,22 @@
 | P1 합성 데이터 | 786만 행 생성 (25초) |
 | P2 적재 | 로컬 Postgres 적재 (89초) |
 | W0 익명 인증 대응 | 42 테이블 / 정합성 17종 / 개인정보 컬럼 0개 |
-| W1 Supabase + RLS | **침투 15종 전부 차단 + 정상동작 9종 확인** |
+| W1 Supabase + RLS | 침투 15종 차단 + 정상동작 9종 |
+| W2 앱 뼈대 | Next.js 16 + 익명 로그인. 새로고침 유지·시크릿창 분리 확인 |
+
+## 웹앱 (web/)
+
+- Next.js 16.2 / React 19.2 / Turbopack / Tailwind / TypeScript
+- 개발 서버: `cd web && npm run dev` → http://localhost:3000
+- `web/.env.local` 은 루트 `.env` 에서 생성한다. **service_role 키는 절대 넣지 않는다.**
+- ⚠️ **v16 부터 `middleware.ts` 가 `proxy.ts` 로 바뀌었다.** 인증 미들웨어를 붙일 때 주의.
+- `web/AGENTS.md` 지시대로, 코드 작성 전 `node_modules/next/dist/docs/` 를 확인할 것.
+
+## 익명 로그인 설정
+
+Supabase 대시보드에서 **Authentication → Sign In / Providers → Allow anonymous sign-ins**
+가 켜져 있어야 한다. 기본값은 꺼짐이고, 토글 후 **저장 버튼을 눌러야** 반영된다.
+확인: `/auth/v1/settings` 의 `external.anonymous_users` 가 `true`.
 
 웹앱 단계(W0~W7)와 파이프라인 단계(P3~P7)는 [[design-spec]] 4장 참조.
 
