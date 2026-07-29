@@ -101,18 +101,18 @@ def setup(cur):
     cid = cur.fetchone()[0]
 
     ids = {}
-    for label, auth_id, nick, code in [("A", A_AUTH, "시험유저A", "TESTAA"),
-                                       ("B", B_AUTH, "시험유저B", "TESTBB")]:
+    for label, auth_id, nick, code, gender in [("A", A_AUTH, "시험유저A", "TESTAA", "F"),
+                                               ("B", B_AUTH, "시험유저B", "TESTBB", "M")]:
         cur.execute(
-            "INSERT INTO app_user (auth_user_id, nickname, invite_code, class_id, heart_balance) "
-            "VALUES (%s, %s, %s, %s, 5000) RETURNING id",
-            (auth_id, nick, code, cid))
+            "INSERT INTO app_user (auth_user_id, nickname, invite_code, class_id, gender, "
+            "heart_balance) VALUES (%s, %s, %s, %s, %s, 5000) RETURNING id",
+            (auth_id, nick, code, cid, gender))
         ids[label] = cur.fetchone()[0]
 
     for n, (auth_id, nick, code) in enumerate(D_USERS, start=1):
         cur.execute(
-            "INSERT INTO app_user (auth_user_id, nickname, invite_code, class_id) "
-            "VALUES (%s, %s, %s, %s) RETURNING id", (auth_id, nick, code, cid))
+            "INSERT INTO app_user (auth_user_id, nickname, invite_code, class_id, gender) "
+            "VALUES (%s, %s, %s, %s, 'X') RETURNING id", (auth_id, nick, code, cid))
         ids[f"D{n}"] = cur.fetchone()[0]
 
     # B 의 민감 데이터를 만들어 둔다 — A 가 이걸 훔쳐보려 시도할 것이다
@@ -238,6 +238,14 @@ def main() -> int:
                 ("A 가 접속 기록을 직접 생성(과거 시각으로)",
                  A_AUTH, "INSERT INTO user_session (user_id,platform,app_version,started_at) "
                          "VALUES (%s,'WEB','1.0','2020-01-01')", (A,)),
+                # 힌트를 공짜로 만들 수 있으면 수익 구조가 통째로 무너진다
+                ("B 가 힌트 구매 기록을 직접 생성",
+                 B_AUTH, "INSERT INTO hint_purchase "
+                         "(vote_received_id,user_id,hint_type,step,heart_cost) "
+                         "VALUES (%s,%s,'FULL_NAME',1,0)", (ctx["received"], B)),
+                ("B 가 공개 상태를 직접 REVEALED 로 변경",
+                 B_AUTH, "UPDATE vote_received SET reveal_status='REVEALED' WHERE id=%s",
+                 (ctx["received"],)),
             ]
             for desc, who, sql, params in write_tests:
                 cur.execute("SAVEPOINT sp")
@@ -293,7 +301,7 @@ def main() -> int:
             try:
                 as_user(cur, C_AUTH)
                 cur.execute("SELECT id, nickname, invite_code, heart_balance, is_synthetic "
-                            "FROM complete_onboarding('새로온사람', %s)", (cid,))
+                            "FROM complete_onboarding('새로온사람', %s, 'F')", (cid,))
                 new_id, nick, code, bal, synth = cur.fetchone()
                 cur.execute("SET LOCAL ROLE postgres")
 
@@ -308,7 +316,7 @@ def main() -> int:
 
                 # 새로고침이나 중복 클릭으로 두 번 불려도 계정이 갈라지면 안 된다
                 as_user(cur, C_AUTH)
-                cur.execute("SELECT id FROM complete_onboarding('다른이름', %s)", (cid,))
+                cur.execute("SELECT id FROM complete_onboarding('다른이름', %s, 'M')", (cid,))
                 again_id = cur.fetchone()[0]
                 cur.execute("SET LOCAL ROLE postgres")
                 cur.execute("SELECT count(*) FROM app_user WHERE auth_user_id=%s", (C_AUTH,))
@@ -550,6 +558,22 @@ def main() -> int:
                        expect_error(cur, A_AUTH, "SELECT submit_vote(%s,%s)", (item, pick)),
                        "예외 기대")
 
+                # 내가 한 투표는 내 기록이므로 그대로 보인다
+                as_user(cur, A_AUTH)
+                cur.execute("SELECT chosen_user_id, question_text FROM my_vote_history "
+                            "WHERE vote_item_id=%s", (item,))
+                hist = cur.fetchone()
+                cur.execute("SET LOCAL ROLE postgres")
+                vcheck("내가 한 투표가 목록에 남음",
+                       hist is not None and hist[0] == pick, str(hist and hist[0]))
+
+                # 남이 한 투표는 보이지 않는다
+                cur.execute("SELECT count(*) FROM vote_item WHERE user_id=%s", (A,))
+                mine = cur.fetchone()[0]
+                vcheck("남의 투표 기록은 내 목록에 없음",
+                       rpc(cur, B_AUTH, "SELECT count(*) FROM my_vote_history") == 0,
+                       f"A 의 기록 {mine}건은 B 에게 0건")
+
                 # --- 셔플 -------------------------------------------------
                 cur.execute("SELECT id FROM vote_item WHERE session_id=%s AND voted_at IS NULL "
                             "ORDER BY position LIMIT 1", (session,))
@@ -607,6 +631,130 @@ def main() -> int:
                 failures.append("[투표] RPC 호출 실패")
             finally:
                 cur.execute("ROLLBACK TO SAVEPOINT voting")
+                cur.execute("SET LOCAL ROLE postgres")
+
+            # ---------------------------------------------------------
+            # 받은 투표 · 힌트 — 값을 치르기 전에는 새지 않는가 (W6)
+            #
+            # "누가 나를 뽑았는가"를 하트로 파는 것이 이 서비스의 수익 구조다.
+            # 공짜로 알아낼 수 있는 경로가 하나라도 있으면 서비스가 성립하지 않는다.
+            # ---------------------------------------------------------
+            print()
+            print("받은 투표 시험 (W6)")
+
+            def rcheck(desc: str, ok: bool, detail=""):
+                print(f"  {'동작함' if ok else '실패!!'} {desc}  ({detail})")
+                if not ok:
+                    failures.append(f"[받은투표] {desc}")
+
+            recv = ctx["received"]
+            cur.execute("SAVEPOINT received")
+            try:
+                # 아무것도 사지 않은 상태 — 투표자에 대한 어떤 단서도 없어야 한다
+                as_user(cur, B_AUTH)
+                cur.execute("SELECT voter_id, voter_nickname, voter_initial, voter_gender, "
+                            "voter_class_id, hint_steps, is_read "
+                            "FROM my_vote_received WHERE id=%s", (recv,))
+                row = cur.fetchone()
+                cur.execute("SET LOCAL ROLE postgres")
+                rcheck("사기 전에는 투표자 단서가 하나도 없음",
+                       row is not None and all(x is None for x in row[:5]) and row[5] == 0,
+                       str(row))
+
+                rpc(cur, B_AUTH, "SELECT mark_received_read(%s)", (recv,))
+                cur.execute("SELECT is_read, read_at IS NOT NULL FROM vote_received WHERE id=%s",
+                            (recv,))
+                rcheck("읽음 처리", cur.fetchone() == (True, True))
+
+                cur.execute("SELECT heart_balance FROM app_user WHERE id=%s", (B,))
+                start_balance = cur.fetchone()[0]
+
+                # 1단계 — 초성
+                step = rpc(cur, B_AUTH, "SELECT buy_hint(%s)", (recv,))
+                as_user(cur, B_AUTH)
+                cur.execute("SELECT voter_initial, voter_gender, voter_class_id, voter_id "
+                            "FROM my_vote_received WHERE id=%s", (recv,))
+                initial, gender, cls, vid = cur.fetchone()
+                cur.execute("SET LOCAL ROLE postgres")
+                rcheck("1단계: 초성만 열림",
+                       step == 1 and initial is not None
+                       and gender is None and cls is None and vid is None,
+                       f"초성={initial!r}")
+
+                cur.execute("SELECT heart_balance FROM app_user WHERE id=%s", (B,))
+                rcheck("하트가 200 차감됨",
+                       cur.fetchone()[0] == start_balance - 200, "200")
+
+                cur.execute("""
+                    SELECT count(*) FROM hint_purchase p
+                     WHERE p.vote_received_id = %s
+                       AND NOT EXISTS (SELECT 1 FROM heart_transaction t
+                                        WHERE t.hint_purchase_id = p.id)
+                """, (recv,))
+                rcheck("힌트 구매마다 원장이 남음", cur.fetchone()[0] == 0, "원장 없는 구매 0건")
+
+                # 2단계 — 성별
+                rpc(cur, B_AUTH, "SELECT buy_hint(%s)", (recv,))
+                as_user(cur, B_AUTH)
+                cur.execute("SELECT voter_gender, voter_class_id, voter_id "
+                            "FROM my_vote_received WHERE id=%s", (recv,))
+                gender, cls, vid = cur.fetchone()
+                cur.execute("SET LOCAL ROLE postgres")
+                rcheck("2단계: 성별까지 열림",
+                       gender == "F" and cls is None and vid is None, f"성별={gender}")
+
+                # 3단계 — 반
+                rpc(cur, B_AUTH, "SELECT buy_hint(%s)", (recv,))
+                as_user(cur, B_AUTH)
+                cur.execute("SELECT voter_class_id, voter_id FROM my_vote_received WHERE id=%s",
+                            (recv,))
+                cls, vid = cur.fetchone()
+                cur.execute("SET LOCAL ROLE postgres")
+                rcheck("3단계: 반까지 열리지만 투표자는 아직 비공개",
+                       cls is not None and vid is None, f"반={cls}")
+
+                # 4단계 — 전체 공개
+                step = rpc(cur, B_AUTH, "SELECT buy_hint(%s)", (recv,))
+                as_user(cur, B_AUTH)
+                cur.execute("SELECT voter_id, voter_nickname, reveal_status "
+                            "FROM my_vote_received WHERE id=%s", (recv,))
+                vid, nick, reveal = cur.fetchone()
+                cur.execute("SET LOCAL ROLE postgres")
+                rcheck("4단계: 투표자가 공개됨",
+                       step == 4 and vid == A and nick == "시험유저A" and reveal == "REVEALED",
+                       f"{nick}")
+
+                cur.execute("SELECT heart_balance FROM app_user WHERE id=%s", (B,))
+                rcheck("누진 요금 합계 2000 차감",
+                       cur.fetchone()[0] == start_balance - 2000, "200+300+500+1000")
+
+                rcheck("더 살 힌트가 없으면 막힘",
+                       expect_error(cur, B_AUTH, "SELECT buy_hint(%s)", (recv,)), "예외 기대")
+
+                # 남의 받은 투표는 건드릴 수 없다
+                rcheck("남이 받은 투표에는 힌트를 못 삼",
+                       expect_error(cur, A_AUTH, "SELECT buy_hint(%s)", (recv,)), "예외 기대")
+
+                cur.execute("ROLLBACK TO SAVEPOINT received")
+
+                # 하트가 모자라면 구매가 막힌다
+                cur.execute("UPDATE app_user SET heart_balance = 100 WHERE id=%s", (B,))
+                rcheck("하트가 모자라면 구매가 막힘",
+                       expect_error(cur, B_AUTH, "SELECT buy_hint(%s)", (recv,)),
+                       "보유 100 < 200")
+                cur.execute("SELECT count(*) FROM hint_purchase WHERE vote_received_id=%s", (recv,))
+                rcheck("막힌 구매는 흔적을 남기지 않음", cur.fetchone()[0] == 0, "0건")
+
+                # 답변 공개
+                rpc(cur, B_AUTH, "SELECT set_answer_status(%s,'PUBLIC')", (recv,))
+                cur.execute("SELECT answer_status, answered_at IS NOT NULL "
+                            "FROM vote_received WHERE id=%s", (recv,))
+                rcheck("답변 공개 상태가 기록됨", cur.fetchone() == ("PUBLIC", True))
+            except Exception as e:
+                print(f"  실패!! 받은 투표 RPC  ({type(e).__name__}: {e})")
+                failures.append("[받은투표] RPC 호출 실패")
+            finally:
+                cur.execute("ROLLBACK TO SAVEPOINT received")
                 cur.execute("SET LOCAL ROLE postgres")
 
             # ---------------------------------------------------------

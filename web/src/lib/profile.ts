@@ -23,6 +23,15 @@ export type Profile = {
 export type School = { id: number; name: string };
 export type ClassOption = { id: number; label: string };
 
+/** app_user.gender 와 같은 값. 힌트로 파는 정보라 온보딩에서 반드시 받는다. */
+export type Gender = "F" | "M" | "X";
+
+export const GENDER_LABEL: Record<Gender, string> = {
+  F: "여성",
+  M: "남성",
+  X: "기타",
+};
+
 /**
  * 학급 표시명.
  *
@@ -155,11 +164,13 @@ export async function listClasses(schoolId: number): Promise<ClassOption[]> {
 export async function completeOnboarding(
   nickname: string,
   classId: number,
+  gender: Gender,
 ): Promise<Profile> {
   const supabase = createClient();
   const { error } = await supabase.rpc("complete_onboarding", {
     p_nickname: nickname,
     p_class_id: classId,
+    p_gender: gender,
   });
 
   if (error) throw new Error(error.message);

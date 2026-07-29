@@ -5,7 +5,9 @@ import {
   completeOnboarding,
   listClasses,
   listSchools,
+  GENDER_LABEL,
   type ClassOption,
+  type Gender,
   type Profile,
   type School,
 } from "@/lib/profile";
@@ -13,8 +15,8 @@ import {
 /**
  * 온보딩 화면.
  *
- * 받는 것은 닉네임과 소속뿐이다. 이름·이메일·전화번호는 받지 않는다.
- * 성별은 스키마에 자리만 있고 MVP 에서는 묻지 않는다(투표에 아직 쓰지 않는다).
+ * 받는 것은 닉네임·성별·소속이다. 이름·이메일·전화번호는 받지 않는다.
+ * 성별은 힌트로 파는 정보라(받은 투표의 2단계) 비워둘 수 없다.
  */
 export function OnboardingForm({ onDone }: { onDone: (p: Profile) => void }) {
   const [schools, setSchools] = useState<School[]>([]);
@@ -22,6 +24,7 @@ export function OnboardingForm({ onDone }: { onDone: (p: Profile) => void }) {
   const [schoolId, setSchoolId] = useState<number | null>(null);
   const [classId, setClassId] = useState<number | null>(null);
   const [nickname, setNickname] = useState("");
+  const [gender, setGender] = useState<Gender | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
 
@@ -62,16 +65,16 @@ export function OnboardingForm({ onDone }: { onDone: (p: Profile) => void }) {
   // 서버(complete_onboarding)와 같은 기준이다. 여기서 막는 건 안내용일 뿐,
   // 진짜 검증은 서버가 한다.
   const nicknameOk = trimmed.length >= 2 && trimmed.length <= 20;
-  const canSubmit = nicknameOk && classId !== null && !submitting;
+  const canSubmit = nicknameOk && gender !== null && classId !== null && !submitting;
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!canSubmit || classId === null) return;
+    if (!canSubmit || classId === null || gender === null) return;
 
     setSubmitting(true);
     setError("");
     try {
-      onDone(await completeOnboarding(trimmed, classId));
+      onDone(await completeOnboarding(trimmed, classId, gender));
     } catch (err) {
       setError(messageOf(err));
       setSubmitting(false);
@@ -85,8 +88,8 @@ export function OnboardingForm({ onDone }: { onDone: (p: Profile) => void }) {
           어떻게 부르면 될까요?
         </h1>
         <p className="text-sm leading-relaxed text-neutral-600 dark:text-neutral-400">
-          이름도 이메일도 전화번호도 받지 않습니다. 친구들이 알아볼 별명과 소속만
-          알려주세요.
+          이름도 이메일도 전화번호도 받지 않습니다. 친구들이 알아볼 별명과
+          성별·소속만 알려주세요.
         </p>
       </header>
 
@@ -101,6 +104,25 @@ export function OnboardingForm({ onDone }: { onDone: (p: Profile) => void }) {
             placeholder="친구들이 부르는 이름"
             className="w-full rounded border border-neutral-300 bg-transparent px-3 py-2.5 outline-none focus:border-neutral-900 dark:border-neutral-700 dark:focus:border-neutral-100"
           />
+        </Field>
+
+        <Field label="성별">
+          <div className="flex gap-2">
+            {(Object.keys(GENDER_LABEL) as Gender[]).map((g) => (
+              <button
+                key={g}
+                type="button"
+                onClick={() => setGender(g)}
+                className={`flex-1 rounded border px-3 py-2.5 text-sm transition-colors ${
+                  gender === g
+                    ? "border-neutral-900 font-medium dark:border-neutral-100"
+                    : "border-neutral-300 text-neutral-500 dark:border-neutral-700"
+                }`}
+              >
+                {GENDER_LABEL[g]}
+              </button>
+            ))}
+          </div>
         </Field>
 
         <Field label="학교">

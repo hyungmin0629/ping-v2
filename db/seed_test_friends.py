@@ -20,9 +20,14 @@
    남겨두면 실유저가 존재하지 않는 사람에게 투표하게 되고,
    그 사람은 받은 투표를 영영 열어볼 수 없다.
 
+더미가 나를 뽑은 기록도 만들 수 있다(--votes). 더미는 로그인할 수 없어서
+스스로 투표하지 못하는데, "받은 투표" 화면(W6)을 보려면 누군가 나를 뽑아야 한다.
+힌트 누진 요금은 한 건에 여러 단계를 사야 확인되므로 몇 건은 있어야 한다.
+
 사용법:
     python db/seed_test_friends.py --for 6RSH96F8        # 내 초대 코드
     python db/seed_test_friends.py --for 6RSH96F8 --same-class 5 --other-class 3
+    python db/seed_test_friends.py --for 6RSH96F8 --votes 6   # 나를 뽑은 기록 6건
     python db/seed_test_friends.py --clean               # 더미 전부 삭제
 """
 
@@ -168,15 +173,19 @@ def seed(cur, invite_code: str, same_class: int, other_class: int) -> int:
     placements += [other_classes[i % len(other_classes)] for i in range(other_class)]
 
     codes = make_codes(cur, len(placements))
+    # 성별은 온보딩 필수 항목이고 힌트로 파는 정보다. 비워두면 GENDER 힌트를
+    # 산 사람에게 빈 값이 나간다.
+    genders = random.Random().choices(["F", "M", "X"], weights=[45, 45, 10],
+                                      k=len(placements))
     cur.execute("SELECT coalesce(max(id), 0) FROM app_user WHERE is_synthetic")
     start = cur.fetchone()[0]
 
     made = 0
-    for i, (class_id, code) in enumerate(zip(placements, codes), start=1):
+    for i, (class_id, code, gender) in enumerate(zip(placements, codes, genders), start=1):
         cur.execute(
-            "INSERT INTO app_user (nickname, invite_code, class_id, is_synthetic) "
-            "VALUES (%s, %s, %s, true) RETURNING id",
-            (f"시험친구{i:02d}", code, class_id))
+            "INSERT INTO app_user (nickname, invite_code, class_id, gender, is_synthetic) "
+            "VALUES (%s, %s, %s, %s, true) RETURNING id",
+            (f"시험친구{i:02d}", code, class_id, gender))
         friend_id = cur.fetchone()[0]
         cur.execute(
             "INSERT INTO friendship (user_low_id, user_high_id, source) "
@@ -198,6 +207,108 @@ def seed(cur, invite_code: str, same_class: int, other_class: int) -> int:
     return made
 
 
+def fill_missing_genders(cur) -> None:
+    """성별을 받기 전에 만든 더미를 채운다.
+
+    성별은 힌트 2단계로 파는 정보다. 비어 있으면 하트를 받고 빈 값을 넘기게 된다.
+    """
+    cur.execute("""
+        UPDATE app_user
+           SET gender = (ARRAY['F','M','X']::gender_type[])[1 + floor(random()*3)::int]
+         WHERE is_synthetic AND gender IS NULL
+    """)
+    if cur.rowcount:
+        print(f"  성별이 비어 있던 더미 {cur.rowcount}명을 채웠습니다.")
+
+
+def seed_votes(cur, invite_code: str, count: int) -> int:
+    """더미들이 나를 뽑은 기록을 만든다.
+
+    후보 규칙은 앱과 똑같이 DB 함수(pick_candidates)로 뽑는다. 손으로 넣으면
+    "후보는 투표자의 친구여야 한다" 같은 정합성 규칙을 어기기 쉽다.
+
+    CLASS 스코프 질문은 쓰지 않는다. 다른 반 더미가 CLASS 질문으로 나를 뽑으면
+    'CLASS 스코프에 타반 후보' 정합성 검사에 걸린다.
+    """
+    cur.execute("SELECT id FROM app_user WHERE invite_code = %s", (invite_code.upper(),))
+    row = cur.fetchone()
+    if row is None:
+        sys.exit(f"초대 코드 {invite_code} 인 계정이 없습니다.")
+    me = row[0]
+
+    fill_missing_genders(cur)
+
+    cur.execute("SELECT id FROM app_user WHERE is_synthetic ORDER BY id")
+    dummies = [r[0] for r in cur.fetchall()]
+    if len(dummies) < 4:
+        sys.exit("더미가 4명 미만입니다. 먼저 --for 로 친구를 만들어 주세요.")
+
+    # 더미끼리도 친구로 묶는다. 후보는 투표자의 친구 중에서만 나오는데,
+    # 더미의 친구가 나 하나뿐이면 4명을 채울 수 없다.
+    for i, a in enumerate(dummies):
+        for b in dummies[i + 1:]:
+            cur.execute("INSERT INTO friendship (user_low_id,user_high_id,source) "
+                        "VALUES (LEAST(%s,%s),GREATEST(%s,%s),'INVITE_CODE') "
+                        "ON CONFLICT DO NOTHING", (a, b, a, b))
+    for d in dummies:
+        cur.execute("SELECT refresh_friend_state(%s)", (d,))
+
+    cur.execute("SELECT id, scope FROM question "
+                "WHERE status='ACTIVE' AND scope <> 'CLASS' ORDER BY random() LIMIT %s",
+                (count,))
+    questions = cur.fetchall()
+    if not questions:
+        sys.exit("ACTIVE 질문이 없습니다. db/seed_questions.sql 을 먼저 적용하세요.")
+
+    rng = random.Random()
+    made = 0
+    for i, (qid, scope) in enumerate(questions):
+        voter = dummies[i % len(dummies)]
+
+        cur.execute("SELECT public.effective_scope(%s, %s)", (voter, scope))
+        eff = cur.fetchone()[0]
+        if eff is None:
+            continue
+
+        cur.execute("SELECT candidate_user_id FROM public.pick_candidates(%s, %s)", (voter, eff))
+        picks = [r[0] for r in cur.fetchall()]
+        if len(picks) < 4:
+            continue
+        # 나를 반드시 후보에 넣는다 — 나를 뽑은 기록을 만드는 것이 목적이다
+        if me not in picks:
+            picks[-1] = me
+
+        cur.execute("INSERT INTO vote_session (user_id, item_count, status, completed_at) "
+                    "VALUES (%s, 1, 'COMPLETED', now()) RETURNING id", (voter,))
+        session = cur.fetchone()[0]
+        cur.execute("INSERT INTO vote_item "
+                    "(session_id,user_id,question_id,candidate_scope,position,voted_at) "
+                    "VALUES (%s,%s,%s,%s,1,now()) RETURNING id", (session, voter, qid, eff))
+        item = cur.fetchone()[0]
+
+        rng.shuffle(picks)
+        for slot, uid in enumerate(picks, start=1):
+            cur.execute("INSERT INTO vote_candidate "
+                        "(vote_item_id,candidate_user_id,shuffle_round,slot,is_chosen) "
+                        "VALUES (%s,%s,0,%s,%s)", (item, uid, slot, uid == me))
+
+        cur.execute("INSERT INTO vote_received (vote_item_id,voter_id,receiver_id,question_id) "
+                    "VALUES (%s,%s,%s,%s)", (item, voter, me, qid))
+
+        # 하트는 앱과 같은 함수로 준다. 잔액과 원장이 함께 움직여야 한다.
+        cur.execute("SELECT public.grant_hearts(%s,%s,'VOTE_REWARD',%s)",
+                    (voter, rng.randint(5, 15), item))
+        cur.execute("SELECT public.grant_hearts(%s,%s,'VOTE_REWARD',%s)",
+                    (me, rng.randint(5, 15), item))
+        made += 1
+
+    cur.execute("SELECT heart_balance FROM app_user WHERE id=%s", (me,))
+    print(f"나를 뽑은 기록 {made}건을 만들었습니다. (하트 {cur.fetchone()[0]}개)")
+    if made < count:
+        print(f"⚠️ {count - made}건은 후보가 모자라 건너뛰었습니다.")
+    return made
+
+
 def main() -> int:
     try:
         sys.stdout.reconfigure(encoding="utf-8")
@@ -209,6 +320,8 @@ def main() -> int:
     ap.add_argument("--same-class", type=int, default=5,
                     help="같은 반에 만들 수 (CLASS 스코프에 4명 이상 필요)")
     ap.add_argument("--other-class", type=int, default=3, help="다른 반에 만들 수")
+    ap.add_argument("--votes", type=int, default=0,
+                    help="더미가 나를 뽑은 기록을 이만큼 만든다 (W6 시험용)")
     ap.add_argument("--clean", action="store_true", help="더미를 전부 지운다")
     args = ap.parse_args()
 
@@ -221,6 +334,8 @@ def main() -> int:
         with conn.cursor() as cur:
             if args.clean:
                 clean(cur)
+            elif args.votes:
+                seed_votes(cur, args.invite_code, args.votes)
             else:
                 seed(cur, args.invite_code, args.same_class, args.other_class)
         conn.commit()

@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { FriendsPanel } from "@/components/friends-panel";
+import { InboxPanel } from "@/components/inbox-panel";
 import { OnboardingForm } from "@/components/onboarding-form";
 import { ProfileCard } from "@/components/profile-card";
 import { VotePanel } from "@/components/vote-panel";
@@ -18,7 +19,7 @@ import { getMyProfile, type Profile } from "@/lib/profile";
  */
 export default function Home() {
   const [profile, setProfile] = useState<Profile | null>(null);
-  const [voting, setVoting] = useState(false);
+  const [screen, setScreen] = useState<"home" | "vote" | "inbox">("home");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -52,8 +53,8 @@ export default function Home() {
     };
   }, []);
 
-  function finishVoting() {
-    setVoting(false);
+  function backHome() {
+    setScreen("home");
     refresh();
   }
 
@@ -83,23 +84,40 @@ export default function Home() {
         />
       )}
 
-      {!loading && !error && profile && voting && (
-        <VotePanel onClose={finishVoting} />
+      {!loading && !error && profile && screen === "vote" && (
+        <VotePanel onClose={backHome} />
       )}
 
-      {!loading && !error && profile && !voting && (
+      {!loading && !error && profile && screen === "inbox" && (
+        <InboxPanel
+          hearts={profile.heartBalance}
+          onClose={backHome}
+          onChanged={refresh}
+        />
+      )}
+
+      {!loading && !error && profile && screen === "home" && (
         <div className="flex flex-col gap-10">
           <ProfileCard profile={profile} />
 
           <section className="flex flex-col gap-3">
             {profile.unlocked ? (
-              <button
-                type="button"
-                onClick={() => setVoting(true)}
-                className="rounded bg-neutral-900 px-4 py-4 font-medium text-white dark:bg-neutral-100 dark:text-neutral-900"
-              >
-                투표하러 가기
-              </button>
+              <>
+                <button
+                  type="button"
+                  onClick={() => setScreen("vote")}
+                  className="rounded bg-neutral-900 px-4 py-4 font-medium text-white dark:bg-neutral-100 dark:text-neutral-900"
+                >
+                  투표하러 가기
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setScreen("inbox")}
+                  className="rounded border border-neutral-300 px-4 py-3 text-sm font-medium dark:border-neutral-700"
+                >
+                  받은 투표 보기
+                </button>
+              </>
             ) : (
               <p className="rounded border border-dashed border-neutral-300 px-4 py-6 text-center text-sm leading-relaxed text-neutral-500 dark:border-neutral-700">
                 친구를 {Math.max(0, 5 - profile.friendCount)}명 더 모으면

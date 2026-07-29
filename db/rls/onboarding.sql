@@ -73,6 +73,13 @@ BEGIN
         RAISE EXCEPTION '닉네임은 2~20자여야 합니다' USING ERRCODE = '22023';
     END IF;
 
+    -- 성별은 필수다. 힌트로 파는 정보라 비어 있으면 살 수 있는 힌트가
+    -- 한 단계 사라진다. 파라미터의 기본값은 예전 호출 형태를 위해 남겨두고
+    -- 값 검사는 여기서 한다.
+    IF p_gender IS NULL THEN
+        RAISE EXCEPTION '성별을 선택해 주세요' USING ERRCODE = '22023';
+    END IF;
+
     -- FK 도 잡아주지만, 화면에 보여줄 말이 되는 메시지가 필요하다.
     IF NOT EXISTS (SELECT 1 FROM public.grade_class g WHERE g.id = p_class_id) THEN
         RAISE EXCEPTION '없는 학급입니다' USING ERRCODE = '23503';
