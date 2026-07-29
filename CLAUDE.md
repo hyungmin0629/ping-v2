@@ -59,9 +59,12 @@
 
 ## 현재 단계
 
-**P0·P1·P2·W0~W7 완료, P3·W8 진행 중** (2026-07-30)
-→ 배포·초대 링크·NEIS 학교 연동·급식표까지 끝났다. 남은 것은 지인 초대,
-그리고 파이프라인 트랙(P4~P7).
+**P0·P1·P2·W0~W8 완료** (2026-07-30) → 다음은 **P4 BigQuery 적재**
+
+앱은 배포돼 있고 실데이터가 쌓이는 상태다. 남은 것은 파이프라인 트랙(P4~P7)과
+지인 초대. **P4 를 먼저 하고 그 위에서 초대하는 편이 낫다** — 초대 후에 만들면
+그동안 쌓인 데이터를 소급 적재해야 하고, 증분 적재를 시험하기에는 처음부터
+흐르게 두는 쪽이 깔끔하다.
 
 | 완료 | 결과 |
 |---|---|
@@ -76,8 +79,42 @@
 | W5 투표 | 후보 추출·투표·셔플 RPC + 화면. 질문 24개 시드, 접속 로그 추가. 시험 67종 통과 |
 | W6 받은 투표 | 힌트 4단계(성별→초성→반→공개, 200·300·500·1000) + 내가 한 투표 목록 |
 | W7 배포 | Vercel 배포, 개인정보처리방침, 초대 링크(`/add?code=`) |
-| P3 NEIS (일부) | 전국 중·고 5,724개 + 서울고 학급 42개. 급식 수집기 |
-| W8 급식표 (일부) | 메인의 토글 → 월 캘린더 · 점심/저녁 선택. 시간표·공지는 남음 |
+| P3 NEIS (일부) | 전국 중·고 5,724개 · 학교 19곳의 학급과 급식(2,938건). DAG 화는 P4 |
+| W8 급식표 | 메인 토글 → 월 캘린더 · 끼니 선택. **시간표·공지는 남음** |
+
+## 스크립트
+
+| 명령 | 하는 일 |
+|---|---|
+| `python db/apply.py --target supabase` | DDL + 마이그레이션 적용 |
+| `python db/run_sql.py <파일>` | SQL 파일 하나를 Supabase 에 적용 |
+| `python db/rls/verify.py` | **침투·동작 시험 86항목. 배포 전 반드시 통과** |
+| `python db/neis_schools.py --schools` | 전국 중·고 목록 |
+| `python db/neis_schools.py --classes <코드> [--into <조직>]` | 학급 |
+| `python db/neis_meals.py --school <코드>` | 급식 |
+| `python db/seed_test_friends.py --for <초대코드> [--votes N]` | 더미 친구·받은 투표 |
+| `python db/reset_users.py --yes` | 유저 데이터 전체 삭제 (마스터는 보존) |
+
+정합성 검사는 `qa/checks/integrity.sql` 을 Supabase 에 그대로 돌린다(17종, 위반 0이어야 한다).
+
+## DB 를 처음부터 다시 만들 때
+
+`db/rls/` 의 SQL 은 **순서가 있다.** 뒤의 파일이 앞의 정책을 갈아끼우기 때문이다.
+
+```
+python db/apply.py --target supabase          # DDL + migrations
+python db/run_sql.py db/rls/policies.sql      # 기본 RLS
+python db/run_sql.py db/rls/onboarding.sql    # 가입 RPC (insert_own_user 를 대체)
+python db/run_sql.py db/rls/friends.sql       # 친구 RPC (친구요청 정책을 대체)
+python db/run_sql.py db/rls/voting.sql        # 투표 RPC
+python db/run_sql.py db/rls/received.sql      # 힌트·받은 투표 뷰
+python db/run_sql.py db/rls/session_log.sql   # 접속 로그 (insert_own_session 을 대체)
+python db/run_sql.py db/rls/school_picker.sql # selectable_school 뷰
+python db/run_sql.py db/rls/school_info.sql   # 급식 정책 + my_school_source 뷰
+python db/run_sql.py db/seed_org.sql          # 테스트 조직
+python db/run_sql.py db/seed_questions.sql    # 질문 24개
+python db/rls/verify.py                       # 통과해야 끝
+```
 
 ## 웹앱 (web/)
 

@@ -26,6 +26,7 @@ from dotenv import load_dotenv
 
 ROOT = Path(__file__).resolve().parent.parent
 DDL_DIR = ROOT / "db" / "ddl"
+MIGRATION_DIR = ROOT / "db" / "migrations"
 
 # 실행 순서가 곧 의존 순서다. 와일드카드 금지.
 DDL_FILES = [
@@ -41,6 +42,10 @@ DDL_FILES = [
 
 # Supabase 전용 추가분 (auth.users 연결 등). 로컬에는 auth 스키마가 없어 적용하지 않는다.
 SUPABASE_EXTRA = ["supabase/10_auth_link.sql"]
+
+# 스키마 변경 이력. DDL 을 처음부터 다시 올려도 여기까지 적용해야 현재 스키마가 된다.
+# 빠뜨리면 neis_office_code / info_school_id / padded_count 가 없는 반쪽 스키마가 된다.
+MIGRATION_FILES = sorted(f.name for f in MIGRATION_DIR.glob("*.sql"))
 
 
 def dsn(target: str) -> str:
@@ -100,6 +105,10 @@ def main() -> int:
                 cur.execute(path.read_text(encoding="utf-8"))
                 print(f"  적용  {name}")
 
+            for name in MIGRATION_FILES:
+                cur.execute((MIGRATION_DIR / name).read_text(encoding="utf-8"))
+                print(f"  적용  migrations/{name}")
+
             cur.execute("""
                 SELECT
                   (SELECT count(*) FROM information_schema.tables
@@ -111,10 +120,12 @@ def main() -> int:
         conn.commit()
 
     print(f"\n적용 완료 — {args.target}")
-    print(f"  테이블 {tables}개 / FK {fks}개")
+    print(f"  테이블 {tables}개 / FK {fks}개 / 마이그레이션 {len(MIGRATION_FILES)}개")
     if tables != 42:
         print(f"  ⚠️ 42개가 아닙니다. 70_deferred_v2.sql 이 섞였는지 확인하세요.")
         return 1
+    if args.target == "supabase":
+        print("\n다음: RLS 와 RPC 를 순서대로 올립니다 (CLAUDE.md 참조)")
     return 0
 
 
