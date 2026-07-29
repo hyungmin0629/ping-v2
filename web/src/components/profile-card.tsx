@@ -12,13 +12,19 @@ const FRIEND_GATE = 5; // 투표가 열리는 친구 수. 후보 풀의 하한�
  * 이 코드를 주고받아야 투표가 열린다.
  */
 export function ProfileCard({ profile }: { profile: Profile }) {
-  const [copied, setCopied] = useState(false);
+  const [copied, setCopied] = useState<"code" | "link" | null>(null);
 
-  async function copy() {
+  async function copy(what: "code" | "link") {
+    // 링크는 코드를 주소에 담은 것뿐이다. 받은 사람이 누르면 가입 후 요청이
+    // 자동으로 간다. 친구를 맺는 근거는 여전히 초대 코드 하나다.
+    const text =
+      what === "code"
+        ? profile.inviteCode
+        : `${window.location.origin}/add?code=${profile.inviteCode}`;
     try {
-      await navigator.clipboard.writeText(profile.inviteCode);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1500);
+      await navigator.clipboard.writeText(text);
+      setCopied(what);
+      setTimeout(() => setCopied(null), 1500);
     } catch {
       // 클립보드를 막아둔 브라우저도 있다. 코드는 화면에 이미 보이므로 넘어간다.
     }
@@ -41,17 +47,26 @@ export function ProfileCard({ profile }: { profile: Profile }) {
           <span className="font-mono text-3xl tracking-[0.2em] tabular-nums">
             {profile.inviteCode}
           </span>
+        </div>
+        <div className="flex gap-2">
           <button
             type="button"
-            onClick={copy}
+            onClick={() => copy("link")}
+            className="rounded bg-neutral-900 px-3 py-1.5 text-xs text-white transition-opacity hover:opacity-80 dark:bg-neutral-100 dark:text-neutral-900"
+          >
+            {copied === "link" ? "복사됨" : "초대 링크 복사"}
+          </button>
+          <button
+            type="button"
+            onClick={() => copy("code")}
             className="rounded border border-neutral-300 px-3 py-1.5 text-xs transition-colors hover:bg-neutral-100 dark:border-neutral-700 dark:hover:bg-neutral-900"
           >
-            {copied ? "복사됨" : "복사"}
+            {copied === "code" ? "복사됨" : "코드만 복사"}
           </button>
         </div>
         <p className="text-xs leading-relaxed text-neutral-500">
-          이 코드를 친구에게 알려주세요. 친구가 코드를 입력하면 요청이 오고,
-          내가 수락하면 친구가 됩니다.
+          링크를 보내면 친구는 누르기만 하면 됩니다. 직접 불러줄 때만 코드를 쓰세요.
+          어느 쪽이든 내가 수락해야 친구가 됩니다.
         </p>
       </section>
 
