@@ -35,7 +35,10 @@ docker exec -i pgtest psql -U postgres -d pingv2 -c \
   "SELECT count(*) FROM information_schema.tables WHERE table_schema='public';"
 ```
 
-`43`이 나오면 정상.
+`42`가 나오면 정상.
+
+> `70_deferred_v2.sql`은 **일부러 빼놓았다.** MVP에서 만들지 않는 테이블이다
+> (연락처 동기화 — 전화번호를 받지 않기로 했다). 자세한 이유는 파일 안 주석 참조.
 
 ### 3. 환경변수 파일 만들기
 

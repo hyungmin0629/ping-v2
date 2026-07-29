@@ -17,8 +17,10 @@ CREATE TYPE user_status      AS ENUM ('ACTIVE', 'SUSPENDED', 'WITHDRAWN');
 CREATE TYPE platform_type    AS ENUM ('IOS', 'ANDROID', 'WEB');
 
 -- 소셜 ---------------------------------------------------------------
+-- INVITE_CODE 가 MVP의 유일한 친구 추가 경로다.
+-- CONTACT_SYNC 는 연락처(전화번호)를 받아야 하므로 MVP에서 사용하지 않는다.
 CREATE TYPE friend_req_status AS ENUM ('PENDING', 'ACCEPTED', 'REJECTED', 'CANCELLED');
-CREATE TYPE relation_source   AS ENUM ('SEARCH', 'CONTACT_SYNC', 'RECOMMEND');
+CREATE TYPE relation_source   AS ENUM ('INVITE_CODE', 'SEARCH', 'CONTACT_SYNC', 'RECOMMEND');
 CREATE TYPE recommend_reason  AS ENUM ('MUTUAL_CONTACT', 'MUTUAL_FRIEND', 'SAME_CLASS', 'SAME_SCHOOL');
 CREATE TYPE block_reason      AS ENUM ('UNKNOWN_PERSON', 'AWKWARD', 'IMPERSONATION', 'IRRELEVANT', 'TOO_MANY');
 

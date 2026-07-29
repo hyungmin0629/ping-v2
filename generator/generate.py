@@ -50,12 +50,28 @@ SIDO = [
     ("강원특별자치도", ["춘천시", "원주시", "강릉시"]),
 ]
 
-SURNAMES = "김이박최정강조윤장임한오서신권황안송류전홍고문양손배백허유남심노정하곽성차주우구신任"
+SURNAMES = "김이박최정강조윤장임한오서신권황안송류전홍고문양손배백허유남심노하곽성차주우구"
 GIVEN = [
     "민준", "서연", "지호", "하윤", "예준", "지우", "주원", "서윤", "지훈", "채원",
-    "건우", "수아", "现우", "하은", "도윤", "지아", "시우", "유진", "준서", "다은",
+    "건우", "수아", "현우", "하은", "도윤", "지아", "시우", "유진", "준서", "다은",
     "은우", "소율", "정우", "예은", "승현", "가은", "연우", "지윤", "시윤", "나윤",
 ]
+
+# 닉네임 — 실명이 아니라 유저가 직접 정하는 별명이다.
+# 개인정보를 받지 않으므로 이름 마스킹이 아니라 자유 별명이 맞다.
+NICK_ADJ = [
+    "졸린", "배고픈", "심심한", "행복한", "느긋한", "바쁜", "조용한", "신난",
+    "귀찮은", "설레는", "포근한", "엉뚱한", "재빠른", "다정한", "웃긴", "차분한",
+    "용감한", "수줍은", "엉큼한", "부지런한", "나른한", "상냥한",
+]
+NICK_NOUN = [
+    "감자", "고양이", "너구리", "펭귄", "수달", "토끼", "곰돌이", "다람쥐",
+    "붕어빵", "김밥", "떡볶이", "마카롱", "복숭아", "딸기", "포도", "귤",
+    "구름", "바람", "별빛", "달빛", "파도", "노을",
+]
+
+# 헷갈리는 글자(0/O, 1/I/L) 제외 — DDL 의 ck_invite_code 와 맞춰야 한다
+CODE_CHARS = "ABCDEFGHJKMNPQRSTUVWXYZ23456789"
 
 SUBJECTS = ["국어", "수학", "영어", "과학", "사회", "역사", "체육", "음악", "미술", "정보", "도덕", "기술가정"]
 
@@ -107,8 +123,32 @@ WITHDRAW_TEXTS = [
 # 유틸
 # =====================================================================
 
+def make_nickname(rng: random.Random, taken: set[str]) -> str:
+    """유저가 정하는 별명. 실명·마스킹이 아니다."""
+    for _ in range(60):
+        nick = f"{rng.choice(NICK_ADJ)}{rng.choice(NICK_NOUN)}"
+        if nick not in taken:
+            taken.add(nick)
+            return nick
+    # 조합이 소진되면 뒤에 숫자를 붙인다 (실제 서비스의 중복 처리와 같은 방식)
+    while True:
+        nick = f"{rng.choice(NICK_ADJ)}{rng.choice(NICK_NOUN)}{rng.randint(2, 999)}"
+        if nick not in taken:
+            taken.add(nick)
+            return nick
+
+
+def make_invite_code(rng: random.Random, taken: set[str]) -> str:
+    """친구 추가의 유일한 수단. 전역 유일해야 한다."""
+    while True:
+        code = "".join(rng.choice(CODE_CHARS) for _ in range(6))
+        if code not in taken:
+            taken.add(code)
+            return code
+
+
 def masked_name(rng: random.Random) -> str:
-    """김민수 → 김*수 / 김수 → 김*"""
+    """교사명 등 실명 계열에만 쓴다. 김민수 → 김*수"""
     sur = rng.choice(SURNAMES)
     given = rng.choice(GIVEN)
     if len(given) <= 1:
@@ -376,7 +416,9 @@ class Generator:
             a, b = self.users[lo_id - 1], self.users[hi_id - 1]
             base = max(a.created_at, b.created_at)
             created = rand_dt(self.rng, base, min(base + timedelta(days=10), self.end))
-            source = self.rng.choices(["SEARCH", "CONTACT_SYNC", "RECOMMEND"], [0.5, 0.2, 0.3])[0]
+            # MVP에서 친구 추가는 초대 코드가 주된 경로다.
+            # CONTACT_SYNC 는 전화번호를 받아야 하므로 쓰지 않는다.
+            source = self.rng.choices(["INVITE_CODE", "RECOMMEND", "SEARCH"], [0.7, 0.2, 0.1])[0]
             sender, receiver = (lo_id, hi_id) if self.rng.random() < 0.5 else (hi_id, lo_id)
 
             fr_id += 1
@@ -417,7 +459,7 @@ class Generator:
             self.w.write("friend_request",
                          ["id", "sender_id", "receiver_id", "status", "source", "created_at", "responded_at"],
                          [fr_id, s, r_, "PENDING" if is_pending else "REJECTED",
-                          self.rng.choice(["SEARCH", "RECOMMEND"]), iso(created),
+                          self.rng.choice(["INVITE_CODE", "RECOMMEND"]), iso(created),
                           "" if is_pending else iso(created + timedelta(hours=self.rng.randint(1, 72)))])
 
         # 친구 수 확정 + 게이트 해금 시점
@@ -737,6 +779,8 @@ class Generator:
         sess_id = 0
         wd_id = 0
         school_counts: dict[int, int] = {}
+        self._nicks: set[str] = set()
+        self._codes: set[str] = set()
 
         for u in self.users:
             school_counts[u.school_id] = school_counts.get(u.school_id, 0) + 1
@@ -744,11 +788,14 @@ class Generator:
             last_active = u.created_at + timedelta(days=u.activity_days) if u.activity_days else u.created_at
             last_active = min(last_active, self.end)
 
+            # auth_user_id 는 비운다. 합성 유저는 Supabase 익명 계정이 없다.
+            # 실유저와 합성을 구분하는 신호이기도 하다.
             self.w.write("app_user",
-                         ["id", "auth_user_id", "name_masked", "gender", "class_id",
+                         ["id", "auth_user_id", "nickname", "invite_code", "gender", "class_id",
                           "heart_balance", "friend_count", "service_unlocked_at", "status",
                           "is_synthetic", "last_active_at", "created_at", "updated_at"],
-                         [u.id, "", masked_name(self.rng), u.gender, u.class_id,
+                         [u.id, "", make_nickname(self.rng, self._nicks),
+                          make_invite_code(self.rng, self._codes), u.gender, u.class_id,
                           getattr(u, "final_balance", 0), len(u.friends),
                           iso(u.unlocked_at), "WITHDRAWN" if withdrawn else "ACTIVE",
                           "true", iso(last_active), iso(u.created_at), iso(last_active)])
