@@ -156,6 +156,9 @@ python pipeline/verify_load.py  --source supabase     # 행 수 대조
 섞으면 서로를 덮어쓰므로, 적재 시 `_source` 컬럼을 붙이고 키를
 `(_source, id)` 로 쓴다. 분석에서 실유저만 보려면 `WHERE _source = 'supabase'`.
 
+원천에서 지워진 행은 **삭제하지 않고 `_deleted_at` 을 찍는다.** raw 는 이력을
+잃지 않는다. 그래서 분석 쿼리에는 `AND _deleted_at IS NULL` 이 거의 항상 필요하다.
+
 정기 적재는 Airflow 가 한다:
 
 ```bash

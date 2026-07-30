@@ -169,6 +169,9 @@ def bq_schema(cols: list[tuple[str, str, bool]]) -> list[bigquery.SchemaField]:
     ]
     fields.append(bigquery.SchemaField("_source", "STRING", mode="REQUIRED"))
     fields.append(bigquery.SchemaField("_loaded_at", "TIMESTAMP", mode="REQUIRED"))
+    # 원천에서 사라진 행에 찍는다. 행을 지우지는 않는다 — raw 는 이력을 잃지 않는다.
+    # 이게 없으면 지워진 계정과 살아 있는 계정을 **분간할 수 없다.**
+    fields.append(bigquery.SchemaField("_deleted_at", "TIMESTAMP", mode="NULLABLE"))
     return fields
 
 
@@ -352,6 +355,56 @@ def merge_from_temp(bq: bigquery.Client, target_id: str, temp_id: str, cols: lis
     ).result()
 
 
+def mark_deleted(bq: bigquery.Client, conn, dataset_id: str, source: str,
+                 table: str, pk: str, snapshot_at: datetime) -> int:
+    """원천에서 사라진 행에 `_deleted_at` 을 찍는다.
+
+    왜 필요한가 — 증분 MERGE 는 INSERT/UPDATE 만 한다(그건 의도된 설계다.
+    raw 는 이력을 지우지 않는다). 그런데 표시가 없으면 **지워진 행과 살아 있는
+    행을 분간할 수 없다.**
+
+    2026-07-30 에 실제로 물렸다. 시험 계정을 정리한 뒤 "오늘 투표한 수"를 물었더니
+    이미 지운 투표 20건이 오늘 것으로 셈해졌다. 쿼리는 오류를 내지 않았다.
+
+    원천의 PK 전부를 임시 테이블로 올려 대조한다. 행이 많은 원천에서는 비싸므로
+    실유저(supabase)에만 기본으로 돈다 — 합성 데이터는 재생성 때 통째로
+    갈아끼우므로(--full-refresh) 유령이 생기지 않는다.
+    """
+    target_id = f"{dataset_id}.{table}"
+    temp_id = f"{dataset_id}._live_{table}_{source}"
+
+    with conn.cursor(name=f"pk_{table}") as cur:
+        cur.execute(f'SELECT "{pk}" FROM public."{table}"')
+        rows = [{"k": to_json_value(r[0])} for r in cur.fetchall()]
+
+    schema = [bigquery.SchemaField("k", "STRING")]
+    bq.delete_table(temp_id, not_found_ok=True)
+    temp = bigquery.Table(temp_id, schema=schema)
+    temp.expires = datetime.now(timezone.utc) + timedelta(hours=6)
+    bq.create_table(temp)
+    try:
+        if rows:
+            load_batches(bq, temp_id, schema, (rows[i:i + BATCH_ROWS]
+                                               for i in range(0, len(rows), BATCH_ROWS)))
+        job = bq.query(
+            f"""
+            UPDATE `{target_id}` T
+               SET _deleted_at = @ts
+             WHERE T._source = @src
+               AND T._deleted_at IS NULL
+               AND CAST(T.`{pk}` AS STRING) NOT IN (SELECT k FROM `{temp_id}`)
+            """,
+            job_config=bigquery.QueryJobConfig(query_parameters=[
+                bigquery.ScalarQueryParameter("src", "STRING", source),
+                bigquery.ScalarQueryParameter("ts", "TIMESTAMP", snapshot_at),
+            ]),
+        )
+        job.result()
+        return job.num_dml_affected_rows or 0
+    finally:
+        bq.delete_table(temp_id, not_found_ok=True)
+
+
 def load_table(
     bq: bigquery.Client,
     conn,
@@ -438,6 +491,8 @@ def main() -> int:
     ap.add_argument("--table", help="이 테이블 하나만")
     ap.add_argument("--full-refresh", action="store_true", help="워터마크를 무시하고 처음부터")
     ap.add_argument("--dry-run", action="store_true", help="BigQuery 에 쓰지 않고 대상만 보여준다")
+    ap.add_argument("--no-mark-deleted", action="store_true",
+                    help="원천에서 사라진 행에 _deleted_at 을 찍지 않는다")
     args = ap.parse_args()
 
     load_dotenv(ROOT / ".env")
@@ -465,6 +520,10 @@ def main() -> int:
     watermarks = {} if args.full_refresh else read_watermarks(bq, state_id, args.source)
 
     total = 0
+    tombstoned = 0
+    # 합성 원천에서는 기본으로 끈다. PK 786만 개를 올려 대조하는 값이 얻는 것보다
+    # 크고, 재생성은 --full-refresh 라 애초에 유령이 생기지 않는다.
+    mark_del = not args.no_mark_deleted and args.source == "supabase"
     with psycopg.connect(pg_dsn(args.source), connect_timeout=60) as conn:
         conn.read_only = True
         conn.isolation_level = psycopg.IsolationLevel.REPEATABLE_READ
@@ -486,10 +545,19 @@ def main() -> int:
                         bq, state_id, args.source, name,
                         snapshot_at - WATERMARK_LAG, n, args.full_refresh,
                     )
-                print(f"  {how:4} {name:26} {n:>9,}행")
+                    if mark_del:
+                        gone = mark_deleted(bq, conn, dataset_id, args.source,
+                                            name, spec["pk"], snapshot_at)
+                        if gone:
+                            tombstoned += gone
+                            how = f"{how}·삭제{gone}"
+                print(f"  {how:6} {name:26} {n:>9,}행")
 
     print(f"\n적재 완료 — {args.source} → {dataset_id}")
     print(f"  {len(plan)}개 테이블 / {total:,}행")
+    if tombstoned:
+        print(f"  원천에서 사라진 {tombstoned:,}행에 _deleted_at 을 찍었습니다")
+        print("  (행은 지우지 않는다. 분석에서는 `_deleted_at IS NULL` 로 거른다)")
     return 0
 
 

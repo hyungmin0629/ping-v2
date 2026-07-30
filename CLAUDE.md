@@ -338,8 +338,10 @@ docker run -d --name pgtest -e POSTGRES_PASSWORD=test -e POSTGRES_DB=pingv2 -p 5
 - 실유저와 합성 데이터가 **같은 테이블**에 들어간다. 둘 다 id 가 1부터라
   `_source` 컬럼으로 키를 나눈다 — 실유저만 보려면 `WHERE _source = 'supabase'`.
 - 적재 방식(full / incremental)은 `pipeline/tables.yaml` 이 정한다.
-- **원천의 삭제는 전파하지 않는다.** raw 는 이력을 지우지 않으므로
-  `reset_users.py` 이후 BigQuery 행이 더 많은 것은 정상이다.
+- **원천의 삭제는 행을 지우지 않고 `_deleted_at` 으로 표시한다.**
+  raw 는 이력을 잃지 않는다. 대신 **분석 쿼리에는 `_deleted_at IS NULL` 을 반드시 넣는다** —
+  안 넣으면 지운 계정과 그 활동이 오늘 것으로 셈해진다(2026-07-30 에 실제로 물렸다).
+  실유저 원천에서만 표시한다. 합성은 재생성이 `--full-refresh` 라 유령이 안 생긴다.
 - 정기 적재: `docker compose -f airflow/docker-compose.yml up -d` → http://localhost:8080
 
 ### 증분 적재의 함정 (2026-07-30 점검에서 실제로 걸린 것들)
