@@ -197,7 +197,7 @@ SUPABASE_DB_URL=postgresql://...
 **순서가 중요합니다.** 뒤 파일이 앞의 정책을 갈아끼우기 때문에 순서를 바꾸면 깨집니다.
 
 ```bash
-python db/apply.py --target supabase
+python db/apply.py --target supabase   # 확인을 물어봅니다. 'supabase' 를 입력하세요
 python db/run_sql.py db/rls/policies.sql
 python db/run_sql.py db/rls/onboarding.sql
 python db/run_sql.py db/rls/friends.sql

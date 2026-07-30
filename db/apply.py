@@ -64,6 +64,46 @@ def dsn(target: str) -> str:
     )
 
 
+def confirm_supabase(drop: bool) -> bool:
+    """실서비스 적용 전 확인.
+
+    이 스크립트는 `db/migrations/*.sql` 을 **전부** 적용한다. 그래야 스키마를
+    처음부터 다시 세울 수 있기 때문인데, 부작용이 하나 있다 —
+    합성 데이터 작업용으로 만든 마이그레이션도 함께 간다.
+    로컬에만 적용해 뒀더라도, 누군가 이 명령을 supabase 로 돌리는 순간
+    실서비스에 반영된다.
+
+    실유저가 있는 DB 다. 그래서 무엇이 적용되는지와 지금 누가 쓰고 있는지를
+    보여주고 확인을 받는다. 자동화에서는 --yes 로 건너뛴다.
+    """
+    print("=" * 62)
+    print("⚠️  실서비스(Supabase)에 스키마를 적용하려고 합니다")
+    print("=" * 62)
+
+    try:
+        with psycopg.connect(dsn("supabase"), connect_timeout=30) as conn, conn.cursor() as cur:
+            cur.execute("SELECT count(*) FROM app_user WHERE NOT is_synthetic")
+            users = cur.fetchone()[0]
+            cur.execute("SELECT count(*) FROM vote_item WHERE voted_at IS NOT NULL")
+            votes = cur.fetchone()[0]
+            cur.execute("SELECT count(*) FROM post WHERE status = 'PUBLISHED'")
+            posts = cur.fetchone()[0]
+        print(f"\n지금 이 DB 에는 실유저 {users}명 · 투표 {votes}건 · 게시글 {posts}건이 있습니다.")
+    except Exception as e:
+        print(f"\n(현재 상태를 읽지 못했습니다: {type(e).__name__})")
+
+    print(f"\n적용될 마이그레이션 {len(MIGRATION_FILES)}개:")
+    for name in MIGRATION_FILES:
+        print(f"  - {name}")
+    if drop:
+        print("\n🔴 --drop 이 켜져 있습니다. **모든 테이블을 지우고 다시 만듭니다.**")
+        print("   실유저 데이터가 전부 사라집니다.")
+
+    print("\n로컬 합성 데이터 작업이라면 --target local 을 써야 합니다.")
+    answer = input("\n계속하려면 'supabase' 를 입력하세요: ").strip()
+    return answer == "supabase"
+
+
 def main() -> int:
     try:
         sys.stdout.reconfigure(encoding="utf-8")
@@ -73,11 +113,17 @@ def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--target", choices=["local", "supabase"], required=True)
     ap.add_argument("--drop", action="store_true", help="public 스키마를 비우고 새로 만든다")
+    ap.add_argument("--yes", action="store_true", help="supabase 확인 절차를 건너뛴다")
     args = ap.parse_args()
 
     files = list(DDL_FILES)
     if args.target == "supabase":
         files += [f for f in SUPABASE_EXTRA if (DDL_DIR / f).exists()]
+
+    if args.target == "supabase" and not args.yes:
+        if not confirm_supabase(args.drop):
+            print("취소했습니다.")
+            return 1
 
     with psycopg.connect(dsn(args.target), connect_timeout=30) as conn:
         conn.autocommit = False

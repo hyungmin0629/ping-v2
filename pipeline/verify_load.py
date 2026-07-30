@@ -48,6 +48,27 @@ def main() -> int:
     bq = bigquery.Client(project=project, location=os.getenv("BQ_LOCATION", "asia-northeast3"))
     plan = load_manifest()
 
+    # 매니페스트에 없는 테이블은 **BigQuery 로 아예 가지 않는다.** 오류도 경고도
+    # 없어서, 새 테이블을 만들고 tables.yaml 을 잊으면 그 데이터는 조용히 사라진다.
+    # 행 수를 세기 전에 목록부터 맞춰 본다.
+    with psycopg.connect(pg_dsn(args.source), connect_timeout=60) as conn, conn.cursor() as cur:
+        cur.execute("""SELECT table_name FROM information_schema.tables
+                        WHERE table_schema='public' AND table_type='BASE TABLE'""")
+        actual = {r[0] for r in cur.fetchall()}
+
+    missing = sorted(actual - set(plan))
+    stale = sorted(set(plan) - actual)
+    if missing or stale:
+        print("❌ pipeline/tables.yaml 이 실제 스키마와 어긋납니다\n")
+        for t in missing:
+            print(f"   매니페스트에 없음  {t}  ← 이 테이블은 BigQuery 로 가지 않습니다")
+        for t in stale:
+            print(f"   원천에 없음        {t}  ← 매니페스트에서 지우세요")
+        print("\n   full / incremental 중 하나에 넣어야 적재됩니다.")
+        print("   작고 거의 안 변하면 full, 활동이 쌓이면 incremental 입니다.")
+        return 1
+    print(f"매니페스트 대조 — {len(plan)}개 테이블이 실제 스키마와 일치\n")
+
     # BigQuery 쪽은 한 번에 센다. 테이블마다 쿼리를 날리면 42번 왕복한다.
     union = "\nUNION ALL\n".join(
         f"SELECT '{t}' AS table_name, count(*) AS n FROM `{dataset_id}.{t}` WHERE _source = @s"
