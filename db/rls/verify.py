@@ -887,9 +887,33 @@ def main() -> int:
                 cseq = cur.fetchone()[0]
                 bcheck("익명 번호를 쓰지 않음", cseq == 2, f"NULL {cseq}개")
 
+                # 학교 경계는 읽기만 막아서는 부족하다. 글 id 는 순번이라
+                # 찍어볼 수 있으므로 **쓰는 쪽 경로를 전부** 확인한다.
                 bcheck("다른 학교 글에는 댓글을 못 닮",
                        expect_error(cur, out_auth, "SELECT create_comment(%s, '침입')", (pid,)),
                        "차단")
+                bcheck("다른 학교 글에 좋아요를 못 누름",
+                       expect_error(cur, out_auth, "SELECT toggle_post_like(%s)", (pid,)),
+                       "차단")
+                bcheck("다른 학교 댓글에 좋아요를 못 누름",
+                       expect_error(cur, out_auth, "SELECT toggle_comment_like(%s)", (c1,)),
+                       "차단")
+                bcheck("다른 학교 글을 신고해도 접수되지 않음",
+                       rpc(cur, out_auth,
+                           "SELECT report_content('POST', %s, 'P_ABUSE', NULL)", (pid,))
+                       == "NOT_FOUND", "NOT_FOUND")
+                bcheck("다른 학교 글은 지울 수 없음",
+                       rpc(cur, out_auth, "SELECT delete_own_post(%s)", (pid,)) is False, "false")
+                rpc(cur, out_auth, "SELECT bump_post_view(%s)", (pid,))
+                cur.execute("SELECT view_count, report_count, status FROM post WHERE id=%s", (pid,))
+                vc, rc, st = cur.fetchone()
+                bcheck("외부인이 건드려도 글은 그대로",
+                       (vc, rc, st) == (0, 0, "PUBLISHED"),
+                       f"조회 {vc} / 신고 {rc} / {st}")
+                bcheck("외부인은 댓글 목록도 못 봄",
+                       rpc(cur, out_auth,
+                           "SELECT count(*) FROM board_comment WHERE post_id=%s", (pid,)) == 0,
+                       "0건")
 
                 # --- 좋아요 ---
                 on = rpc(cur, B_AUTH, "SELECT toggle_post_like(%s)", (pid,))

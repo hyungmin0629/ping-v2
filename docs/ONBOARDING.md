@@ -217,7 +217,7 @@ python db/run_sql.py db/seed_questions.sql
 python db/rls/verify.py
 ```
 
-**109항목이 전부 통과해야 합니다.** 하나라도 실패하면 남의 데이터가 보인다는
+**115항목이 전부 통과해야 합니다.** 하나라도 실패하면 남의 데이터가 보인다는
 뜻이니 다음으로 넘어가지 마세요.
 
 이 시험은 정책을 선언만 하고 끝내지 않습니다. **실제로 다른 사람의 토큰으로
@@ -427,7 +427,7 @@ python db/seed_test_friends.py --clean  # 더미 친구만 삭제
 |---|---|
 | `db/ddl/` | **테이블 정의. 여기가 스키마의 진실입니다** — 주석에 "왜 이렇게 했는지"가 붙어 있습니다 |
 | `db/migrations/` | 스키마 변경 이력. DDL 을 처음부터 올려도 여기까지 적용해야 현재 스키마가 됩니다 |
-| `db/rls/` | 보안 정책과 RPC 함수. **`verify.py` 가 침투 시험 109항목** |
+| `db/rls/` | 보안 정책과 RPC 함수. **`verify.py` 가 침투 시험 115항목** |
 | `generator/` | 합성 데이터 생성. `config/distribution.yaml` 이 분포 파라미터 |
 | `pipeline/` | Postgres → BigQuery 적재. `tables.yaml` 이 테이블별 적재 방식 |
 | `qa/checks/integrity.sql` | 정합성 17종 |
