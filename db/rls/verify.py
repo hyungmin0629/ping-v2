@@ -931,6 +931,64 @@ def main() -> int:
                 cur.execute("SET LOCAL ROLE postgres")
 
             # ---------------------------------------------------------
+            # 계정 삭제 (W12)
+            #
+            # 행을 지우지 않고 status 를 바꾼다. 확인할 것은 셋이다 —
+            # 사유가 남는가, 목록에서 사라지는가, 다시 못 들어오는가.
+            # ---------------------------------------------------------
+            print()
+            print("계정 삭제 시험")
+
+            def wcheck(desc: str, ok: bool, detail=""):
+                print(f"  {'동작함' if ok else '실패!!'} {desc}  ({detail})")
+                if not ok:
+                    failures.append(f"[탈퇴] {desc}")
+
+            cur.execute("SAVEPOINT withdraw")
+            try:
+                wcheck("없는 사유로는 탈퇴할 수 없음",
+                       expect_error(cur, B_AUTH, "SELECT withdraw_account('없는사유')"),
+                       "차단")
+                wcheck("user_withdrawal 에 직접 INSERT 못 함",
+                       expect_error(cur, B_AUTH,
+                                    "INSERT INTO user_withdrawal (user_id, reason_code) "
+                                    "VALUES (%s,'OTHER') RETURNING id", (A,)),
+                       "권한거부")
+
+                gone = rpc(cur, B_AUTH,
+                           "SELECT withdraw_account('NOT_USING', '시험 탈퇴')")
+                wcheck("탈퇴가 처리됨", gone is True, "true")
+
+                cur.execute("SELECT status, auth_user_id IS NULL FROM app_user WHERE id=%s", (B,))
+                st, unlinked = cur.fetchone()
+                wcheck("행은 남고 상태만 바뀜", st == "WITHDRAWN", f"{st}")
+                wcheck("로그인 연결이 끊김", unlinked, "auth_user_id = NULL")
+
+                cur.execute("SELECT reason_code, reason_text FROM user_withdrawal "
+                            "WHERE user_id=%s", (B,))
+                row = cur.fetchone()
+                wcheck("누가 왜 그만뒀는지 남음",
+                       row == ("NOT_USING", "시험 탈퇴"), f"{row}")
+
+                wcheck("탈퇴한 사람은 친구 목록에서 사라짐",
+                       rpc(cur, A_AUTH,
+                           "SELECT count(*) FROM friend_profile WHERE id=%s", (B,)) == 0,
+                       "0행")
+                wcheck("탈퇴한 사람은 추천에도 안 뜸",
+                       rpc(cur, A_AUTH,
+                           "SELECT count(*) FROM friend_suggestion WHERE id=%s", (B,)) == 0,
+                       "0행")
+                wcheck("탈퇴한 계정으로는 아무것도 못 함",
+                       rpc(cur, B_AUTH, "SELECT current_app_user_id()") is None,
+                       "프로필 없음")
+            except Exception as e:
+                print(f"  실패!! 탈퇴 RPC  ({type(e).__name__}: {e})")
+                failures.append("[탈퇴] RPC 호출 실패")
+            finally:
+                cur.execute("ROLLBACK TO SAVEPOINT withdraw")
+                cur.execute("SET LOCAL ROLE postgres")
+
+            # ---------------------------------------------------------
             # 자유게시판 (W9)
             #
             # 익명이 아니라 닉네임이 드러나는 형태다. 확인할 것은 셋이다 —

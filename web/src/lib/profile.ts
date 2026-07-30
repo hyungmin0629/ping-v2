@@ -255,3 +255,32 @@ export async function updateProfile(
   if (!profile) throw new Error("저장했지만 다시 읽지 못했습니다");
   return profile;
 }
+
+// 계정 삭제 (W12) ------------------------------------------------------
+// 행을 지우지 않고 status 를 WITHDRAWN 으로 바꾼다. "언제 왜 그만뒀는가"가
+// 이 프로젝트가 얻으려는 데이터 그 자체라서다. (db/rls/withdraw.sql)
+
+export type WithdrawalReason = { code: string; label: string };
+
+export async function listWithdrawalReasons(): Promise<WithdrawalReason[]> {
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .from("withdrawal_reason")
+    .select("code, label, sort_order")
+    .order("sort_order");
+
+  if (error) throw new Error(error.message);
+  return (data ?? []).map((r) => ({ code: r.code, label: r.label }));
+}
+
+export async function withdrawAccount(
+  reasonCode: string,
+  reasonText?: string,
+): Promise<void> {
+  const supabase = createClient();
+  const { error } = await supabase.rpc("withdraw_account", {
+    p_reason_code: reasonCode,
+    p_reason_text: reasonText?.trim() || null,
+  });
+  if (error) throw new Error(error.message);
+}

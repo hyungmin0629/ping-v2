@@ -9,6 +9,7 @@ import { MealCalendar } from "@/components/meal-calendar";
 import { OnboardingForm } from "@/components/onboarding-form";
 import { ProfileCard } from "@/components/profile-card";
 import { VotePanel } from "@/components/vote-panel";
+import { WithdrawPanel } from "@/components/withdraw-panel";
 import { ensureAnonymousSession } from "@/lib/supabase/session";
 import { touchSession } from "@/lib/session-log";
 import { getMyProfile, type Profile } from "@/lib/profile";
@@ -20,9 +21,11 @@ import { getMyProfile, type Profile } from "@/lib/profile";
  * 화면 이동 대신 상태로 갈라진다. 주소를 나눌 만큼 화면이 많지 않고,
  * 투표는 시작하면 끝까지 가는 흐름이라 뒤로가기가 오히려 방해가 된다.
  */
+type Screen = "home" | "vote" | "inbox" | "board" | "profile" | "withdraw";
+
 export default function Home() {
   const [profile, setProfile] = useState<Profile | null>(null);
-  const [screen, setScreen] = useState<"home" | "vote" | "inbox" | "board" | "profile">("home");
+  const [screen, setScreen] = useState<Screen>("home");
   const [mealsOpen, setMealsOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -57,10 +60,33 @@ export default function Home() {
     };
   }, []);
 
-  function backHome() {
-    setScreen("home");
-    refresh();
+  /**
+   * 화면 이동을 브라우저 이력에 실는다.
+   *
+   * 이 앱은 주소를 나누지 않고 상태로 화면을 가른다(동적 라우트를 쓸 수 없는
+   * 사정은 CLAUDE.md). 그대로 두면 **휴대폰 뒤로가기가 앱을 나가버린다** —
+   * 테스터 대부분이 폰으로 들어오므로 실제로 자주 밟는다.
+   * pushState 로 한 칸 쌓아두고 popstate 에서 홈으로 되돌린다.
+   */
+  function go(next: Screen) {
+    setScreen(next);
+    if (next !== "home") window.history.pushState({ screen: next }, "");
   }
+
+  // 화면 안의 닫기 버튼도 같은 길을 타게 한다. 직접 setScreen 하면
+  // 쌓아둔 이력이 남아 뒤로가기를 두 번 눌러야 나가진다.
+  function backHome() {
+    window.history.back();
+  }
+
+  useEffect(() => {
+    function onPop() {
+      setScreen("home");
+      refresh();
+    }
+    window.addEventListener("popstate", onPop);
+    return () => window.removeEventListener("popstate", onPop);
+  }, [refresh]);
 
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col justify-center px-6 py-16">
@@ -105,12 +131,37 @@ export default function Home() {
       )}
 
       {!loading && !error && profile && screen === "profile" && (
-        <OnboardingForm
-          edit={profile}
+        <div className="flex flex-col gap-10">
+          <OnboardingForm
+            edit={profile}
+            onCancel={backHome}
+            onDone={(p) => {
+              setProfile(p);
+              backHome();
+            }}
+          />
+          <div className="border-t border-neutral-200 pt-6 dark:border-neutral-800">
+            <button
+              type="button"
+              onClick={() => go("withdraw")}
+              className="text-xs text-neutral-500 underline underline-offset-4"
+            >
+              계정 삭제
+            </button>
+          </div>
+        </div>
+      )}
+
+      {!loading && !error && profile && screen === "withdraw" && (
+        <WithdrawPanel
+          nickname={profile.nickname}
           onCancel={backHome}
-          onDone={(p) => {
-            setProfile(p);
+          onDone={() => {
+            // 프로필을 비우면 온보딩 화면으로 돌아간다. 같은 브라우저지만
+            // 계정 연결이 끊겼으므로 새로 가입하는 사람이 된다.
+            setProfile(null);
             setScreen("home");
+            window.history.go(-2);
           }}
         />
       )}
@@ -124,14 +175,14 @@ export default function Home() {
               <>
                 <button
                   type="button"
-                  onClick={() => setScreen("vote")}
+                  onClick={() => go("vote")}
                   className="rounded bg-neutral-900 px-4 py-4 font-medium text-white dark:bg-neutral-100 dark:text-neutral-900"
                 >
                   투표하러 가기
                 </button>
                 <button
                   type="button"
-                  onClick={() => setScreen("inbox")}
+                  onClick={() => go("inbox")}
                   className="rounded border border-neutral-300 px-4 py-3 text-sm font-medium dark:border-neutral-700"
                 >
                   받은 투표 보기
@@ -149,7 +200,7 @@ export default function Home() {
                 성립하지만, 게시판은 같은 학교면 성립한다. */}
             <button
               type="button"
-              onClick={() => setScreen("board")}
+              onClick={() => go("board")}
               className="rounded border border-neutral-300 px-4 py-3 text-sm font-medium dark:border-neutral-700"
             >
               자유게시판
@@ -180,7 +231,7 @@ export default function Home() {
           <div className="flex items-center gap-4">
             <button
               type="button"
-              onClick={() => setScreen("profile")}
+              onClick={() => go("profile")}
               className="text-xs text-neutral-500 underline underline-offset-4"
             >
               프로필 수정

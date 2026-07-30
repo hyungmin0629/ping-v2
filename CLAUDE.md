@@ -64,7 +64,7 @@ A 갈래(로컬 합성 데이터)와 계정이 필요한 B 갈래를 나눠 적�
 
 ## 현재 단계
 
-**P0·P1·P2·P4·W0~W11 완료** (2026-07-30) → 다음은 **지인 초대** 또는 **P5 품질 검증**
+**P0·P1·P2·P4·W0~W12 완료** (2026-07-30) → 다음은 **P5 품질 검증** 또는 **P6 stg/mart**
 
 앱은 배포돼 있고, 실데이터가 BigQuery 까지 흐른다. 초대를 미룰 이유가 없어졌다
 — P4 를 먼저 한 것은 초대 후에 만들면 그동안 쌓인 데이터를 소급 적재해야 했기 때문이다.
@@ -88,7 +88,8 @@ A 갈래(로컬 합성 데이터)와 계정이 필요한 B 갈래를 나눠 적�
 | P4 BigQuery 적재 | 42테이블 · 789만 행 (실유저 29,761 + 합성 786만). 갱신 감지 실증, Airflow DAG 실행 확인 |
 | W9 자유게시판 | 닉네임 노출 · 학교 단위. 글·댓글·좋아요·신고 |
 | W10 친구 추천 | 같은 학교 사람 목록 → 요청 / 안 볼래. **더미는 제외** |
-| W11 프로필 수정 | 닉네임·성별·소속 변경. 온보딩 폼 재사용. 시험 135종 통과 |
+| W11 프로필 수정 | 닉네임·성별·소속 변경. 온보딩 폼 재사용 |
+| W12 계정 삭제·뒤로가기 | 탈퇴(사유 기록·행 보존) + 휴대폰 뒤로가기. 시험 144종 통과 |
 
 ## 스크립트
 
@@ -97,7 +98,7 @@ A 갈래(로컬 합성 데이터)와 계정이 필요한 B 갈래를 나눠 적�
 | `python db/apply.py --target supabase` | DDL + 마이그레이션 적용. **확인 절차가 있다**(`--yes` 로 생략) |
 | `python db/run_sql.py <파일>` | SQL 파일 하나를 Supabase 에 적용 |
 | `python db/erd.py` | 살아 있는 스키마에서 ERD 를 뽑아 `docs/erd.md`·`erd.json` 갱신 |
-| `python db/rls/verify.py` | **침투·동작 시험 135항목. 배포 전 반드시 통과** |
+| `python db/rls/verify.py` | **침투·동작 시험 144항목. 배포 전 반드시 통과** |
 | `python db/neis_schools.py --schools` | 전국 중·고 목록 |
 | `python db/neis_schools.py --classes <코드> [--into <조직>]` | 학급 |
 | `python db/neis_meals.py --school <코드>` | 급식 |
@@ -133,6 +134,7 @@ python db/run_sql.py db/rls/school_info.sql   # 급식 정책 + my_school_source
 python db/run_sql.py db/rls/board.sql         # 자유게시판 뷰 + RPC
 python db/run_sql.py db/rls/recommend.sql     # 친구 추천 뷰 + RPC
 python db/run_sql.py db/rls/profile.sql       # 프로필 수정 RPC (직접 UPDATE 를 회수)
+python db/run_sql.py db/rls/withdraw.sql      # 계정 삭제 RPC
 python db/run_sql.py db/seed_org.sql          # 테스트 조직
 python db/run_sql.py db/seed_questions.sql    # 질문 24개
 python db/rls/verify.py                       # 통과해야 끝

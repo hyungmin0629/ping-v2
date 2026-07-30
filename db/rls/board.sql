@@ -52,7 +52,12 @@ SELECT
     c.name                                   AS category_name,
     p.title,
     p.body,
-    a.nickname                               AS author_nickname,
+    -- 탈퇴한 사람의 이름은 가린다. 글은 남기되(댓글이 달린 글을 지우면 남의
+    -- 대화까지 사라진다) 이름까지 남을 이유는 없다. (W12)
+    -- ::varchar(20) 을 빼면 CASE 가 text 를 돌려줘 뷰 컬럼 타입이 바뀌고,
+    -- CREATE OR REPLACE VIEW 가 "cannot change data type" 으로 거부한다.
+    (CASE WHEN a.status = 'WITHDRAWN' THEN '탈퇴한 사용자'
+          ELSE a.nickname END)::varchar(20)  AS author_nickname,
     (p.author_id = public.current_app_user_id()) AS is_mine,
     p.like_count,
     p.comment_count,
@@ -76,7 +81,8 @@ SELECT
     m.id,
     m.post_id,
     m.body,
-    a.nickname                                   AS author_nickname,
+    (CASE WHEN a.status = 'WITHDRAWN' THEN '탈퇴한 사용자'
+          ELSE a.nickname END)::varchar(20)      AS author_nickname,
     (m.author_id = public.current_app_user_id()) AS is_mine,
     m.like_count,
     EXISTS (SELECT 1 FROM public.comment_like l
