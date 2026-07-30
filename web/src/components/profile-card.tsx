@@ -84,8 +84,13 @@ export function ProfileCard({ profile }: { profile: Profile }) {
           : "투표를 시작할 수 있습니다."}
       </p>
 
+      {/* 초대 코드를 적어두라고 안내하던 자리다. 그건 틀린 말이었다 —
+          초대 코드는 남이 나를 찾는 코드고, 계정을 되찾는 데는 쓸 수 없다.
+          지금은 복구 수단이 아예 없으므로, 있는 그대로 알린다. */}
       <p className="text-xs leading-relaxed text-neutral-500">
-        브라우저 저장소를 지우면 계정이 사라지니, 초대 코드를 적어두세요.
+        이 계정은 <strong>지금 이 브라우저에만</strong> 있습니다. 저장소를
+        지우거나 다른 브라우저·기기로 열면 <strong>새 계정</strong>이 되고,
+        친구와 하트는 되찾을 수 없습니다.
       </p>
     </div>
   );
