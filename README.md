@@ -8,6 +8,7 @@
 
 - **처음 clone 했다면 → [docs/ONBOARDING.md](docs/ONBOARDING.md)** (계정 없이 되는 데까지 20분)
 - 프로젝트 컨텍스트 → [CLAUDE.md](CLAUDE.md)
+- **팀 작업 계획 → [docs/TEAM-PLAN.md](docs/TEAM-PLAN.md)** (스키마를 바꿀 때 무엇이 깨지는가)
 - 설계서 → [docs/design-spec.md](docs/design-spec.md)
 - ERD → [docs/erd.md](docs/erd.md) · [docs/erd.json](docs/erd.json)
   (**생성물** — `python db/erd.py` 로 다시 뽑는다. json 은 카드형 ERD 가 읽는다)
