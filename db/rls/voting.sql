@@ -170,7 +170,11 @@ BEGIN
         -- 위에서 센 것과 실제로 넣는 것은 각각 무작위라 다시 뽑는다.
         CREATE TEMP TABLE IF NOT EXISTS picked_now
             (candidate_user_id bigint, padded boolean, slot int) ON COMMIT DROP;
-        DELETE FROM picked_now;
+        -- WHERE true 가 군더더기로 보이지만 필요하다. Supabase 의 PostgREST 는
+        -- authenticator 역할로 붙고 그 역할에 safeupdate 가 preload 돼 있어,
+        -- WHERE 없는 DELETE 는 임시 테이블이라도 "DELETE requires a WHERE clause"
+        -- 로 막힌다. 실제 앱에서만 터지고 verify.py 로는 안 잡힌다(아래 주석 참조).
+        DELETE FROM picked_now WHERE true;
         INSERT INTO picked_now
         SELECT c.candidate_user_id, c.padded, row_number() OVER ()
           FROM public.pick_candidates(v_me, r.scope) c;
@@ -303,7 +307,7 @@ BEGIN
 
     CREATE TEMP TABLE IF NOT EXISTS picked_now
         (candidate_user_id bigint, padded boolean, slot int) ON COMMIT DROP;
-    DELETE FROM picked_now;
+    DELETE FROM picked_now WHERE true;   -- safeupdate. 위 start_vote_session 주석 참조
     INSERT INTO picked_now
     SELECT c.candidate_user_id, c.padded, row_number() OVER ()
       FROM public.pick_candidates(v_me, v_scope, coalesce(v_prev, '{}')) c;

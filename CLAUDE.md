@@ -234,6 +234,24 @@ Supabase 대시보드에서 **Authentication → Sign In / Providers → Allow a
 - 스키마 적용: `python db/apply.py --target supabase`
 - RLS 검증: `python db/rls/verify.py` — **배포 전 반드시 통과해야 한다**
 
+## ⚠️ verify.py 가 못 잡는 것 — safeupdate
+
+**시험 128항목이 전부 통과해도 실제 앱이 죽을 수 있다.** 2026-07-30 에 실제로 그랬다.
+
+브라우저는 PostgREST 를 거쳐 **`authenticator`** 역할로 접속하고, 그 역할에는
+`session_preload_libraries = supautils, safeupdate` 가 걸려 있다.
+safeupdate 는 **WHERE 없는 DELETE/UPDATE 를 임시 테이블에서도 막는다.**
+
+그런데 `verify.py` 는 `postgres` 로 붙어 `SET LOCAL ROLE authenticated` 만 한다.
+preload 는 **세션이 열릴 때** 적용되므로 역할만 바꿔서는 안 걸린다.
+postgres 는 `LOAD 'safeupdate'` 권한도 없어 흉내낼 수도 없다.
+
+그래서 `verify.py` 가 **소스를 직접 검사한다** — `db/rls/*.sql` 에 WHERE 없는
+DELETE/UPDATE 가 있으면 실패한다. 새 RPC 를 쓸 때 `WHERE true` 를 잊지 말 것.
+
+**교훈: 역할을 바꾸는 것과 그 역할로 접속하는 것은 다르다.**
+세션 설정에 딸린 동작은 이 시험으로 재현되지 않는다.
+
 ## 보안 원칙 (W1에서 확정)
 
 - **읽기는 필요한 것만, 쓰기는 거의 열지 않는다.** 하트·투표 조작은 RPC 함수로 처리한다.

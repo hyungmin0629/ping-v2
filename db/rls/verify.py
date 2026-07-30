@@ -50,6 +50,36 @@ INVITE_CODE_RE = re.compile(r"^[A-HJ-NP-Z2-9]{6,8}$")   # DDL 의 ck_invite_code
 SIGNUP_GRANT = 300                                       # onboarding.sql 이 지급하는 양
 
 
+def check_unqualified_dml() -> list[str]:
+    """WHERE 없는 DELETE/UPDATE 를 소스에서 찾는다.
+
+    왜 소스 검사인가 — **이 시험으로는 런타임에 잡을 수 없기 때문이다.**
+
+    브라우저는 PostgREST 를 거쳐 `authenticator` 역할로 접속하고, 그 역할에는
+    `session_preload_libraries = supautils, safeupdate` 가 걸려 있다.
+    safeupdate 는 WHERE 없는 DELETE/UPDATE 를 임시 테이블에서도 막는다.
+
+    그런데 이 시험은 postgres 로 붙어 `SET LOCAL ROLE authenticated` 만 한다.
+    preload 는 **세션이 열릴 때** 적용되므로 역할만 바꿔서는 안 걸린다.
+    그래서 시험 128항목이 전부 통과해도 실제 앱은 죽을 수 있다 —
+    2026-07-30 에 `start_vote_session` 의 `DELETE FROM picked_now` 로 실제로 그랬다.
+    (postgres 는 `LOAD 'safeupdate'` 권한도 없어서 흉내낼 수도 없다)
+
+    줄 첫머리에 오는 것만 본다. REVOKE ... UPDATE, FOR UPDATE, DO UPDATE 는
+    문장이 아니라 절이므로 걸리면 안 된다.
+    """
+    bad = []
+    for path in sorted((ROOT / "db" / "rls").glob("*.sql")):
+        text = "\n".join(re.sub(r"--.*$", "", ln) for ln in
+                         path.read_text(encoding="utf-8").splitlines())
+        for m in re.finditer(r"^[ \t]*(?:DELETE\s+FROM|UPDATE)\s+[\w.\"]+.*?;",
+                             text, re.S | re.I | re.M):
+            if not re.search(r"\bWHERE\b", m.group(0), re.I):
+                line = text[: m.start()].count("\n") + 1
+                bad.append(f"{path.name}:{line}  {' '.join(m.group(0).split())[:70]}")
+    return bad
+
+
 def as_user(cur, auth_uuid: uuid.UUID | None):
     """이 세션을 해당 유저(또는 비로그인)로 가장한다."""
     if auth_uuid is None:
@@ -145,6 +175,21 @@ def main() -> int:
 
     url = dotenv_values(ROOT / ".env")["SUPABASE_DB_URL"].strip()
     failures = []
+
+    # 접속하기 전에 소스부터 본다. 이건 DB 에 물어봐도 알 수 없는 종류다.
+    print("=" * 62)
+    print("소스 검사 — WHERE 없는 DELETE/UPDATE")
+    print("=" * 62)
+    unqualified = check_unqualified_dml()
+    if unqualified:
+        for b in unqualified:
+            print(f"  걸림!! {b}")
+            failures.append(f"[safeupdate] {b}")
+        print("\n  Supabase 의 authenticator 역할에는 safeupdate 가 걸려 있다.")
+        print("  WHERE 를 붙여라 — 임시 테이블이라도 막힌다. `WHERE true` 면 충분하다.")
+    else:
+        print("  깨끗함  db/rls/*.sql 에 WHERE 없는 DELETE/UPDATE 가 없음")
+    print()
 
     with psycopg.connect(url, connect_timeout=30, autocommit=False) as conn:
         with conn.cursor() as cur:
