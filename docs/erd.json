@@ -3,6 +3,8 @@
   {
    "name": "ad_impression",
    "domain": "질문과 투표",
+   "title": "광고 시청",
+   "note": "",
    "columns": [
     {
      "name": "id",
@@ -73,6 +75,8 @@
   {
    "name": "admin_user",
    "domain": "기준 정보",
+   "title": "운영자",
+   "note": "구 스키마에는 운영 행위의 주체가 남지 않았다. 질문 검수·신고 처리·수동 입력의 작성자를 추적한다.",
    "columns": [
     {
      "name": "id",
@@ -122,6 +126,8 @@
   {
    "name": "app_user",
    "domain": "유저",
+   "title": "유저",
+   "note": "\"user\" 는 Postgres 예약어라 app_user 로 명명한다. ★ 개인정보를 받지 않는다. 이메일·전화번호·실명·비밀번호 컬럼이 없다. 이건 누락이 아니라 설계다. 유저가 입력하는 것은 nickname 과 소속(class_id) 둘뿐이다. auth_user_id : Supabase 익명 계정(auth.users)의 uuid. 이메일·비번 없이 접속만으로 발급된다. 합성 유저는 NULL이므로 실유저/합성 구분에도 쓰인다. nickname     : 유저가 직접 정하는 별명. 실명이 아니다. invite_code  : 친구 추가의 유일한 수단. 이 코드를 주고받아 관계를 맺는다. 전화번호·이메일을 받지 않으므로 서로를 찾을 다른 방법이 없다. heart_balance: 구 스키마에서 point/heart 로 이원화돼 보이던 것을 하나로 통합. service_unlocked_at: 친구 5명 게이트를 넘긴 시점. 온보딩 퍼널 측정용. last_active_at: 구 스키마에 로그인 기록이 없어 리텐션을 친구요청으로 추정해야 했던 문제를 해소.",
    "columns": [
     {
      "name": "id",
@@ -230,6 +236,8 @@
   {
    "name": "block_record",
    "domain": "친구",
+   "title": "차단",
+   "note": "",
    "columns": [
     {
      "name": "id",
@@ -281,6 +289,8 @@
   {
    "name": "board_category",
    "domain": "게시판",
+   "title": "",
+   "note": "",
    "columns": [
     {
      "name": "id",
@@ -332,6 +342,8 @@
   {
    "name": "comment_like",
    "domain": "게시판",
+   "title": "",
+   "note": "",
    "columns": [
     {
      "name": "id",
@@ -376,6 +388,8 @@
   {
    "name": "external_sync_log",
    "domain": "학교 정보",
+   "title": "외부 동기화 이력",
+   "note": "언제 무엇을 성공/실패했는지 남긴다. 구 시스템에서 결제 실패 로그가 조용히 끊겼던 것 같은 사고를 조기에 발견한다.",
    "columns": [
     {
      "name": "id",
@@ -474,6 +488,8 @@
   {
    "name": "friend_recommendation",
    "domain": "친구",
+   "title": "친구 추천",
+   "note": "MVP에서는 SAME_CLASS / SAME_SCHOOL / MUTUAL_FRIEND 만 사용한다. MUTUAL_CONTACT 는 연락처를 받아야 하므로 v2로 미룬다. dismissed_at 으로 \"안 볼래\" 처리도 추적한다.",
    "columns": [
     {
      "name": "id",
@@ -539,6 +555,8 @@
   {
    "name": "friend_request",
    "domain": "친구",
+   "title": "친구 요청",
+   "note": "",
    "columns": [
     {
      "name": "id",
@@ -604,6 +622,8 @@
   {
    "name": "friendship",
    "domain": "친구",
+   "title": "친구 관계(수락된 무방향 간선)",
+   "note": "user_low_id < user_high_id 를 강제해 (A,B)와 (B,A)가 중복 저장되는 것을 막는다.",
    "columns": [
     {
      "name": "id",
@@ -655,6 +675,8 @@
   {
    "name": "grade_class",
    "domain": "기준 정보",
+   "title": "학급",
+   "note": "label: 화면에 보여줄 이름을 직접 지정하고 싶을 때만 채운다. 비어 있으면 앱이 \"N학년 M반\"으로 조립한다. 일반 학교는 비워두고, \"1팀\"처럼 학년·반 체계가 아닌 조직에만 쓴다.",
    "columns": [
     {
      "name": "id",
@@ -706,6 +728,8 @@
   {
    "name": "heart_product",
    "domain": "하트",
+   "title": "충전 상품",
+   "note": "구 스키마는 productId 문자열만 있고 가격·수량이 코드에만 있어 매출 계산 시 값을 하드코딩해야 했다.",
    "columns": [
     {
      "name": "id",
@@ -757,6 +781,8 @@
   {
    "name": "heart_purchase",
    "domain": "하트",
+   "title": "충전 결제",
+   "note": "성공/실패를 한 테이블에 status 로 통합한다. 구 스키마는 별도 테이블이었고 실패 로깅이 2023-09에 조용히 끊겨 그 이후로는 실패율 자체를 계산할 수 없었다.",
    "columns": [
     {
      "name": "id",
@@ -850,6 +876,8 @@
   {
    "name": "heart_transaction",
    "domain": "하트",
+   "title": "하트 원장",
+   "note": "이 프로젝트에서 가장 중요한 테이블. 구 스키마의 원장은 순합계가 201만인데 유저 잔액 총합은 20억이었다. 가입 지급과 충전이 원장에 남지 않았기 때문이다(heart.777이 57,873건 팔렸는데 원장의 +777 행은 21건뿐이었다). 잔액을 원장으로 재구성하는 것이 불가능했고, 누락을 탐지할 방법조차 없었다. 규칙: 모든 하트 증감은 예외 없이 이 테이블을 거친다. balance_after 로 거래 직후 잔액을 남겨 app_user.heart_balance 와 대조하면 정합성이 즉시 검증된다. source_* 컬럼은 이 거래의 원인을 가리키는 단방향 참조다. 유형에 따라 하나만 채워지며, 나머지는 NULL이다.",
    "columns": [
     {
      "name": "id",
@@ -948,6 +976,8 @@
   {
    "name": "heart_transaction_type",
    "domain": "하트",
+   "title": "거래 유형 마스터",
+   "note": "구 스키마는 delta_point 값만 보고 의미를 역추론해야 했다 (5~15 = 투표 적립, -300 = 힌트 구매 ... 전부 추측이었다).",
    "columns": [
     {
      "name": "code",
@@ -983,6 +1013,8 @@
   {
    "name": "hint_purchase",
    "domain": "질문과 투표",
+   "title": "힌트 구매",
+   "note": "구 데이터에서 확인된 누진 요금(200 → 300 → 500 → 1000)을 step 으로 명시화한다. 하트 차감은 heart_transaction 이 이 행을 참조하는 단방향 구조.",
    "columns": [
     {
      "name": "id",
@@ -1048,6 +1080,8 @@
   {
    "name": "meal_menu_item",
    "domain": "학교 정보",
+   "title": "급식 메뉴 항목",
+   "note": "메뉴를 한 덩어리 텍스트가 아니라 요리 단위로 분리한다. \"인기 급식 메뉴\" 분석과 알레르기 필터가 가능해진다.",
    "columns": [
     {
      "name": "id",
@@ -1097,6 +1131,8 @@
   {
    "name": "meal_plan",
    "domain": "학교 정보",
+   "title": "급식표",
+   "note": "학교·날짜·끼니에 UNIQUE. 같은 날 중복 급식이 들어오는 것을 DB가 막는다.",
    "columns": [
     {
      "name": "id",
@@ -1183,6 +1219,8 @@
   {
    "name": "post",
    "domain": "게시판",
+   "title": "게시글",
+   "note": "",
    "columns": [
     {
      "name": "id",
@@ -1281,6 +1319,8 @@
   {
    "name": "post_comment",
    "domain": "게시판",
+   "title": "댓글",
+   "note": "anonymous_seq: 글 안에서만 유효한 익명 번호(익명1, 익명2 ...). 같은 사람은 같은 글에서 같은 번호를 유지해 대화 맥락이 읽히게 한다. 글이 다르면 번호도 달라져 글 사이의 동일인 추적은 불가능하다.",
    "columns": [
     {
      "name": "id",
@@ -1360,6 +1400,8 @@
   {
    "name": "post_like",
    "domain": "게시판",
+   "title": "좋아요",
+   "note": "",
    "columns": [
     {
      "name": "id",
@@ -1404,6 +1446,8 @@
   {
    "name": "question",
    "domain": "질문과 투표",
+   "title": "질문",
+   "note": "scope: CLASS / SCHOOL / GLOBAL. 세 스코프 모두 \"친구\" 안에서의 범위이며, GLOBAL 도 전체 가입자가 아니라 학교 무관 친구 전체를 뜻한다.",
    "columns": [
     {
      "name": "id",
@@ -1474,6 +1518,8 @@
   {
    "name": "question_category",
    "domain": "질문과 투표",
+   "title": "질문 카테고리",
+   "note": "구 스키마에는 카테고리가 없어 \"외모/신체 질문이 신고 상위 5개를 독점\"한다는 사실을 사후 수동 분류로만 확인할 수 있었다. is_sensitive 로 위험 카테고리를 사전에 표시한다.",
    "columns": [
     {
      "name": "id",
@@ -1525,6 +1571,8 @@
   {
    "name": "question_request",
    "domain": "질문과 투표",
+   "title": "질문 요청(유저 제안 → 검수)",
+   "note": "",
    "columns": [
     {
      "name": "id",
@@ -1616,6 +1664,8 @@
   {
    "name": "region",
    "domain": "기준 정보",
+   "title": "지역",
+   "note": "구 스키마는 accounts_school.address 가 varchar(100) 한 덩어리라 시/군 단위 집계가 불가능했다. 시도·시군구를 정규화한다.",
    "columns": [
     {
      "name": "id",
@@ -1653,6 +1703,8 @@
   {
    "name": "report",
    "domain": "신고와 제재",
+   "title": "신고",
+   "note": "유저·질문·게시글·댓글 신고를 한 테이블로 통합하되, 대상별 FK를 명시 컬럼으로 두어 참조 무결성을 지킨다. (다형 참조 방식은 FK를 걸 수 없어 채택하지 않았다.) post / post_comment 참조는 90_board.sql 에서 추가한다.",
    "columns": [
     {
      "name": "id",
@@ -1758,6 +1810,8 @@
   {
    "name": "report_reason",
    "domain": "신고와 제재",
+   "title": "",
+   "note": "",
    "columns": [
     {
      "name": "code",
@@ -1793,6 +1847,8 @@
   {
    "name": "sanction",
    "domain": "신고와 제재",
+   "title": "제재",
+   "note": "triggered_by_report_id 로 근거 신고를 명시한다. 이 연결이 구 시스템에는 아예 없었다.",
    "columns": [
     {
      "name": "id",
@@ -1884,6 +1940,8 @@
   {
    "name": "sanction_policy",
    "domain": "신고와 제재",
+   "title": "자동 제재 정책",
+   "note": "임계값을 코드가 아니라 데이터로 정의한다. 구 시스템은 피신고 10회 이상 116명 중 제재된 사람이 0명이었고, 253회 신고받은 유저도 정상 상태로 활동 중이었다. 정책이 스키마에 드러나야 감사가 가능하다.",
    "columns": [
     {
      "name": "id",
@@ -1947,6 +2005,8 @@
   {
    "name": "school",
    "domain": "기준 정보",
+   "title": "학교",
+   "note": "구 스키마에는 학교 이름 컬럼이 아예 없었다. 마스킹된 이름을 저장한다. neis_school_code 는 NEIS 공개 API 연동 키.",
    "columns": [
     {
      "name": "id",
@@ -2026,6 +2086,8 @@
   {
    "name": "school_event",
    "domain": "학교 정보",
+   "title": "학사일정",
+   "note": "시작·종료일을 분리해 기간 일정을 지원한다. grade_scope 가 NULL 이면 전교 대상, 값이 있으면 해당 학년만 해당한다.",
    "columns": [
     {
      "name": "id",
@@ -2124,6 +2186,8 @@
   {
    "name": "school_notice",
    "domain": "학교 정보",
+   "title": "공지사항",
+   "note": "",
    "columns": [
     {
      "name": "id",
@@ -2208,6 +2272,8 @@
   {
    "name": "school_notice_read",
    "domain": "학교 정보",
+   "title": "공지 열람 기록",
+   "note": "어떤 공지가 실제로 읽히는지 측정해 알림 정책을 조정한다.",
    "columns": [
     {
      "name": "id",
@@ -2252,6 +2318,8 @@
   {
    "name": "timetable",
    "domain": "학교 정보",
+   "title": "시간표",
+   "note": "학급·학기·요일·교시에 UNIQUE → 한 칸에 두 과목이 들어갈 수 없다. 교사명은 마스킹해서 저장한다.",
    "columns": [
     {
      "name": "id",
@@ -2345,6 +2413,8 @@
   {
    "name": "user_session",
    "domain": "유저",
+   "title": "세션",
+   "note": "리텐션을 추정이 아니라 실측하기 위한 테이블.",
    "columns": [
     {
      "name": "id",
@@ -2408,6 +2478,8 @@
   {
    "name": "user_withdrawal",
    "domain": "유저",
+   "title": "탈퇴 기록",
+   "note": "구 스키마 최대 결함의 해소 지점. accounts_userwithdraw 는 70,764건(가입자의 10.5%)이었지만 유저 식별자가 없어 이탈 원인 분석이 원천 불가능했다. user_id 를 NOT NULL 로 두고 자유 서술까지 받아 \"기타 57%\" 블랙박스를 연다.",
    "columns": [
     {
      "name": "id",
@@ -2459,6 +2531,8 @@
   {
    "name": "vote_candidate",
    "domain": "질문과 투표",
+   "title": "후보 (아이템당 4명)",
+   "note": "구 스키마는 세트↔피스 관계를 JSON 배열로만 들고 있었다. 행으로 저장한다. shuffle_round: 0 = 최초 후보, 1 = 셔플 후 후보. 둘 다 보존해 \"어떤 후보였을 때 셔플했는가\"를 분석할 수 있게 한다. is_chosen: 선택된 후보 표시. 아이템당 1명만 true (부분 유니크 인덱스로 강제).",
    "columns": [
     {
      "name": "id",
@@ -2517,6 +2591,8 @@
   {
    "name": "vote_item",
    "domain": "질문과 투표",
+   "title": "투표 아이템(출제된 질문 1건)",
+   "note": "스킵 컬럼이 없다. 스킵 기능을 폐지했기 때문이다. candidate_scope 는 출제 시점의 스코프 스냅샷이다. 질문의 scope 가 나중에 바뀌어도 과거 투표의 해석이 흔들리지 않도록 복사해 둔다.",
    "columns": [
     {
      "name": "id",
@@ -2603,6 +2679,8 @@
   {
    "name": "vote_received",
    "domain": "질문과 투표",
+   "title": "지목받은 기록(수신자 관점)",
+   "note": "",
    "columns": [
     {
      "name": "id",
@@ -2696,6 +2774,8 @@
   {
    "name": "vote_session",
    "domain": "질문과 투표",
+   "title": "투표 세션",
+   "note": "",
    "columns": [
     {
      "name": "id",
@@ -2752,6 +2832,8 @@
   {
    "name": "vote_shuffle",
    "domain": "질문과 투표",
+   "title": "셔플",
+   "note": "vote_item_id 에 UNIQUE → DB 차원에서 1회 제한을 강제한다. ad_impression_id 가 NOT NULL → 광고 없이 셔플한 기록은 존재할 수 없다.",
    "columns": [
     {
      "name": "id",
@@ -2797,6 +2879,8 @@
   {
    "name": "withdrawal_reason",
    "domain": "유저",
+   "title": "탈퇴 사유 마스터",
+   "note": "",
    "columns": [
     {
      "name": "code",

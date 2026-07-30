@@ -20,13 +20,14 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import sys
 from pathlib import Path
 
 import psycopg
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from apply import dsn  # noqa: E402
+from apply import DDL_FILES, dsn  # noqa: E402  — 적용 순서와 목록을 한 곳에만 둔다
 
 ROOT = Path(__file__).resolve().parent.parent
 OUT = ROOT / "docs" / "erd.md"
@@ -225,6 +226,59 @@ def diagram(members: list[str], cols, pks, fks) -> str:
     return "\n".join(lines)
 
 
+def table_notes() -> dict[str, dict]:
+    """DDL 주석에서 테이블 설명을 뽑는다.
+
+    설명을 따로 쓰지 않는 이유는 ERD 를 뽑는 이유와 같다 — 두 번째 진실을
+    만들지 않기 위해서다. `db/ddl/*.sql` 의 각 CREATE TABLE 위에는 이미
+    "무엇이고 왜 이 구조인가"가 적혀 있다. 그것을 그대로 쓴다.
+
+    형식은 파일 전체에서 일정하다:
+
+        -- 친구 추천 -----------------------------------------------
+        -- MVP에서는 SAME_CLASS / SAME_SCHOOL 만 사용한다.
+        -- dismissed_at 으로 "안 볼래" 처리도 추적한다.
+        CREATE TABLE friend_recommendation (
+
+    첫 줄(대시로 끝나는)이 제목, 나머지가 설명이다.
+    """
+    out: dict[str, dict] = {}
+    for name in DDL_FILES:
+        path = ROOT / "db" / "ddl" / name
+        if not path.exists():
+            continue
+        lines = path.read_text(encoding="utf-8").splitlines()
+        for i, line in enumerate(lines):
+            m = re.match(r"\s*CREATE TABLE (\w+)", line)
+            if not m:
+                continue
+            block: list[str] = []
+            for prev in reversed(lines[:i]):
+                s = prev.strip()
+                if not s.startswith("--"):
+                    break                      # 빈 줄이나 코드를 만나면 끝
+                body = s[2:].strip()
+                if set(body) <= {"="} and body:
+                    break                      # 파일 머리말 배너
+                block.append(body)
+            block.reverse()
+            if not block:
+                continue
+
+            title, note = "", []
+            head = re.match(r"^(.*?)\s*-{3,}$", block[0])
+            if head:
+                title = head.group(1).strip()
+                note = block[1:]
+            else:
+                note = block
+            out[m.group(1)] = {
+                "title": title,
+                "note": " ".join(x for x in note if x).strip(),
+            }
+    return out
+
+
 def as_json(domains, tables, cols, pks, fks, order, uniques) -> dict:
     """카드형 ERD 가 읽는 데이터. **모든 컬럼과 타입**을 담는다.
 
@@ -233,6 +287,7 @@ def as_json(domains, tables, cols, pks, fks, order, uniques) -> dict:
     """
     where = {t: title for title, _, members in domains for t in members}
     fk_of = {(c, col): p for c, col, p in fks}
+    notes = table_notes()
 
     out: dict = {"tables": [], "edges": [], "domains": [d[0] for d in domains]}
     for t in tables:
@@ -248,7 +303,9 @@ def as_json(domains, tables, cols, pks, fks, order, uniques) -> dict:
                 "pk": (t, c) in pks,
                 "fk": fk_of.get((t, c)),
             })
+        n = notes.get(t, {})
         out["tables"].append({"name": t, "domain": where.get(t, "기타"),
+                              "title": n.get("title", ""), "note": n.get("note", ""),
                               "columns": columns, "uniques": uniques.get(t, [])})
 
     seen = set()
