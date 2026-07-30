@@ -18,6 +18,9 @@ export type Profile = {
   unlocked: boolean;
   /** 화면에 보여줄 소속. 예: "코드잇 DA 14기 · 1팀" */
   belonging: string;
+  /** 프로필 수정 화면을 채우는 데 쓴다 */
+  classId: number;
+  gender: Gender | null;
 };
 
 export type School = { id: number; name: string };
@@ -56,6 +59,7 @@ function one<T>(v: T | T[] | null | undefined): T | null {
 
 const PROFILE_COLUMNS = `
   id, nickname, invite_code, heart_balance, friend_count, service_unlocked_at,
+  class_id, gender,
   grade_class ( grade, class_num, label, school ( name_masked ) )
 `;
 
@@ -66,6 +70,8 @@ type ProfileRow = {
   heart_balance: number;
   friend_count: number;
   service_unlocked_at: string | null;
+  class_id: number;
+  gender: Gender | null;
   grade_class:
     | {
         grade: number;
@@ -99,6 +105,8 @@ function toProfile(row: ProfileRow): Profile {
     friendCount: row.friend_count,
     unlocked: row.service_unlocked_at !== null,
     belonging,
+    classId: row.class_id,
+    gender: row.gender,
   };
 }
 
@@ -216,5 +224,34 @@ export async function completeOnboarding(
   // RPC 는 app_user 행만 돌려준다. 소속 이름까지 붙여서 다시 읽는다.
   const profile = await getMyProfile();
   if (!profile) throw new Error("계정을 만들었지만 다시 읽지 못했습니다");
+  return profile;
+}
+
+/**
+ * 프로필 수정 (W11).
+ *
+ * 가입과 같은 규칙(닉네임 2~20자·성별 필수·고를 수 있는 학급)을 서버가 확인한다.
+ * app_user 직접 UPDATE 권한은 회수했으므로 이 함수가 유일한 통로다.
+ * (db/rls/profile.sql)
+ *
+ * ⚠️ 학교를 옮기면 게시판과 친구 추천이 새 학교 기준으로 바뀐다.
+ *    이미 쓴 글은 옛 학교에 남고 본인도 더는 볼 수 없다.
+ */
+export async function updateProfile(
+  nickname: string,
+  classId: number,
+  gender: Gender,
+): Promise<Profile> {
+  const supabase = createClient();
+  const { error } = await supabase.rpc("update_profile", {
+    p_nickname: nickname,
+    p_class_id: classId,
+    p_gender: gender,
+  });
+
+  if (error) throw new Error(error.message);
+
+  const profile = await getMyProfile();
+  if (!profile) throw new Error("저장했지만 다시 읽지 못했습니다");
   return profile;
 }

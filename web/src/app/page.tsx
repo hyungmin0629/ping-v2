@@ -22,7 +22,7 @@ import { getMyProfile, type Profile } from "@/lib/profile";
  */
 export default function Home() {
   const [profile, setProfile] = useState<Profile | null>(null);
-  const [screen, setScreen] = useState<"home" | "vote" | "inbox" | "board">("home");
+  const [screen, setScreen] = useState<"home" | "vote" | "inbox" | "board" | "profile">("home");
   const [mealsOpen, setMealsOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -104,6 +104,17 @@ export default function Home() {
         <BoardPanel onClose={backHome} />
       )}
 
+      {!loading && !error && profile && screen === "profile" && (
+        <OnboardingForm
+          edit={profile}
+          onCancel={backHome}
+          onDone={(p) => {
+            setProfile(p);
+            setScreen("home");
+          }}
+        />
+      )}
+
       {!loading && !error && profile && screen === "home" && (
         <div className="flex flex-col gap-10">
           <ProfileCard profile={profile} />
@@ -166,12 +177,21 @@ export default function Home() {
           <hr className="border-neutral-200 dark:border-neutral-800" />
           <FriendsPanel myId={profile.id} onChanged={refresh} />
 
-          <Link
-            href="/privacy"
-            className="text-xs text-neutral-500 underline underline-offset-4"
-          >
-            개인정보처리방침
-          </Link>
+          <div className="flex items-center gap-4">
+            <button
+              type="button"
+              onClick={() => setScreen("profile")}
+              className="text-xs text-neutral-500 underline underline-offset-4"
+            >
+              프로필 수정
+            </button>
+            <Link
+              href="/privacy"
+              className="text-xs text-neutral-500 underline underline-offset-4"
+            >
+              개인정보처리방침
+            </Link>
+          </div>
         </div>
       )}
     </main>

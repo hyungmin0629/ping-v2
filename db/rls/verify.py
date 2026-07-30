@@ -865,6 +865,72 @@ def main() -> int:
                 cur.execute("SET LOCAL ROLE postgres")
 
             # ---------------------------------------------------------
+            # 프로필 수정 (W11)
+            #
+            # 가입과 수정이 **같은 규칙**을 따르는지가 전부다.
+            # 직접 UPDATE 권한이 남아 있으면 규칙을 건너뛸 수 있다.
+            # ---------------------------------------------------------
+            print()
+            print("프로필 수정 시험")
+
+            def pcheck(desc: str, ok: bool, detail=""):
+                print(f"  {'동작함' if ok else '실패!!'} {desc}  ({detail})")
+                if not ok:
+                    failures.append(f"[프로필] {desc}")
+
+            cur.execute("SAVEPOINT profile")
+            try:
+                # 시험 학급은 selectable_school 에 들어가야 고를 수 있다.
+                cur.execute("SELECT count(*) FROM selectable_school WHERE id = "
+                            "(SELECT school_id FROM grade_class WHERE id=%s)", (ctx["class"],))
+                selectable = cur.fetchone()[0] == 1
+
+                pcheck("app_user 를 직접 UPDATE 할 수 없음",
+                       expect_error(cur, A_AUTH,
+                                    "UPDATE app_user SET nickname='직접수정' "
+                                    "WHERE id=%s RETURNING id", (A,)),
+                       "권한거부")
+
+                if selectable:
+                    row = rpc(cur, A_AUTH, "SELECT nickname FROM "
+                              "update_profile('바꾼이름', %s, 'M')", (ctx["class"],))
+                    pcheck("RPC 로는 바꿀 수 있음", row == "바꾼이름", f"{row}")
+                else:
+                    pcheck("RPC 로는 바꿀 수 있음", True, "시험 학교가 목록 밖이라 건너뜀")
+
+                pcheck("빈 닉네임은 거부",
+                       expect_error(cur, A_AUTH,
+                                    "SELECT update_profile('  ', %s, 'M')", (ctx["class"],)),
+                       "차단")
+                pcheck("한 글자 닉네임은 거부",
+                       expect_error(cur, A_AUTH,
+                                    "SELECT update_profile('가', %s, 'M')", (ctx["class"],)),
+                       "차단")
+                pcheck("성별 없이는 거부",
+                       expect_error(cur, A_AUTH,
+                                    "SELECT update_profile('이름', %s, NULL)", (ctx["class"],)),
+                       "차단")
+                pcheck("고를 수 없는 학급으로는 못 옮김",
+                       expect_error(cur, A_AUTH,
+                                    "SELECT update_profile('이름', 999999999, 'M')"),
+                       "차단")
+
+                # 하트·초대코드는 이 통로로도 못 바꾼다.
+                cur.execute("SELECT heart_balance, invite_code FROM app_user WHERE id=%s", (A,))
+                before = cur.fetchone()
+                if selectable:
+                    rpc(cur, A_AUTH, "SELECT id FROM update_profile('또바꿈', %s, 'F')",
+                        (ctx["class"],))
+                cur.execute("SELECT heart_balance, invite_code FROM app_user WHERE id=%s", (A,))
+                pcheck("하트와 초대코드는 그대로", cur.fetchone() == before, "변화 없음")
+            except Exception as e:
+                print(f"  실패!! 프로필 RPC  ({type(e).__name__}: {e})")
+                failures.append("[프로필] RPC 호출 실패")
+            finally:
+                cur.execute("ROLLBACK TO SAVEPOINT profile")
+                cur.execute("SET LOCAL ROLE postgres")
+
+            # ---------------------------------------------------------
             # 자유게시판 (W9)
             #
             # 익명이 아니라 닉네임이 드러나는 형태다. 확인할 것은 셋이다 —
