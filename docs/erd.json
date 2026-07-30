@@ -1,0 +1,3301 @@
+{
+ "tables": [
+  {
+   "name": "ad_impression",
+   "domain": "질문과 투표",
+   "columns": [
+    {
+     "name": "id",
+     "type": "bigint",
+     "null": false,
+     "pk": true,
+     "fk": null
+    },
+    {
+     "name": "user_id",
+     "type": "bigint",
+     "null": false,
+     "pk": false,
+     "fk": "app_user"
+    },
+    {
+     "name": "placement",
+     "type": "ad_placement",
+     "null": false,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "ad_network",
+     "type": "varchar(30)",
+     "null": false,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "ad_unit_id",
+     "type": "varchar(60)",
+     "null": false,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "status",
+     "type": "ad_status",
+     "null": false,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "started_at",
+     "type": "timestamptz",
+     "null": false,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "completed_at",
+     "type": "timestamptz",
+     "null": true,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "updated_at",
+     "type": "timestamptz",
+     "null": false,
+     "pk": false,
+     "fk": null
+    }
+   ],
+   "uniques": []
+  },
+  {
+   "name": "admin_user",
+   "domain": "기준 정보",
+   "columns": [
+    {
+     "name": "id",
+     "type": "bigint",
+     "null": false,
+     "pk": true,
+     "fk": null
+    },
+    {
+     "name": "name_masked",
+     "type": "varchar(30)",
+     "null": false,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "role",
+     "type": "admin_role",
+     "null": false,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "school_id",
+     "type": "bigint",
+     "null": true,
+     "pk": false,
+     "fk": "school"
+    },
+    {
+     "name": "is_active",
+     "type": "boolean",
+     "null": false,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "created_at",
+     "type": "timestamptz",
+     "null": false,
+     "pk": false,
+     "fk": null
+    }
+   ],
+   "uniques": []
+  },
+  {
+   "name": "app_user",
+   "domain": "유저",
+   "columns": [
+    {
+     "name": "id",
+     "type": "bigint",
+     "null": false,
+     "pk": true,
+     "fk": null
+    },
+    {
+     "name": "auth_user_id",
+     "type": "uuid",
+     "null": true,
+     "pk": false,
+     "fk": "auth.users"
+    },
+    {
+     "name": "nickname",
+     "type": "varchar(20)",
+     "null": false,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "invite_code",
+     "type": "varchar(8)",
+     "null": false,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "gender",
+     "type": "gender_type",
+     "null": true,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "class_id",
+     "type": "bigint",
+     "null": false,
+     "pk": false,
+     "fk": "grade_class"
+    },
+    {
+     "name": "heart_balance",
+     "type": "bigint",
+     "null": false,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "friend_count",
+     "type": "integer",
+     "null": false,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "service_unlocked_at",
+     "type": "timestamptz",
+     "null": true,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "status",
+     "type": "user_status",
+     "null": false,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "is_synthetic",
+     "type": "boolean",
+     "null": false,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "last_active_at",
+     "type": "timestamptz",
+     "null": true,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "created_at",
+     "type": "timestamptz",
+     "null": false,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "updated_at",
+     "type": "timestamptz",
+     "null": false,
+     "pk": false,
+     "fk": null
+    }
+   ],
+   "uniques": [
+    "auth_user_id",
+    "invite_code"
+   ]
+  },
+  {
+   "name": "block_record",
+   "domain": "친구",
+   "columns": [
+    {
+     "name": "id",
+     "type": "bigint",
+     "null": false,
+     "pk": true,
+     "fk": null
+    },
+    {
+     "name": "user_id",
+     "type": "bigint",
+     "null": false,
+     "pk": false,
+     "fk": "app_user"
+    },
+    {
+     "name": "blocked_user_id",
+     "type": "bigint",
+     "null": false,
+     "pk": false,
+     "fk": "app_user"
+    },
+    {
+     "name": "reason",
+     "type": "block_reason",
+     "null": false,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "created_at",
+     "type": "timestamptz",
+     "null": false,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "updated_at",
+     "type": "timestamptz",
+     "null": false,
+     "pk": false,
+     "fk": null
+    }
+   ],
+   "uniques": [
+    "user_id, blocked_user_id"
+   ]
+  },
+  {
+   "name": "board_category",
+   "domain": "게시판",
+   "columns": [
+    {
+     "name": "id",
+     "type": "bigint",
+     "null": false,
+     "pk": true,
+     "fk": null
+    },
+    {
+     "name": "code",
+     "type": "varchar(20)",
+     "null": false,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "name",
+     "type": "varchar(30)",
+     "null": false,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "description",
+     "type": "varchar(100)",
+     "null": true,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "sort_order",
+     "type": "smallint",
+     "null": false,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "is_active",
+     "type": "boolean",
+     "null": false,
+     "pk": false,
+     "fk": null
+    }
+   ],
+   "uniques": [
+    "code"
+   ]
+  },
+  {
+   "name": "comment_like",
+   "domain": "게시판",
+   "columns": [
+    {
+     "name": "id",
+     "type": "bigint",
+     "null": false,
+     "pk": true,
+     "fk": null
+    },
+    {
+     "name": "comment_id",
+     "type": "bigint",
+     "null": false,
+     "pk": false,
+     "fk": "post_comment"
+    },
+    {
+     "name": "user_id",
+     "type": "bigint",
+     "null": false,
+     "pk": false,
+     "fk": "app_user"
+    },
+    {
+     "name": "created_at",
+     "type": "timestamptz",
+     "null": false,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "updated_at",
+     "type": "timestamptz",
+     "null": false,
+     "pk": false,
+     "fk": null
+    }
+   ],
+   "uniques": [
+    "comment_id, user_id"
+   ]
+  },
+  {
+   "name": "external_sync_log",
+   "domain": "학교 정보",
+   "columns": [
+    {
+     "name": "id",
+     "type": "bigint",
+     "null": false,
+     "pk": true,
+     "fk": null
+    },
+    {
+     "name": "school_id",
+     "type": "bigint",
+     "null": true,
+     "pk": false,
+     "fk": "school"
+    },
+    {
+     "name": "resource_type",
+     "type": "sync_resource",
+     "null": false,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "provider",
+     "type": "varchar(30)",
+     "null": false,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "status",
+     "type": "sync_status",
+     "null": false,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "rows_upserted",
+     "type": "integer",
+     "null": false,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "rows_failed",
+     "type": "integer",
+     "null": false,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "target_from",
+     "type": "date",
+     "null": true,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "target_to",
+     "type": "date",
+     "null": true,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "error_message",
+     "type": "varchar(500)",
+     "null": true,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "started_at",
+     "type": "timestamptz",
+     "null": false,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "finished_at",
+     "type": "timestamptz",
+     "null": true,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "updated_at",
+     "type": "timestamptz",
+     "null": false,
+     "pk": false,
+     "fk": null
+    }
+   ],
+   "uniques": []
+  },
+  {
+   "name": "friend_recommendation",
+   "domain": "친구",
+   "columns": [
+    {
+     "name": "id",
+     "type": "bigint",
+     "null": false,
+     "pk": true,
+     "fk": null
+    },
+    {
+     "name": "user_id",
+     "type": "bigint",
+     "null": false,
+     "pk": false,
+     "fk": "app_user"
+    },
+    {
+     "name": "recommended_user_id",
+     "type": "bigint",
+     "null": false,
+     "pk": false,
+     "fk": "app_user"
+    },
+    {
+     "name": "reason",
+     "type": "recommend_reason",
+     "null": false,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "score",
+     "type": "numeric(5,4)",
+     "null": false,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "created_at",
+     "type": "timestamptz",
+     "null": false,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "dismissed_at",
+     "type": "timestamptz",
+     "null": true,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "updated_at",
+     "type": "timestamptz",
+     "null": false,
+     "pk": false,
+     "fk": null
+    }
+   ],
+   "uniques": [
+    "user_id, recommended_user_id"
+   ]
+  },
+  {
+   "name": "friend_request",
+   "domain": "친구",
+   "columns": [
+    {
+     "name": "id",
+     "type": "bigint",
+     "null": false,
+     "pk": true,
+     "fk": null
+    },
+    {
+     "name": "sender_id",
+     "type": "bigint",
+     "null": false,
+     "pk": false,
+     "fk": "app_user"
+    },
+    {
+     "name": "receiver_id",
+     "type": "bigint",
+     "null": false,
+     "pk": false,
+     "fk": "app_user"
+    },
+    {
+     "name": "status",
+     "type": "friend_req_status",
+     "null": false,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "source",
+     "type": "relation_source",
+     "null": false,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "created_at",
+     "type": "timestamptz",
+     "null": false,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "responded_at",
+     "type": "timestamptz",
+     "null": true,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "updated_at",
+     "type": "timestamptz",
+     "null": false,
+     "pk": false,
+     "fk": null
+    }
+   ],
+   "uniques": [
+    "sender_id, receiver_id"
+   ]
+  },
+  {
+   "name": "friendship",
+   "domain": "친구",
+   "columns": [
+    {
+     "name": "id",
+     "type": "bigint",
+     "null": false,
+     "pk": true,
+     "fk": null
+    },
+    {
+     "name": "user_low_id",
+     "type": "bigint",
+     "null": false,
+     "pk": false,
+     "fk": "app_user"
+    },
+    {
+     "name": "user_high_id",
+     "type": "bigint",
+     "null": false,
+     "pk": false,
+     "fk": "app_user"
+    },
+    {
+     "name": "source",
+     "type": "relation_source",
+     "null": false,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "created_at",
+     "type": "timestamptz",
+     "null": false,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "updated_at",
+     "type": "timestamptz",
+     "null": false,
+     "pk": false,
+     "fk": null
+    }
+   ],
+   "uniques": [
+    "user_low_id, user_high_id"
+   ]
+  },
+  {
+   "name": "grade_class",
+   "domain": "기준 정보",
+   "columns": [
+    {
+     "name": "id",
+     "type": "bigint",
+     "null": false,
+     "pk": true,
+     "fk": null
+    },
+    {
+     "name": "school_id",
+     "type": "bigint",
+     "null": false,
+     "pk": false,
+     "fk": "school"
+    },
+    {
+     "name": "grade",
+     "type": "smallint",
+     "null": false,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "class_num",
+     "type": "smallint",
+     "null": false,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "created_at",
+     "type": "timestamptz",
+     "null": false,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "label",
+     "type": "varchar(20)",
+     "null": true,
+     "pk": false,
+     "fk": null
+    }
+   ],
+   "uniques": [
+    "school_id, grade, class_num"
+   ]
+  },
+  {
+   "name": "heart_product",
+   "domain": "하트",
+   "columns": [
+    {
+     "name": "id",
+     "type": "bigint",
+     "null": false,
+     "pk": true,
+     "fk": null
+    },
+    {
+     "name": "product_code",
+     "type": "varchar(40)",
+     "null": false,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "heart_amount",
+     "type": "integer",
+     "null": false,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "price_krw",
+     "type": "integer",
+     "null": false,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "label",
+     "type": "varchar(30)",
+     "null": true,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "is_active",
+     "type": "boolean",
+     "null": false,
+     "pk": false,
+     "fk": null
+    }
+   ],
+   "uniques": [
+    "product_code"
+   ]
+  },
+  {
+   "name": "heart_purchase",
+   "domain": "하트",
+   "columns": [
+    {
+     "name": "id",
+     "type": "bigint",
+     "null": false,
+     "pk": true,
+     "fk": null
+    },
+    {
+     "name": "user_id",
+     "type": "bigint",
+     "null": false,
+     "pk": false,
+     "fk": "app_user"
+    },
+    {
+     "name": "product_id",
+     "type": "bigint",
+     "null": false,
+     "pk": false,
+     "fk": "heart_product"
+    },
+    {
+     "name": "platform",
+     "type": "platform_type",
+     "null": false,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "store_transaction_id",
+     "type": "varchar(120)",
+     "null": true,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "status",
+     "type": "purchase_status",
+     "null": false,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "failure_reason",
+     "type": "varchar(120)",
+     "null": true,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "price_krw",
+     "type": "integer",
+     "null": false,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "heart_amount",
+     "type": "integer",
+     "null": false,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "created_at",
+     "type": "timestamptz",
+     "null": false,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "completed_at",
+     "type": "timestamptz",
+     "null": true,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "updated_at",
+     "type": "timestamptz",
+     "null": false,
+     "pk": false,
+     "fk": null
+    }
+   ],
+   "uniques": [
+    "store_transaction_id"
+   ]
+  },
+  {
+   "name": "heart_transaction",
+   "domain": "하트",
+   "columns": [
+    {
+     "name": "id",
+     "type": "bigint",
+     "null": false,
+     "pk": true,
+     "fk": null
+    },
+    {
+     "name": "user_id",
+     "type": "bigint",
+     "null": false,
+     "pk": false,
+     "fk": "app_user"
+    },
+    {
+     "name": "type_code",
+     "type": "varchar(30)",
+     "null": false,
+     "pk": false,
+     "fk": "heart_transaction_type"
+    },
+    {
+     "name": "delta",
+     "type": "integer",
+     "null": false,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "balance_after",
+     "type": "bigint",
+     "null": false,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "vote_item_id",
+     "type": "bigint",
+     "null": true,
+     "pk": false,
+     "fk": "vote_item"
+    },
+    {
+     "name": "hint_purchase_id",
+     "type": "bigint",
+     "null": true,
+     "pk": false,
+     "fk": "hint_purchase"
+    },
+    {
+     "name": "purchase_id",
+     "type": "bigint",
+     "null": true,
+     "pk": false,
+     "fk": "heart_purchase"
+    },
+    {
+     "name": "ad_impression_id",
+     "type": "bigint",
+     "null": true,
+     "pk": false,
+     "fk": "ad_impression"
+    },
+    {
+     "name": "admin_id",
+     "type": "bigint",
+     "null": true,
+     "pk": false,
+     "fk": "admin_user"
+    },
+    {
+     "name": "memo",
+     "type": "varchar(200)",
+     "null": true,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "created_at",
+     "type": "timestamptz",
+     "null": false,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "updated_at",
+     "type": "timestamptz",
+     "null": false,
+     "pk": false,
+     "fk": null
+    }
+   ],
+   "uniques": []
+  },
+  {
+   "name": "heart_transaction_type",
+   "domain": "하트",
+   "columns": [
+    {
+     "name": "code",
+     "type": "varchar(30)",
+     "null": false,
+     "pk": true,
+     "fk": null
+    },
+    {
+     "name": "label",
+     "type": "varchar(50)",
+     "null": false,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "is_credit",
+     "type": "boolean",
+     "null": false,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "is_active",
+     "type": "boolean",
+     "null": false,
+     "pk": false,
+     "fk": null
+    }
+   ],
+   "uniques": []
+  },
+  {
+   "name": "hint_purchase",
+   "domain": "질문과 투표",
+   "columns": [
+    {
+     "name": "id",
+     "type": "bigint",
+     "null": false,
+     "pk": true,
+     "fk": null
+    },
+    {
+     "name": "vote_received_id",
+     "type": "bigint",
+     "null": false,
+     "pk": false,
+     "fk": "vote_received"
+    },
+    {
+     "name": "user_id",
+     "type": "bigint",
+     "null": false,
+     "pk": false,
+     "fk": "app_user"
+    },
+    {
+     "name": "hint_type",
+     "type": "hint_type",
+     "null": false,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "step",
+     "type": "smallint",
+     "null": false,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "heart_cost",
+     "type": "integer",
+     "null": false,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "created_at",
+     "type": "timestamptz",
+     "null": false,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "updated_at",
+     "type": "timestamptz",
+     "null": false,
+     "pk": false,
+     "fk": null
+    }
+   ],
+   "uniques": [
+    "vote_received_id, step"
+   ]
+  },
+  {
+   "name": "meal_menu_item",
+   "domain": "학교 정보",
+   "columns": [
+    {
+     "name": "id",
+     "type": "bigint",
+     "null": false,
+     "pk": true,
+     "fk": null
+    },
+    {
+     "name": "meal_plan_id",
+     "type": "bigint",
+     "null": false,
+     "pk": false,
+     "fk": "meal_plan"
+    },
+    {
+     "name": "dish_name",
+     "type": "varchar(80)",
+     "null": false,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "allergy_codes",
+     "type": "varchar(60)",
+     "null": true,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "sort_order",
+     "type": "smallint",
+     "null": false,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "updated_at",
+     "type": "timestamptz",
+     "null": false,
+     "pk": false,
+     "fk": null
+    }
+   ],
+   "uniques": []
+  },
+  {
+   "name": "meal_plan",
+   "domain": "학교 정보",
+   "columns": [
+    {
+     "name": "id",
+     "type": "bigint",
+     "null": false,
+     "pk": true,
+     "fk": null
+    },
+    {
+     "name": "school_id",
+     "type": "bigint",
+     "null": false,
+     "pk": false,
+     "fk": "school"
+    },
+    {
+     "name": "serve_date",
+     "type": "date",
+     "null": false,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "meal_type",
+     "type": "meal_type",
+     "null": false,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "calorie_kcal",
+     "type": "numeric(6,1)",
+     "null": true,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "source",
+     "type": "data_source",
+     "null": false,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "external_id",
+     "type": "varchar(80)",
+     "null": true,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "is_manually_overridden",
+     "type": "boolean",
+     "null": false,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "synced_at",
+     "type": "timestamptz",
+     "null": true,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "created_at",
+     "type": "timestamptz",
+     "null": false,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "updated_at",
+     "type": "timestamptz",
+     "null": false,
+     "pk": false,
+     "fk": null
+    }
+   ],
+   "uniques": [
+    "school_id, serve_date, meal_type"
+   ]
+  },
+  {
+   "name": "post",
+   "domain": "게시판",
+   "columns": [
+    {
+     "name": "id",
+     "type": "bigint",
+     "null": false,
+     "pk": true,
+     "fk": null
+    },
+    {
+     "name": "school_id",
+     "type": "bigint",
+     "null": false,
+     "pk": false,
+     "fk": "school"
+    },
+    {
+     "name": "category_id",
+     "type": "bigint",
+     "null": false,
+     "pk": false,
+     "fk": "board_category"
+    },
+    {
+     "name": "author_id",
+     "type": "bigint",
+     "null": false,
+     "pk": false,
+     "fk": "app_user"
+    },
+    {
+     "name": "title",
+     "type": "varchar(120)",
+     "null": false,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "body",
+     "type": "text",
+     "null": false,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "view_count",
+     "type": "integer",
+     "null": false,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "like_count",
+     "type": "integer",
+     "null": false,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "comment_count",
+     "type": "integer",
+     "null": false,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "report_count",
+     "type": "integer",
+     "null": false,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "status",
+     "type": "content_status",
+     "null": false,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "created_at",
+     "type": "timestamptz",
+     "null": false,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "updated_at",
+     "type": "timestamptz",
+     "null": false,
+     "pk": false,
+     "fk": null
+    }
+   ],
+   "uniques": []
+  },
+  {
+   "name": "post_comment",
+   "domain": "게시판",
+   "columns": [
+    {
+     "name": "id",
+     "type": "bigint",
+     "null": false,
+     "pk": true,
+     "fk": null
+    },
+    {
+     "name": "post_id",
+     "type": "bigint",
+     "null": false,
+     "pk": false,
+     "fk": "post"
+    },
+    {
+     "name": "parent_comment_id",
+     "type": "bigint",
+     "null": true,
+     "pk": false,
+     "fk": "post_comment"
+    },
+    {
+     "name": "author_id",
+     "type": "bigint",
+     "null": false,
+     "pk": false,
+     "fk": "app_user"
+    },
+    {
+     "name": "anonymous_seq",
+     "type": "smallint",
+     "null": true,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "body",
+     "type": "varchar(1000)",
+     "null": false,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "like_count",
+     "type": "integer",
+     "null": false,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "status",
+     "type": "content_status",
+     "null": false,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "created_at",
+     "type": "timestamptz",
+     "null": false,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "updated_at",
+     "type": "timestamptz",
+     "null": false,
+     "pk": false,
+     "fk": null
+    }
+   ],
+   "uniques": [
+    "post_id, author_id, anonymous_seq"
+   ]
+  },
+  {
+   "name": "post_like",
+   "domain": "게시판",
+   "columns": [
+    {
+     "name": "id",
+     "type": "bigint",
+     "null": false,
+     "pk": true,
+     "fk": null
+    },
+    {
+     "name": "post_id",
+     "type": "bigint",
+     "null": false,
+     "pk": false,
+     "fk": "post"
+    },
+    {
+     "name": "user_id",
+     "type": "bigint",
+     "null": false,
+     "pk": false,
+     "fk": "app_user"
+    },
+    {
+     "name": "created_at",
+     "type": "timestamptz",
+     "null": false,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "updated_at",
+     "type": "timestamptz",
+     "null": false,
+     "pk": false,
+     "fk": null
+    }
+   ],
+   "uniques": [
+    "post_id, user_id"
+   ]
+  },
+  {
+   "name": "question",
+   "domain": "질문과 투표",
+   "columns": [
+    {
+     "name": "id",
+     "type": "bigint",
+     "null": false,
+     "pk": true,
+     "fk": null
+    },
+    {
+     "name": "text",
+     "type": "varchar(200)",
+     "null": false,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "scope",
+     "type": "question_scope",
+     "null": false,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "category_id",
+     "type": "bigint",
+     "null": false,
+     "pk": false,
+     "fk": "question_category"
+    },
+    {
+     "name": "status",
+     "type": "question_status",
+     "null": false,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "source",
+     "type": "question_source",
+     "null": false,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "report_count",
+     "type": "integer",
+     "null": false,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "created_by_admin_id",
+     "type": "bigint",
+     "null": true,
+     "pk": false,
+     "fk": "admin_user"
+    },
+    {
+     "name": "created_at",
+     "type": "timestamptz",
+     "null": false,
+     "pk": false,
+     "fk": null
+    }
+   ],
+   "uniques": []
+  },
+  {
+   "name": "question_category",
+   "domain": "질문과 투표",
+   "columns": [
+    {
+     "name": "id",
+     "type": "bigint",
+     "null": false,
+     "pk": true,
+     "fk": null
+    },
+    {
+     "name": "code",
+     "type": "varchar(30)",
+     "null": false,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "name",
+     "type": "varchar(40)",
+     "null": false,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "is_sensitive",
+     "type": "boolean",
+     "null": false,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "sort_order",
+     "type": "smallint",
+     "null": false,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "is_active",
+     "type": "boolean",
+     "null": false,
+     "pk": false,
+     "fk": null
+    }
+   ],
+   "uniques": [
+    "code"
+   ]
+  },
+  {
+   "name": "question_request",
+   "domain": "질문과 투표",
+   "columns": [
+    {
+     "name": "id",
+     "type": "bigint",
+     "null": false,
+     "pk": true,
+     "fk": null
+    },
+    {
+     "name": "user_id",
+     "type": "bigint",
+     "null": false,
+     "pk": false,
+     "fk": "app_user"
+    },
+    {
+     "name": "text",
+     "type": "varchar(200)",
+     "null": false,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "proposed_scope",
+     "type": "question_scope",
+     "null": false,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "proposed_category_id",
+     "type": "bigint",
+     "null": true,
+     "pk": false,
+     "fk": "question_category"
+    },
+    {
+     "name": "status",
+     "type": "request_status",
+     "null": false,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "reject_reason",
+     "type": "varchar(200)",
+     "null": true,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "reviewed_by_admin_id",
+     "type": "bigint",
+     "null": true,
+     "pk": false,
+     "fk": "admin_user"
+    },
+    {
+     "name": "reviewed_at",
+     "type": "timestamptz",
+     "null": true,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "published_question_id",
+     "type": "bigint",
+     "null": true,
+     "pk": false,
+     "fk": "question"
+    },
+    {
+     "name": "created_at",
+     "type": "timestamptz",
+     "null": false,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "updated_at",
+     "type": "timestamptz",
+     "null": false,
+     "pk": false,
+     "fk": null
+    }
+   ],
+   "uniques": []
+  },
+  {
+   "name": "region",
+   "domain": "기준 정보",
+   "columns": [
+    {
+     "name": "id",
+     "type": "bigint",
+     "null": false,
+     "pk": true,
+     "fk": null
+    },
+    {
+     "name": "sido",
+     "type": "varchar(20)",
+     "null": false,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "sigungu",
+     "type": "varchar(30)",
+     "null": false,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "created_at",
+     "type": "timestamptz",
+     "null": false,
+     "pk": false,
+     "fk": null
+    }
+   ],
+   "uniques": [
+    "sido, sigungu"
+   ]
+  },
+  {
+   "name": "report",
+   "domain": "신고와 제재",
+   "columns": [
+    {
+     "name": "id",
+     "type": "bigint",
+     "null": false,
+     "pk": true,
+     "fk": null
+    },
+    {
+     "name": "reporter_id",
+     "type": "bigint",
+     "null": false,
+     "pk": false,
+     "fk": "app_user"
+    },
+    {
+     "name": "target_type",
+     "type": "report_target",
+     "null": false,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "target_user_id",
+     "type": "bigint",
+     "null": true,
+     "pk": false,
+     "fk": "app_user"
+    },
+    {
+     "name": "target_question_id",
+     "type": "bigint",
+     "null": true,
+     "pk": false,
+     "fk": "question"
+    },
+    {
+     "name": "target_post_id",
+     "type": "bigint",
+     "null": true,
+     "pk": false,
+     "fk": "post"
+    },
+    {
+     "name": "target_comment_id",
+     "type": "bigint",
+     "null": true,
+     "pk": false,
+     "fk": "post_comment"
+    },
+    {
+     "name": "reason_code",
+     "type": "varchar(30)",
+     "null": false,
+     "pk": false,
+     "fk": "report_reason"
+    },
+    {
+     "name": "detail_text",
+     "type": "varchar(500)",
+     "null": true,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "status",
+     "type": "report_status",
+     "null": false,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "reviewed_by_admin_id",
+     "type": "bigint",
+     "null": true,
+     "pk": false,
+     "fk": "admin_user"
+    },
+    {
+     "name": "reviewed_at",
+     "type": "timestamptz",
+     "null": true,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "created_at",
+     "type": "timestamptz",
+     "null": false,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "updated_at",
+     "type": "timestamptz",
+     "null": false,
+     "pk": false,
+     "fk": null
+    }
+   ],
+   "uniques": []
+  },
+  {
+   "name": "report_reason",
+   "domain": "신고와 제재",
+   "columns": [
+    {
+     "name": "code",
+     "type": "varchar(30)",
+     "null": false,
+     "pk": true,
+     "fk": null
+    },
+    {
+     "name": "label",
+     "type": "varchar(60)",
+     "null": false,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "target_type",
+     "type": "report_target",
+     "null": false,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "is_active",
+     "type": "boolean",
+     "null": false,
+     "pk": false,
+     "fk": null
+    }
+   ],
+   "uniques": []
+  },
+  {
+   "name": "sanction",
+   "domain": "신고와 제재",
+   "columns": [
+    {
+     "name": "id",
+     "type": "bigint",
+     "null": false,
+     "pk": true,
+     "fk": null
+    },
+    {
+     "name": "user_id",
+     "type": "bigint",
+     "null": false,
+     "pk": false,
+     "fk": "app_user"
+    },
+    {
+     "name": "type",
+     "type": "sanction_type",
+     "null": false,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "triggered_by_report_id",
+     "type": "bigint",
+     "null": true,
+     "pk": false,
+     "fk": "report"
+    },
+    {
+     "name": "policy_id",
+     "type": "bigint",
+     "null": true,
+     "pk": false,
+     "fk": "sanction_policy"
+    },
+    {
+     "name": "issued_by_admin_id",
+     "type": "bigint",
+     "null": true,
+     "pk": false,
+     "fk": "admin_user"
+    },
+    {
+     "name": "reason",
+     "type": "varchar(200)",
+     "null": false,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "starts_at",
+     "type": "timestamptz",
+     "null": false,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "ends_at",
+     "type": "timestamptz",
+     "null": true,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "is_active",
+     "type": "boolean",
+     "null": false,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "created_at",
+     "type": "timestamptz",
+     "null": false,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "updated_at",
+     "type": "timestamptz",
+     "null": false,
+     "pk": false,
+     "fk": null
+    }
+   ],
+   "uniques": []
+  },
+  {
+   "name": "sanction_policy",
+   "domain": "신고와 제재",
+   "columns": [
+    {
+     "name": "id",
+     "type": "bigint",
+     "null": false,
+     "pk": true,
+     "fk": null
+    },
+    {
+     "name": "name",
+     "type": "varchar(60)",
+     "null": false,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "target_type",
+     "type": "report_target",
+     "null": false,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "threshold_count",
+     "type": "integer",
+     "null": false,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "window_days",
+     "type": "smallint",
+     "null": false,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "action_type",
+     "type": "sanction_type",
+     "null": false,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "action_days",
+     "type": "smallint",
+     "null": true,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "is_active",
+     "type": "boolean",
+     "null": false,
+     "pk": false,
+     "fk": null
+    }
+   ],
+   "uniques": []
+  },
+  {
+   "name": "school",
+   "domain": "기준 정보",
+   "columns": [
+    {
+     "name": "id",
+     "type": "bigint",
+     "null": false,
+     "pk": true,
+     "fk": null
+    },
+    {
+     "name": "name_masked",
+     "type": "varchar(50)",
+     "null": false,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "region_id",
+     "type": "bigint",
+     "null": false,
+     "pk": false,
+     "fk": "region"
+    },
+    {
+     "name": "school_type",
+     "type": "school_type",
+     "null": false,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "neis_school_code",
+     "type": "varchar(20)",
+     "null": true,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "student_count",
+     "type": "integer",
+     "null": false,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "created_at",
+     "type": "timestamptz",
+     "null": false,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "updated_at",
+     "type": "timestamptz",
+     "null": false,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "neis_office_code",
+     "type": "varchar(10)",
+     "null": true,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "info_school_id",
+     "type": "bigint",
+     "null": true,
+     "pk": false,
+     "fk": "school"
+    }
+   ],
+   "uniques": [
+    "neis_school_code"
+   ]
+  },
+  {
+   "name": "school_event",
+   "domain": "학교 정보",
+   "columns": [
+    {
+     "name": "id",
+     "type": "bigint",
+     "null": false,
+     "pk": true,
+     "fk": null
+    },
+    {
+     "name": "school_id",
+     "type": "bigint",
+     "null": false,
+     "pk": false,
+     "fk": "school"
+    },
+    {
+     "name": "title",
+     "type": "varchar(120)",
+     "null": false,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "event_type",
+     "type": "school_event_type",
+     "null": false,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "start_date",
+     "type": "date",
+     "null": false,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "end_date",
+     "type": "date",
+     "null": false,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "is_all_day",
+     "type": "boolean",
+     "null": false,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "grade_scope",
+     "type": "smallint",
+     "null": true,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "source",
+     "type": "data_source",
+     "null": false,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "external_id",
+     "type": "varchar(80)",
+     "null": true,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "is_manually_overridden",
+     "type": "boolean",
+     "null": false,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "synced_at",
+     "type": "timestamptz",
+     "null": true,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "updated_at",
+     "type": "timestamptz",
+     "null": false,
+     "pk": false,
+     "fk": null
+    }
+   ],
+   "uniques": []
+  },
+  {
+   "name": "school_notice",
+   "domain": "학교 정보",
+   "columns": [
+    {
+     "name": "id",
+     "type": "bigint",
+     "null": false,
+     "pk": true,
+     "fk": null
+    },
+    {
+     "name": "school_id",
+     "type": "bigint",
+     "null": false,
+     "pk": false,
+     "fk": "school"
+    },
+    {
+     "name": "title",
+     "type": "varchar(200)",
+     "null": false,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "body",
+     "type": "text",
+     "null": false,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "source",
+     "type": "data_source",
+     "null": false,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "external_id",
+     "type": "varchar(80)",
+     "null": true,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "is_manually_overridden",
+     "type": "boolean",
+     "null": false,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "created_by_admin_id",
+     "type": "bigint",
+     "null": true,
+     "pk": false,
+     "fk": "admin_user"
+    },
+    {
+     "name": "published_at",
+     "type": "timestamptz",
+     "null": false,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "created_at",
+     "type": "timestamptz",
+     "null": false,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "updated_at",
+     "type": "timestamptz",
+     "null": false,
+     "pk": false,
+     "fk": null
+    }
+   ],
+   "uniques": []
+  },
+  {
+   "name": "school_notice_read",
+   "domain": "학교 정보",
+   "columns": [
+    {
+     "name": "id",
+     "type": "bigint",
+     "null": false,
+     "pk": true,
+     "fk": null
+    },
+    {
+     "name": "notice_id",
+     "type": "bigint",
+     "null": false,
+     "pk": false,
+     "fk": "school_notice"
+    },
+    {
+     "name": "user_id",
+     "type": "bigint",
+     "null": false,
+     "pk": false,
+     "fk": "app_user"
+    },
+    {
+     "name": "read_at",
+     "type": "timestamptz",
+     "null": false,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "updated_at",
+     "type": "timestamptz",
+     "null": false,
+     "pk": false,
+     "fk": null
+    }
+   ],
+   "uniques": [
+    "notice_id, user_id"
+   ]
+  },
+  {
+   "name": "timetable",
+   "domain": "학교 정보",
+   "columns": [
+    {
+     "name": "id",
+     "type": "bigint",
+     "null": false,
+     "pk": true,
+     "fk": null
+    },
+    {
+     "name": "class_id",
+     "type": "bigint",
+     "null": false,
+     "pk": false,
+     "fk": "grade_class"
+    },
+    {
+     "name": "semester",
+     "type": "varchar(10)",
+     "null": false,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "day_of_week",
+     "type": "smallint",
+     "null": false,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "period",
+     "type": "smallint",
+     "null": false,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "subject_name",
+     "type": "varchar(40)",
+     "null": false,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "teacher_name_masked",
+     "type": "varchar(20)",
+     "null": true,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "room",
+     "type": "varchar(30)",
+     "null": true,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "source",
+     "type": "data_source",
+     "null": false,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "is_manually_overridden",
+     "type": "boolean",
+     "null": false,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "synced_at",
+     "type": "timestamptz",
+     "null": true,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "updated_at",
+     "type": "timestamptz",
+     "null": false,
+     "pk": false,
+     "fk": null
+    }
+   ],
+   "uniques": [
+    "class_id, semester, day_of_week, period"
+   ]
+  },
+  {
+   "name": "user_session",
+   "domain": "유저",
+   "columns": [
+    {
+     "name": "id",
+     "type": "bigint",
+     "null": false,
+     "pk": true,
+     "fk": null
+    },
+    {
+     "name": "user_id",
+     "type": "bigint",
+     "null": false,
+     "pk": false,
+     "fk": "app_user"
+    },
+    {
+     "name": "platform",
+     "type": "platform_type",
+     "null": false,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "app_version",
+     "type": "varchar(20)",
+     "null": false,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "device_id",
+     "type": "varchar(64)",
+     "null": true,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "started_at",
+     "type": "timestamptz",
+     "null": false,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "ended_at",
+     "type": "timestamptz",
+     "null": true,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "updated_at",
+     "type": "timestamptz",
+     "null": false,
+     "pk": false,
+     "fk": null
+    }
+   ],
+   "uniques": []
+  },
+  {
+   "name": "user_withdrawal",
+   "domain": "유저",
+   "columns": [
+    {
+     "name": "id",
+     "type": "bigint",
+     "null": false,
+     "pk": true,
+     "fk": null
+    },
+    {
+     "name": "user_id",
+     "type": "bigint",
+     "null": false,
+     "pk": false,
+     "fk": "app_user"
+    },
+    {
+     "name": "reason_code",
+     "type": "varchar(30)",
+     "null": false,
+     "pk": false,
+     "fk": "withdrawal_reason"
+    },
+    {
+     "name": "reason_text",
+     "type": "varchar(500)",
+     "null": true,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "created_at",
+     "type": "timestamptz",
+     "null": false,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "updated_at",
+     "type": "timestamptz",
+     "null": false,
+     "pk": false,
+     "fk": null
+    }
+   ],
+   "uniques": [
+    "user_id"
+   ]
+  },
+  {
+   "name": "vote_candidate",
+   "domain": "질문과 투표",
+   "columns": [
+    {
+     "name": "id",
+     "type": "bigint",
+     "null": false,
+     "pk": true,
+     "fk": null
+    },
+    {
+     "name": "vote_item_id",
+     "type": "bigint",
+     "null": false,
+     "pk": false,
+     "fk": "vote_item"
+    },
+    {
+     "name": "candidate_user_id",
+     "type": "bigint",
+     "null": false,
+     "pk": false,
+     "fk": "app_user"
+    },
+    {
+     "name": "shuffle_round",
+     "type": "smallint",
+     "null": false,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "slot",
+     "type": "smallint",
+     "null": false,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "is_chosen",
+     "type": "boolean",
+     "null": false,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "updated_at",
+     "type": "timestamptz",
+     "null": false,
+     "pk": false,
+     "fk": null
+    }
+   ],
+   "uniques": [
+    "vote_item_id, shuffle_round, slot"
+   ]
+  },
+  {
+   "name": "vote_item",
+   "domain": "질문과 투표",
+   "columns": [
+    {
+     "name": "id",
+     "type": "bigint",
+     "null": false,
+     "pk": true,
+     "fk": null
+    },
+    {
+     "name": "session_id",
+     "type": "bigint",
+     "null": false,
+     "pk": false,
+     "fk": "vote_session"
+    },
+    {
+     "name": "user_id",
+     "type": "bigint",
+     "null": false,
+     "pk": false,
+     "fk": "app_user"
+    },
+    {
+     "name": "question_id",
+     "type": "bigint",
+     "null": false,
+     "pk": false,
+     "fk": "question"
+    },
+    {
+     "name": "candidate_scope",
+     "type": "question_scope",
+     "null": false,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "position",
+     "type": "smallint",
+     "null": false,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "shuffle_count",
+     "type": "smallint",
+     "null": false,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "served_at",
+     "type": "timestamptz",
+     "null": false,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "voted_at",
+     "type": "timestamptz",
+     "null": true,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "padded_count",
+     "type": "smallint",
+     "null": false,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "updated_at",
+     "type": "timestamptz",
+     "null": false,
+     "pk": false,
+     "fk": null
+    }
+   ],
+   "uniques": [
+    "session_id, position"
+   ]
+  },
+  {
+   "name": "vote_received",
+   "domain": "질문과 투표",
+   "columns": [
+    {
+     "name": "id",
+     "type": "bigint",
+     "null": false,
+     "pk": true,
+     "fk": null
+    },
+    {
+     "name": "vote_item_id",
+     "type": "bigint",
+     "null": false,
+     "pk": false,
+     "fk": "vote_item"
+    },
+    {
+     "name": "voter_id",
+     "type": "bigint",
+     "null": false,
+     "pk": false,
+     "fk": "app_user"
+    },
+    {
+     "name": "receiver_id",
+     "type": "bigint",
+     "null": false,
+     "pk": false,
+     "fk": "app_user"
+    },
+    {
+     "name": "question_id",
+     "type": "bigint",
+     "null": false,
+     "pk": false,
+     "fk": "question"
+    },
+    {
+     "name": "is_read",
+     "type": "boolean",
+     "null": false,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "read_at",
+     "type": "timestamptz",
+     "null": true,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "reveal_status",
+     "type": "reveal_status",
+     "null": false,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "answer_status",
+     "type": "answer_status",
+     "null": false,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "answered_at",
+     "type": "timestamptz",
+     "null": true,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "created_at",
+     "type": "timestamptz",
+     "null": false,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "updated_at",
+     "type": "timestamptz",
+     "null": false,
+     "pk": false,
+     "fk": null
+    }
+   ],
+   "uniques": [
+    "vote_item_id"
+   ]
+  },
+  {
+   "name": "vote_session",
+   "domain": "질문과 투표",
+   "columns": [
+    {
+     "name": "id",
+     "type": "bigint",
+     "null": false,
+     "pk": true,
+     "fk": null
+    },
+    {
+     "name": "user_id",
+     "type": "bigint",
+     "null": false,
+     "pk": false,
+     "fk": "app_user"
+    },
+    {
+     "name": "status",
+     "type": "session_status",
+     "null": false,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "item_count",
+     "type": "smallint",
+     "null": false,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "started_at",
+     "type": "timestamptz",
+     "null": false,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "completed_at",
+     "type": "timestamptz",
+     "null": true,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "updated_at",
+     "type": "timestamptz",
+     "null": false,
+     "pk": false,
+     "fk": null
+    }
+   ],
+   "uniques": []
+  },
+  {
+   "name": "vote_shuffle",
+   "domain": "질문과 투표",
+   "columns": [
+    {
+     "name": "id",
+     "type": "bigint",
+     "null": false,
+     "pk": true,
+     "fk": null
+    },
+    {
+     "name": "vote_item_id",
+     "type": "bigint",
+     "null": false,
+     "pk": false,
+     "fk": "vote_item"
+    },
+    {
+     "name": "ad_impression_id",
+     "type": "bigint",
+     "null": false,
+     "pk": false,
+     "fk": "ad_impression"
+    },
+    {
+     "name": "created_at",
+     "type": "timestamptz",
+     "null": false,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "updated_at",
+     "type": "timestamptz",
+     "null": false,
+     "pk": false,
+     "fk": null
+    }
+   ],
+   "uniques": [
+    "vote_item_id",
+    "ad_impression_id"
+   ]
+  },
+  {
+   "name": "withdrawal_reason",
+   "domain": "유저",
+   "columns": [
+    {
+     "name": "code",
+     "type": "varchar(30)",
+     "null": false,
+     "pk": true,
+     "fk": null
+    },
+    {
+     "name": "label",
+     "type": "varchar(60)",
+     "null": false,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "sort_order",
+     "type": "smallint",
+     "null": false,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "is_active",
+     "type": "boolean",
+     "null": false,
+     "pk": false,
+     "fk": null
+    }
+   ],
+   "uniques": []
+  }
+ ],
+ "edges": [
+  {
+   "from": "ad_impression",
+   "col": "user_id",
+   "to": "app_user",
+   "null": false
+  },
+  {
+   "from": "admin_user",
+   "col": "school_id",
+   "to": "school",
+   "null": true
+  },
+  {
+   "from": "app_user",
+   "col": "class_id",
+   "to": "grade_class",
+   "null": false
+  },
+  {
+   "from": "block_record",
+   "col": "blocked_user_id",
+   "to": "app_user",
+   "null": false
+  },
+  {
+   "from": "block_record",
+   "col": "user_id",
+   "to": "app_user",
+   "null": false
+  },
+  {
+   "from": "comment_like",
+   "col": "comment_id",
+   "to": "post_comment",
+   "null": false
+  },
+  {
+   "from": "comment_like",
+   "col": "user_id",
+   "to": "app_user",
+   "null": false
+  },
+  {
+   "from": "external_sync_log",
+   "col": "school_id",
+   "to": "school",
+   "null": true
+  },
+  {
+   "from": "friend_recommendation",
+   "col": "recommended_user_id",
+   "to": "app_user",
+   "null": false
+  },
+  {
+   "from": "friend_recommendation",
+   "col": "user_id",
+   "to": "app_user",
+   "null": false
+  },
+  {
+   "from": "friend_request",
+   "col": "receiver_id",
+   "to": "app_user",
+   "null": false
+  },
+  {
+   "from": "friend_request",
+   "col": "sender_id",
+   "to": "app_user",
+   "null": false
+  },
+  {
+   "from": "friendship",
+   "col": "user_high_id",
+   "to": "app_user",
+   "null": false
+  },
+  {
+   "from": "friendship",
+   "col": "user_low_id",
+   "to": "app_user",
+   "null": false
+  },
+  {
+   "from": "grade_class",
+   "col": "school_id",
+   "to": "school",
+   "null": false
+  },
+  {
+   "from": "heart_purchase",
+   "col": "product_id",
+   "to": "heart_product",
+   "null": false
+  },
+  {
+   "from": "heart_purchase",
+   "col": "user_id",
+   "to": "app_user",
+   "null": false
+  },
+  {
+   "from": "heart_transaction",
+   "col": "ad_impression_id",
+   "to": "ad_impression",
+   "null": true
+  },
+  {
+   "from": "heart_transaction",
+   "col": "admin_id",
+   "to": "admin_user",
+   "null": true
+  },
+  {
+   "from": "heart_transaction",
+   "col": "hint_purchase_id",
+   "to": "hint_purchase",
+   "null": true
+  },
+  {
+   "from": "heart_transaction",
+   "col": "purchase_id",
+   "to": "heart_purchase",
+   "null": true
+  },
+  {
+   "from": "heart_transaction",
+   "col": "type_code",
+   "to": "heart_transaction_type",
+   "null": false
+  },
+  {
+   "from": "heart_transaction",
+   "col": "user_id",
+   "to": "app_user",
+   "null": false
+  },
+  {
+   "from": "heart_transaction",
+   "col": "vote_item_id",
+   "to": "vote_item",
+   "null": true
+  },
+  {
+   "from": "hint_purchase",
+   "col": "user_id",
+   "to": "app_user",
+   "null": false
+  },
+  {
+   "from": "hint_purchase",
+   "col": "vote_received_id",
+   "to": "vote_received",
+   "null": false
+  },
+  {
+   "from": "meal_menu_item",
+   "col": "meal_plan_id",
+   "to": "meal_plan",
+   "null": false
+  },
+  {
+   "from": "meal_plan",
+   "col": "school_id",
+   "to": "school",
+   "null": false
+  },
+  {
+   "from": "post",
+   "col": "author_id",
+   "to": "app_user",
+   "null": false
+  },
+  {
+   "from": "post",
+   "col": "category_id",
+   "to": "board_category",
+   "null": false
+  },
+  {
+   "from": "post",
+   "col": "school_id",
+   "to": "school",
+   "null": false
+  },
+  {
+   "from": "post_comment",
+   "col": "author_id",
+   "to": "app_user",
+   "null": false
+  },
+  {
+   "from": "post_comment",
+   "col": "parent_comment_id",
+   "to": "post_comment",
+   "null": true
+  },
+  {
+   "from": "post_comment",
+   "col": "post_id",
+   "to": "post",
+   "null": false
+  },
+  {
+   "from": "post_like",
+   "col": "post_id",
+   "to": "post",
+   "null": false
+  },
+  {
+   "from": "post_like",
+   "col": "user_id",
+   "to": "app_user",
+   "null": false
+  },
+  {
+   "from": "question",
+   "col": "category_id",
+   "to": "question_category",
+   "null": false
+  },
+  {
+   "from": "question",
+   "col": "created_by_admin_id",
+   "to": "admin_user",
+   "null": true
+  },
+  {
+   "from": "question_request",
+   "col": "proposed_category_id",
+   "to": "question_category",
+   "null": true
+  },
+  {
+   "from": "question_request",
+   "col": "published_question_id",
+   "to": "question",
+   "null": true
+  },
+  {
+   "from": "question_request",
+   "col": "reviewed_by_admin_id",
+   "to": "admin_user",
+   "null": true
+  },
+  {
+   "from": "question_request",
+   "col": "user_id",
+   "to": "app_user",
+   "null": false
+  },
+  {
+   "from": "report",
+   "col": "reason_code",
+   "to": "report_reason",
+   "null": false
+  },
+  {
+   "from": "report",
+   "col": "reporter_id",
+   "to": "app_user",
+   "null": false
+  },
+  {
+   "from": "report",
+   "col": "reviewed_by_admin_id",
+   "to": "admin_user",
+   "null": true
+  },
+  {
+   "from": "report",
+   "col": "target_comment_id",
+   "to": "post_comment",
+   "null": true
+  },
+  {
+   "from": "report",
+   "col": "target_post_id",
+   "to": "post",
+   "null": true
+  },
+  {
+   "from": "report",
+   "col": "target_question_id",
+   "to": "question",
+   "null": true
+  },
+  {
+   "from": "report",
+   "col": "target_user_id",
+   "to": "app_user",
+   "null": true
+  },
+  {
+   "from": "sanction",
+   "col": "issued_by_admin_id",
+   "to": "admin_user",
+   "null": true
+  },
+  {
+   "from": "sanction",
+   "col": "policy_id",
+   "to": "sanction_policy",
+   "null": true
+  },
+  {
+   "from": "sanction",
+   "col": "triggered_by_report_id",
+   "to": "report",
+   "null": true
+  },
+  {
+   "from": "sanction",
+   "col": "user_id",
+   "to": "app_user",
+   "null": false
+  },
+  {
+   "from": "school",
+   "col": "info_school_id",
+   "to": "school",
+   "null": true
+  },
+  {
+   "from": "school",
+   "col": "region_id",
+   "to": "region",
+   "null": false
+  },
+  {
+   "from": "school_event",
+   "col": "school_id",
+   "to": "school",
+   "null": false
+  },
+  {
+   "from": "school_notice",
+   "col": "created_by_admin_id",
+   "to": "admin_user",
+   "null": true
+  },
+  {
+   "from": "school_notice",
+   "col": "school_id",
+   "to": "school",
+   "null": false
+  },
+  {
+   "from": "school_notice_read",
+   "col": "notice_id",
+   "to": "school_notice",
+   "null": false
+  },
+  {
+   "from": "school_notice_read",
+   "col": "user_id",
+   "to": "app_user",
+   "null": false
+  },
+  {
+   "from": "timetable",
+   "col": "class_id",
+   "to": "grade_class",
+   "null": false
+  },
+  {
+   "from": "user_session",
+   "col": "user_id",
+   "to": "app_user",
+   "null": false
+  },
+  {
+   "from": "user_withdrawal",
+   "col": "reason_code",
+   "to": "withdrawal_reason",
+   "null": false
+  },
+  {
+   "from": "user_withdrawal",
+   "col": "user_id",
+   "to": "app_user",
+   "null": false
+  },
+  {
+   "from": "vote_candidate",
+   "col": "candidate_user_id",
+   "to": "app_user",
+   "null": false
+  },
+  {
+   "from": "vote_candidate",
+   "col": "vote_item_id",
+   "to": "vote_item",
+   "null": false
+  },
+  {
+   "from": "vote_item",
+   "col": "question_id",
+   "to": "question",
+   "null": false
+  },
+  {
+   "from": "vote_item",
+   "col": "session_id",
+   "to": "vote_session",
+   "null": false
+  },
+  {
+   "from": "vote_item",
+   "col": "user_id",
+   "to": "app_user",
+   "null": false
+  },
+  {
+   "from": "vote_received",
+   "col": "question_id",
+   "to": "question",
+   "null": false
+  },
+  {
+   "from": "vote_received",
+   "col": "receiver_id",
+   "to": "app_user",
+   "null": false
+  },
+  {
+   "from": "vote_received",
+   "col": "vote_item_id",
+   "to": "vote_item",
+   "null": false
+  },
+  {
+   "from": "vote_received",
+   "col": "voter_id",
+   "to": "app_user",
+   "null": false
+  },
+  {
+   "from": "vote_session",
+   "col": "user_id",
+   "to": "app_user",
+   "null": false
+  },
+  {
+   "from": "vote_shuffle",
+   "col": "ad_impression_id",
+   "to": "ad_impression",
+   "null": false
+  },
+  {
+   "from": "vote_shuffle",
+   "col": "vote_item_id",
+   "to": "vote_item",
+   "null": false
+  }
+ ],
+ "domains": [
+  "기준 정보",
+  "유저",
+  "친구",
+  "질문과 투표",
+  "하트",
+  "신고와 제재",
+  "학교 정보",
+  "게시판"
+ ]
+}

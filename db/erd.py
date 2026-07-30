@@ -19,6 +19,7 @@
 from __future__ import annotations
 
 import argparse
+import json
 import sys
 from pathlib import Path
 
@@ -29,6 +30,7 @@ from apply import dsn  # noqa: E402
 
 ROOT = Path(__file__).resolve().parent.parent
 OUT = ROOT / "docs" / "erd.md"
+OUT_JSON = ROOT / "docs" / "erd.json"      # 카드형 ERD 가 읽는다
 
 # 42개를 한 장에 그리면 아무도 못 읽는다. 도메인으로 나눈다.
 # 여기 없는 테이블은 "기타"로 떨어진다 — 새 테이블이 조용히 사라지지 않게.
@@ -95,13 +97,40 @@ def fetch(cur):
     """)
     fks = cur.fetchall()
 
+    # 컬럼 순서와 UNIQUE 는 카드형 ERD(docs/erd.json)에서 쓴다.
+    cur.execute("""
+        SELECT c.relname, a.attname, a.attnum
+          FROM pg_class c
+          JOIN pg_namespace n ON n.oid = c.relnamespace
+          JOIN pg_attribute a ON a.attrelid = c.oid AND a.attnum > 0 AND NOT a.attisdropped
+         WHERE n.nspname = 'public' AND c.relkind = 'r'
+         ORDER BY c.relname, a.attnum
+    """)
+    order: dict[str, list[str]] = {}
+    for t, col, _ in cur.fetchall():
+        order.setdefault(t, []).append(col)
+
+    cur.execute("""
+        SELECT c.relname, string_agg(a.attname, ', ' ORDER BY k.ord)
+          FROM pg_constraint con
+          JOIN pg_class c ON c.oid = con.conrelid
+          JOIN pg_namespace n ON n.oid = c.relnamespace
+          JOIN LATERAL unnest(con.conkey) WITH ORDINALITY AS k(attnum, ord) ON true
+          JOIN pg_attribute a ON a.attrelid = c.oid AND a.attnum = k.attnum
+         WHERE con.contype = 'u' AND n.nspname = 'public'
+         GROUP BY c.relname, con.oid
+    """)
+    uniques: dict[str, list[str]] = {}
+    for t, cols_txt in cur.fetchall():
+        uniques.setdefault(t, []).append(cols_txt)
+
     cur.execute("""
         SELECT c.relname, count(*) FROM pg_class c
           JOIN pg_namespace n ON n.oid = c.relnamespace
          WHERE n.nspname = 'public' AND c.relkind = 'r' GROUP BY 1
     """)
     tables = sorted(t for t, _ in cur.fetchall())
-    return tables, cols, pks, fks
+    return tables, cols, pks, fks, order, uniques
 
 
 # 도메인 색. 채도를 낮춘 8색이라 옆에 놓아도 서로 싸우지 않고,
@@ -196,6 +225,44 @@ def diagram(members: list[str], cols, pks, fks) -> str:
     return "\n".join(lines)
 
 
+def as_json(domains, tables, cols, pks, fks, order, uniques) -> dict:
+    """카드형 ERD 가 읽는 데이터. **모든 컬럼과 타입**을 담는다.
+
+    mermaid 도표는 키만 실었지만 카드형은 컬럼 정의를 다 보여주는 것이 목적이다.
+    여기서도 손으로 적지 않는다 — 전부 pg_catalog 에서 온다.
+    """
+    where = {t: title for title, _, members in domains for t in members}
+    fk_of = {(c, col): p for c, col, p in fks}
+
+    out: dict = {"tables": [], "edges": [], "domains": [d[0] for d in domains]}
+    for t in tables:
+        columns = []
+        for c in order.get(t, []):
+            nullable, typ = cols.get((t, c), (True, "?"))
+            columns.append({
+                "name": c,
+                "type": (typ.replace("character varying", "varchar")
+                            .replace("timestamp with time zone", "timestamptz")
+                            .replace("double precision", "float8")),
+                "null": nullable,
+                "pk": (t, c) in pks,
+                "fk": fk_of.get((t, c)),
+            })
+        out["tables"].append({"name": t, "domain": where.get(t, "기타"),
+                              "columns": columns, "uniques": uniques.get(t, [])})
+
+    seen = set()
+    for child, col, parent in fks:
+        if parent not in tables:
+            continue                      # auth.users 같은 스키마 밖 부모
+        if (child, parent, col) in seen:
+            continue
+        seen.add((child, parent, col))
+        out["edges"].append({"from": child, "col": col, "to": parent,
+                             "null": cols.get((child, col), (True, ""))[0]})
+    return out
+
+
 def main() -> int:
     try:
         sys.stdout.reconfigure(encoding="utf-8")
@@ -208,7 +275,7 @@ def main() -> int:
     args = ap.parse_args()
 
     with psycopg.connect(dsn(args.target), connect_timeout=30) as conn, conn.cursor() as cur:
-        tables, cols, pks, fks = fetch(cur)
+        tables, cols, pks, fks, order, uniques = fetch(cur)
 
     placed = {t for _, _, members in DOMAINS for t in members}
     leftover = [t for t in tables if t not in placed]
@@ -256,6 +323,11 @@ def main() -> int:
         for cd, c, col, pd, p in sorted(cross):
             out.append(f"| {c} <sub>({cd})</sub> | `{col}` | {p} <sub>({pd})</sub> |")
         out.append("")
+
+    if not args.stdout:
+        OUT_JSON.write_text(
+            json.dumps(as_json(domains, tables, cols, pks, fks, order, uniques),
+                       ensure_ascii=False, indent=1), encoding="utf-8")
 
     text = "\n".join(out)
     if args.stdout:
