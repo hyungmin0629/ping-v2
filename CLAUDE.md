@@ -35,7 +35,10 @@ A 갈래(로컬 합성 데이터)와 계정이 필요한 B 갈래를 나눠 적�
 
 - **상용 서비스 출시가 목표가 아니다.** 앱스토어 배포, 인앱결제, 사업자등록은 범위 밖.
 - **불특정 다수 공개가 아니다.** 성인 지인 20~50명 대상 클로즈드 테스트만.
-- MVP에서 **광고는 스텁**(3초 대기), **하트 충전은 제외**. 스키마는 준비돼 있다.
+- MVP에서 **광고는 스텁**(3초 대기). **하트 충전도 스텁**이다(W13) —
+  누르면 결제 없이 바로 들어오고, 대신 **하루 한 번**만 받을 수 있다.
+  스텁 결제는 `heart_purchase.store_transaction_id` 의 `MVP-STUB-` 접두어로 구분한다.
+  **매출을 셀 때 반드시 거를 것.**
 - **익명 게시판은 열지 않는다.** 신고 검토 인력이 없기 때문.
   단 **자유게시판**(닉네임이 드러나는 형태)은 열었다(W9). 글쓴이가 붙으면
   "사고가 나도 책임을 물을 수 없다"는 전제가 바뀌기 때문이다.
@@ -64,7 +67,7 @@ A 갈래(로컬 합성 데이터)와 계정이 필요한 B 갈래를 나눠 적�
 
 ## 현재 단계
 
-**P0·P1·P2·P4·W0~W12 완료** (2026-07-30) → 다음은 **P5 품질 검증** 또는 **P6 stg/mart**
+**P0·P1·P2·P4·W0~W13 완료** (2026-07-30) → 다음은 **P5 품질 검증** 또는 **P6 stg/mart**
 
 앱은 배포돼 있고, 실데이터가 BigQuery 까지 흐른다. 초대를 미룰 이유가 없어졌다
 — P4 를 먼저 한 것은 초대 후에 만들면 그동안 쌓인 데이터를 소급 적재해야 했기 때문이다.
@@ -89,7 +92,8 @@ A 갈래(로컬 합성 데이터)와 계정이 필요한 B 갈래를 나눠 적�
 | W9 자유게시판 | 닉네임 노출 · 학교 단위. 글·댓글·좋아요·신고 |
 | W10 친구 추천 | 같은 학교 사람 목록 → 요청 / 안 볼래. **더미는 제외** |
 | W11 프로필 수정 | 닉네임·성별·소속 변경. 온보딩 폼 재사용 |
-| W12 계정 삭제·뒤로가기 | 탈퇴(사유 기록·행 보존) + 휴대폰 뒤로가기. 시험 144종 통과 |
+| W12 계정 삭제·뒤로가기 | 탈퇴(사유 기록·행 보존) + 휴대폰 뒤로가기 |
+| W13 하트 충전 | **결제 없는 스텁.** 하루 한 번 제한. 시험 156종 통과 |
 
 ## 스크립트
 
@@ -98,7 +102,7 @@ A 갈래(로컬 합성 데이터)와 계정이 필요한 B 갈래를 나눠 적�
 | `python db/apply.py --target supabase` | DDL + 마이그레이션 적용. **확인 절차가 있다**(`--yes` 로 생략) |
 | `python db/run_sql.py <파일>` | SQL 파일 하나를 Supabase 에 적용 |
 | `python db/erd.py` | 살아 있는 스키마에서 ERD 를 뽑아 `docs/erd.md`·`erd.json` 갱신 |
-| `python db/rls/verify.py` | **침투·동작 시험 144항목. 배포 전 반드시 통과** |
+| `python db/rls/verify.py` | **침투·동작 시험 156항목. 배포 전 반드시 통과** |
 | `python db/neis_schools.py --schools` | 전국 중·고 목록 |
 | `python db/neis_schools.py --classes <코드> [--into <조직>]` | 학급 |
 | `python db/neis_meals.py --school <코드>` | 급식 |
@@ -135,6 +139,7 @@ python db/run_sql.py db/rls/board.sql         # 자유게시판 뷰 + RPC
 python db/run_sql.py db/rls/recommend.sql     # 친구 추천 뷰 + RPC
 python db/run_sql.py db/rls/profile.sql       # 프로필 수정 RPC (직접 UPDATE 를 회수)
 python db/run_sql.py db/rls/withdraw.sql      # 계정 삭제 RPC
+python db/run_sql.py db/rls/topup.sql         # 하트 충전 RPC (스텁)
 python db/run_sql.py db/seed_org.sql          # 테스트 조직
 python db/run_sql.py db/seed_questions.sql    # 질문 24개
 python db/rls/verify.py                       # 통과해야 끝

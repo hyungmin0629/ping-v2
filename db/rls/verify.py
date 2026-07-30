@@ -931,6 +931,88 @@ def main() -> int:
                 cur.execute("SET LOCAL ROLE postgres")
 
             # ---------------------------------------------------------
+            # 하트 충전 (W13)
+            #
+            # 결제가 없으므로 **하루 한 번**이 하트 경제를 지키는 유일한 장치다.
+            # 뚫리면 하트가 무한이 되고, 힌트 가격도 소비 패턴도 관찰할 수 없다.
+            # ---------------------------------------------------------
+            print()
+            print("하트 충전 시험")
+
+            def tcheck(desc: str, ok: bool, detail=""):
+                print(f"  {'동작함' if ok else '실패!!'} {desc}  ({detail})")
+                if not ok:
+                    failures.append(f"[충전] {desc}")
+
+            cur.execute("SAVEPOINT topup")
+            try:
+                cur.execute("SELECT heart_balance FROM app_user WHERE id=%s", (A,))
+                before = cur.fetchone()[0]
+
+                tcheck("살 수 있는 상태로 시작",
+                       rpc(cur, A_AUTH, "SELECT can_purchase FROM my_topup_state") is True,
+                       "can_purchase = true")
+
+                tcheck("없는 상품은 거부",
+                       rpc(cur, A_AUTH, "SELECT purchase_hearts('heart.999')") == "NOT_FOUND",
+                       "NOT_FOUND")
+
+                tcheck("충전이 처리됨",
+                       rpc(cur, A_AUTH, "SELECT purchase_hearts('heart.1000')") == "OK", "OK")
+
+                cur.execute("SELECT heart_balance FROM app_user WHERE id=%s", (A,))
+                after = cur.fetchone()[0]
+                tcheck("하트가 상품 수량만큼 늘어남", after == before + 1000,
+                       f"{before} → {after}")
+
+                cur.execute("""SELECT t.delta, t.balance_after, t.purchase_id IS NOT NULL
+                                 FROM heart_transaction t
+                                WHERE t.user_id=%s AND t.type_code='TOPUP'""", (A,))
+                tx = cur.fetchone()
+                tcheck("원장에 남고 잔액이 일치", tx == (1000, after, True), f"{tx}")
+
+                cur.execute("""SELECT status, store_transaction_id LIKE 'MVP-STUB-%%'
+                                 FROM heart_purchase WHERE user_id=%s""", (A,))
+                pur = cur.fetchone()
+                tcheck("스텁 결제임이 기록에 남음", pur == ("SUCCESS", True),
+                       "MVP-STUB- 접두어")
+
+                # ★ 이것이 이 기능의 전부다.
+                tcheck("같은 날 두 번째는 막힘",
+                       rpc(cur, A_AUTH, "SELECT purchase_hearts('heart.4000')") == "ALREADY_TODAY",
+                       "ALREADY_TODAY")
+                tcheck("제일 싼 것을 골라도 막힘",
+                       rpc(cur, A_AUTH, "SELECT purchase_hearts('heart.200')") == "ALREADY_TODAY",
+                       "상품을 가리지 않음")
+                tcheck("상태도 못 산다고 알려줌",
+                       rpc(cur, A_AUTH, "SELECT can_purchase FROM my_topup_state") is False,
+                       "can_purchase = false")
+
+                cur.execute("SELECT heart_balance FROM app_user WHERE id=%s", (A,))
+                tcheck("막힌 시도로 하트가 늘지 않음", cur.fetchone()[0] == after, f"{after}")
+
+                # 어제 산 것으로 바꾸면 다시 열려야 한다.
+                cur.execute("UPDATE heart_purchase SET created_at = now() - interval '2 days' "
+                            "WHERE user_id=%s", (A,))
+                tcheck("날이 바뀌면 다시 살 수 있음",
+                       rpc(cur, A_AUTH, "SELECT can_purchase FROM my_topup_state") is True,
+                       "can_purchase = true")
+
+                tcheck("heart_purchase 에 직접 INSERT 못 함",
+                       expect_error(cur, A_AUTH,
+                                    "INSERT INTO heart_purchase "
+                                    "(user_id, product_id, platform, status, price_krw, heart_amount) "
+                                    "SELECT %s, id, 'WEB', 'SUCCESS', 0, 99999 "
+                                    "FROM heart_product LIMIT 1 RETURNING id", (A,)),
+                       "권한거부")
+            except Exception as e:
+                print(f"  실패!! 충전 RPC  ({type(e).__name__}: {e})")
+                failures.append("[충전] RPC 호출 실패")
+            finally:
+                cur.execute("ROLLBACK TO SAVEPOINT topup")
+                cur.execute("SET LOCAL ROLE postgres")
+
+            # ---------------------------------------------------------
             # 계정 삭제 (W12)
             #
             # 행을 지우지 않고 status 를 바꾼다. 확인할 것은 셋이다 —

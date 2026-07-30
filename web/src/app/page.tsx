@@ -8,6 +8,7 @@ import { InboxPanel } from "@/components/inbox-panel";
 import { MealCalendar } from "@/components/meal-calendar";
 import { OnboardingForm } from "@/components/onboarding-form";
 import { ProfileCard } from "@/components/profile-card";
+import { TopupPanel } from "@/components/topup-panel";
 import { VotePanel } from "@/components/vote-panel";
 import { WithdrawPanel } from "@/components/withdraw-panel";
 import { ensureAnonymousSession } from "@/lib/supabase/session";
@@ -21,7 +22,8 @@ import { getMyProfile, type Profile } from "@/lib/profile";
  * 화면 이동 대신 상태로 갈라진다. 주소를 나눌 만큼 화면이 많지 않고,
  * 투표는 시작하면 끝까지 가는 흐름이라 뒤로가기가 오히려 방해가 된다.
  */
-type Screen = "home" | "vote" | "inbox" | "board" | "profile" | "withdraw";
+type Screen =
+  | "home" | "vote" | "inbox" | "board" | "profile" | "withdraw" | "topup";
 
 export default function Home() {
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -130,6 +132,14 @@ export default function Home() {
         <BoardPanel onClose={backHome} />
       )}
 
+      {!loading && !error && profile && screen === "topup" && (
+        <TopupPanel
+          hearts={profile.heartBalance}
+          onClose={backHome}
+          onChanged={refresh}
+        />
+      )}
+
       {!loading && !error && profile && screen === "profile" && (
         <div className="flex flex-col gap-10">
           <OnboardingForm
@@ -204,6 +214,13 @@ export default function Home() {
               className="rounded border border-neutral-300 px-4 py-3 text-sm font-medium dark:border-neutral-700"
             >
               자유게시판
+            </button>
+            <button
+              type="button"
+              onClick={() => go("topup")}
+              className="rounded border border-neutral-300 px-4 py-3 text-sm font-medium dark:border-neutral-700"
+            >
+              하트 충전
             </button>
           </section>
 
