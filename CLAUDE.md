@@ -36,6 +36,8 @@ A 갈래(로컬 합성 데이터)와 계정이 필요한 B 갈래를 나눠 적�
 - **불특정 다수 공개가 아니다.** 성인 지인 20~50명 대상 클로즈드 테스트만.
 - MVP에서 **광고는 스텁**(3초 대기), **하트 충전은 제외**. 스키마는 준비돼 있다.
 - **익명 게시판은 열지 않는다.** 신고 검토 인력이 없기 때문.
+  단 **자유게시판**(닉네임이 드러나는 형태)은 열었다(W9). 글쓴이가 붙으면
+  "사고가 나도 책임을 물을 수 없다"는 전제가 바뀌기 때문이다.
 
 ## 작업자 컨텍스트
 
@@ -61,7 +63,7 @@ A 갈래(로컬 합성 데이터)와 계정이 필요한 B 갈래를 나눠 적�
 
 ## 현재 단계
 
-**P0·P1·P2·P4·W0~W8 완료** (2026-07-30) → 다음은 **P5 품질 검증** 또는 **지인 초대**
+**P0·P1·P2·P4·W0~W9 완료** (2026-07-30) → 다음은 **지인 초대** 또는 **P5 품질 검증**
 
 앱은 배포돼 있고, 실데이터가 BigQuery 까지 흐른다. 초대를 미룰 이유가 없어졌다
 — P4 를 먼저 한 것은 초대 후에 만들면 그동안 쌓인 데이터를 소급 적재해야 했기 때문이다.
@@ -83,6 +85,7 @@ A 갈래(로컬 합성 데이터)와 계정이 필요한 B 갈래를 나눠 적�
 | P3 NEIS (일부) | 전국 중·고 5,724개 · 학교 19곳의 학급과 급식(2,938건). DAG 화는 남음 |
 | W8 급식표 | 메인 토글 → 월 캘린더 · 끼니 선택. **시간표·공지는 남음** |
 | P4 BigQuery 적재 | 42테이블 · 789만 행 (실유저 29,761 + 합성 786만). 갱신 감지 실증, Airflow DAG 실행 확인 |
+| W9 자유게시판 | 닉네임 노출 · 학교 단위. 글·댓글·좋아요·신고. 시험 109종 통과 |
 
 ## 스크립트
 
@@ -90,7 +93,7 @@ A 갈래(로컬 합성 데이터)와 계정이 필요한 B 갈래를 나눠 적�
 |---|---|
 | `python db/apply.py --target supabase` | DDL + 마이그레이션 적용 |
 | `python db/run_sql.py <파일>` | SQL 파일 하나를 Supabase 에 적용 |
-| `python db/rls/verify.py` | **침투·동작 시험 86항목. 배포 전 반드시 통과** |
+| `python db/rls/verify.py` | **침투·동작 시험 109항목. 배포 전 반드시 통과** |
 | `python db/neis_schools.py --schools` | 전국 중·고 목록 |
 | `python db/neis_schools.py --classes <코드> [--into <조직>]` | 학급 |
 | `python db/neis_meals.py --school <코드>` | 급식 |
@@ -115,6 +118,7 @@ python db/run_sql.py db/rls/received.sql      # 힌트·받은 투표 뷰
 python db/run_sql.py db/rls/session_log.sql   # 접속 로그 (insert_own_session 을 대체)
 python db/run_sql.py db/rls/school_picker.sql # selectable_school 뷰
 python db/run_sql.py db/rls/school_info.sql   # 급식 정책 + my_school_source 뷰
+python db/run_sql.py db/rls/board.sql         # 자유게시판 뷰 + RPC
 python db/run_sql.py db/seed_org.sql          # 테스트 조직
 python db/run_sql.py db/seed_questions.sql    # 질문 24개
 python db/rls/verify.py                       # 통과해야 끝
@@ -230,6 +234,8 @@ Supabase 대시보드에서 **Authentication → Sign In / Providers → Allow a
 - **id 로 남을 지목할 수 있는 경로를 만들지 않는다.** `app_user.id` 는 1부터 이어지는
   정수다. 친구 요청 INSERT 를 열었더니 코드 없이 전체 가입자를 지목할 수 있었다.
   친구 관련 쓰기는 전부 `db/rls/friends.sql` 의 RPC 로만 한다.
+- **남의 닉네임이 필요하면 뷰를 쓴다.** `app_user` 는 본인 행만 읽힌다.
+  게시판 목록에 글쓴이 이름을 띄우려고 정책을 넓히지 않고 `board_post` 뷰를 뒀다.
 - **컬럼을 가려야 하면 뷰를 쓴다.** RLS 는 행 단위라 컬럼을 숨기지 못한다.
   `vote_received` 는 직접 접근을 막고 `my_vote_received` 뷰로만 노출한다
   — `voter_id`("누가 나를 뽑았나")가 하트를 받고 파는 유료 정보이기 때문.
@@ -245,7 +251,7 @@ Supabase 대시보드에서 **Authentication → Sign In / Providers → Allow a
 | `block_record`, `friend_recommendation` | MVP 화면 범위 밖 |
 | `report`, `sanction` | MVP 화면 범위 밖 (설정값은 yaml에 준비됨) |
 | `meal_plan`, `timetable`, `school_notice`, `school_event`, `external_sync_log` | P3 NEIS 연동에서 채운다. **화면은 W8** |
-| `post`, `post_comment`, `post_like`, `comment_like` | 익명 게시판 v2 (재검토 조건은 [[DECISIONS]]) |
+| `post`, `post_comment`, `post_like`, `comment_like` | 실유저는 W9 부터 쓴다. **합성 생성기는 아직 안 만듦** |
 
 ## 스키마 적용 시 주의
 
@@ -339,7 +345,7 @@ docker run -d --name pgtest -e POSTGRES_PASSWORD=test -e POSTGRES_DB=pingv2 -p 5
 
 ## 하기로 했지만 순서가 없는 기능
 
-- **자유게시판** — 스키마 있음. 익명이 아니라 글쓴이가 드러나는 형태로 연다
+- ~~자유게시판~~ → **W9 에서 열었다.** 닉네임 노출 · 학교 단위 · 신고 포함
 - **지목한 사람에게 익명 메시지** — 스키마 **없음**. 받은 투표에서 "나를 뽑은
   사람"에게 보낸다. 보내는 쪽은 상대가 누군지 모른다
 - **채팅방 열기 (하트 차감)** — 스키마 **없음**. 하트 소비처가 하나 더 생긴다

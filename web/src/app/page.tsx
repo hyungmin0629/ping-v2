@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
+import { BoardPanel } from "@/components/board-panel";
 import { FriendsPanel } from "@/components/friends-panel";
 import { InboxPanel } from "@/components/inbox-panel";
 import { MealCalendar } from "@/components/meal-calendar";
@@ -21,7 +22,7 @@ import { getMyProfile, type Profile } from "@/lib/profile";
  */
 export default function Home() {
   const [profile, setProfile] = useState<Profile | null>(null);
-  const [screen, setScreen] = useState<"home" | "vote" | "inbox">("home");
+  const [screen, setScreen] = useState<"home" | "vote" | "inbox" | "board">("home");
   const [mealsOpen, setMealsOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -99,6 +100,10 @@ export default function Home() {
         />
       )}
 
+      {!loading && !error && profile && screen === "board" && (
+        <BoardPanel onClose={backHome} />
+      )}
+
       {!loading && !error && profile && screen === "home" && (
         <div className="flex flex-col gap-10">
           <ProfileCard profile={profile} />
@@ -128,6 +133,16 @@ export default function Home() {
                 투표가 열립니다
               </p>
             )}
+
+            {/* 게시판은 친구 5명 게이트와 무관하다. 투표는 친구가 있어야
+                성립하지만, 게시판은 같은 학교면 성립한다. */}
+            <button
+              type="button"
+              onClick={() => setScreen("board")}
+              className="rounded border border-neutral-300 px-4 py-3 text-sm font-medium dark:border-neutral-700"
+            >
+              자유게시판
+            </button>
           </section>
 
           <section className="flex flex-col gap-3 rounded border border-neutral-200 dark:border-neutral-800">

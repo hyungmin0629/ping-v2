@@ -820,6 +820,146 @@ def main() -> int:
                 cur.execute("SET LOCAL ROLE postgres")
 
             # ---------------------------------------------------------
+            # 자유게시판 (W9)
+            #
+            # 익명이 아니라 닉네임이 드러나는 형태다. 확인할 것은 셋이다 —
+            # 같은 학교 안에서만 보이는가, 쓰기가 RPC 밖으로 새지 않는가,
+            # 그리고 한 사람이 한 글에 댓글을 여러 번 달 수 있는가
+            # (익명 번호 UNIQUE 가 이걸 막고 있었다. 마이그레이션 005).
+            # ---------------------------------------------------------
+            print()
+            print("자유게시판 시험")
+
+            def bcheck(desc: str, ok: bool, detail=""):
+                print(f"  {'동작함' if ok else '실패!!'} {desc}  ({detail})")
+                if not ok:
+                    failures.append(f"[게시판] {desc}")
+
+            cur.execute("SAVEPOINT board")
+            try:
+                # 다른 학교 사람 하나. 게시판이 학교 밖으로 새는지 보려면 필요하다.
+                out_auth = uuid.UUID("eeeeeeee-0000-4000-8000-000000000005")
+                cur.execute("INSERT INTO auth.users (id) VALUES (%s) ON CONFLICT DO NOTHING",
+                            (out_auth,))
+                cur.execute("INSERT INTO region (sido, sigungu) VALUES ('시험','타구') "
+                            "ON CONFLICT (sido, sigungu) DO UPDATE SET sido=EXCLUDED.sido "
+                            "RETURNING id")
+                rid2 = cur.fetchone()[0]
+                cur.execute("INSERT INTO school (name_masked, region_id, school_type) "
+                            "VALUES ('타*학교', %s, 'HIGH') RETURNING id", (rid2,))
+                sid2 = cur.fetchone()[0]
+                cur.execute("INSERT INTO grade_class (school_id, grade, class_num) "
+                            "VALUES (%s, 1, 1) RETURNING id", (sid2,))
+                cid2 = cur.fetchone()[0]
+                cur.execute("INSERT INTO app_user (auth_user_id, nickname, invite_code, class_id) "
+                            "VALUES (%s, '타교유저', 'TESTEE', %s) RETURNING id", (out_auth, cid2))
+                outsider = cur.fetchone()[0]
+
+                # --- 글쓰기 ---
+                pid = rpc(cur, A_AUTH, "SELECT create_post('시험 제목', '시험 본문')")
+                bcheck("글을 쓰면 id 가 돌아옴", pid is not None, f"post {pid}")
+
+                seen = rpc(cur, B_AUTH,
+                           "SELECT count(*) FROM board_post WHERE id=%s", (pid,))
+                bcheck("같은 학교 사람에게 보임", seen == 1, f"{seen}건")
+
+                nick = rpc(cur, B_AUTH,
+                           "SELECT author_nickname FROM board_post WHERE id=%s", (pid,))
+                bcheck("글쓴이 닉네임이 드러남 (익명 아님)", nick == "시험유저A", f"{nick}")
+
+                out_seen = rpc(cur, out_auth,
+                               "SELECT count(*) FROM board_post WHERE id=%s", (pid,))
+                bcheck("다른 학교 사람에게는 안 보임", out_seen == 0, f"{out_seen}건")
+
+                # --- 댓글 ---
+                c1 = rpc(cur, B_AUTH, "SELECT create_comment(%s, '첫 댓글')", (pid,))
+                c2 = rpc(cur, B_AUTH, "SELECT create_comment(%s, '같은 사람이 또 답글')", (pid,))
+                bcheck("한 사람이 한 글에 댓글을 두 번 달 수 있음 (마이그레이션 005)",
+                       c1 is not None and c2 is not None and c1 != c2, f"{c1}, {c2}")
+
+                cnt = rpc(cur, A_AUTH, "SELECT comment_count FROM board_post WHERE id=%s", (pid,))
+                bcheck("댓글 수 집계가 맞음", cnt == 2, f"{cnt}개")
+
+                # 이건 postgres 로 본다. post_comment 는 유저에게 안 열려 있어서
+                # (뷰로만 노출) 유저 권한으로 세면 RLS 에 막혀 0 이 나온다.
+                cur.execute("SELECT count(*) FROM post_comment WHERE post_id=%s "
+                            "AND anonymous_seq IS NULL", (pid,))
+                cseq = cur.fetchone()[0]
+                bcheck("익명 번호를 쓰지 않음", cseq == 2, f"NULL {cseq}개")
+
+                bcheck("다른 학교 글에는 댓글을 못 닮",
+                       expect_error(cur, out_auth, "SELECT create_comment(%s, '침입')", (pid,)),
+                       "차단")
+
+                # --- 좋아요 ---
+                on = rpc(cur, B_AUTH, "SELECT toggle_post_like(%s)", (pid,))
+                liked = rpc(cur, A_AUTH, "SELECT like_count FROM board_post WHERE id=%s", (pid,))
+                bcheck("좋아요를 누르면 켜지고 집계가 오름", on is True and liked == 1, f"{liked}개")
+
+                off = rpc(cur, B_AUTH, "SELECT toggle_post_like(%s)", (pid,))
+                unliked = rpc(cur, A_AUTH, "SELECT like_count FROM board_post WHERE id=%s", (pid,))
+                bcheck("다시 누르면 꺼지고 집계가 내려감",
+                       off is False and unliked == 0, f"{unliked}개")
+
+                # --- 쓰기가 RPC 밖으로 새지 않는가 ---
+                bcheck("post 에 직접 INSERT 못 함",
+                       expect_error(cur, A_AUTH,
+                                    "INSERT INTO post (school_id, category_id, author_id, title, body) "
+                                    "SELECT 1, 1, %s, 'x', 'y' RETURNING id", (B,)),
+                       "권한거부")
+                bcheck("post_like 에 직접 INSERT 못 함 (좋아요 조작)",
+                       expect_error(cur, A_AUTH,
+                                    "INSERT INTO post_like (post_id, user_id) "
+                                    "VALUES (%s, %s) RETURNING id", (pid, A)),
+                       "권한거부")
+                bcheck("남의 글을 직접 UPDATE 못 함",
+                       expect_error(cur, B_AUTH,
+                                    "UPDATE post SET title='탈취' WHERE id=%s RETURNING id", (pid,)),
+                       "권한거부")
+
+                # --- 신고 ---
+                r1 = rpc(cur, B_AUTH, "SELECT report_content('POST', %s, 'P_ABUSE', '욕설')", (pid,))
+                bcheck("신고가 접수됨", r1 == "OK", f"{r1}")
+
+                r2 = rpc(cur, B_AUTH, "SELECT report_content('POST', %s, 'P_ABUSE', NULL)", (pid,))
+                bcheck("같은 사람이 두 번 신고해도 한 건", r2 == "ALREADY", f"{r2}")
+
+                cur.execute("SELECT report_count FROM post WHERE id=%s", (pid,))
+                rcnt = cur.fetchone()[0]
+                bcheck("신고 수가 한 번만 오름", rcnt == 1, f"{rcnt}건")
+
+                r3 = rpc(cur, A_AUTH, "SELECT report_content('POST', %s, 'P_ABUSE', NULL)", (pid,))
+                bcheck("자기 글은 신고할 수 없음", r3 == "SELF", f"{r3}")
+
+                bcheck("댓글용 사유로 글을 신고할 수 없음",
+                       expect_error(cur, B_AUTH,
+                                    "SELECT report_content('POST', %s, 'C_ABUSE', NULL)", (pid,)),
+                       "차단")
+
+                # 신고해도 글은 그대로 있어야 한다. 자동 숨김은 집단 신고에 취약해
+                # 채택하지 않았다(DECISIONS).
+                still = rpc(cur, B_AUTH, "SELECT count(*) FROM board_post WHERE id=%s", (pid,))
+                bcheck("신고해도 자동으로 내려가지 않음", still == 1, "사람이 판단")
+
+                # --- 삭제 ---
+                bcheck("남의 글은 지울 수 없음",
+                       rpc(cur, B_AUTH, "SELECT delete_own_post(%s)", (pid,)) is False, "false")
+
+                gone = rpc(cur, A_AUTH, "SELECT delete_own_post(%s)", (pid,))
+                left = rpc(cur, B_AUTH, "SELECT count(*) FROM board_post WHERE id=%s", (pid,))
+                bcheck("내 글을 지우면 목록에서 사라짐", gone is True and left == 0, f"{left}건")
+
+                cur.execute("SELECT status FROM post WHERE id=%s", (pid,))
+                bcheck("행은 남는다 (신고 기록이 가리키고 있다)",
+                       cur.fetchone()[0] == "DELETED", "DELETED")
+            except Exception as e:
+                print(f"  실패!! 게시판 RPC  ({type(e).__name__}: {e})")
+                failures.append("[게시판] RPC 호출 실패")
+            finally:
+                cur.execute("ROLLBACK TO SAVEPOINT board")
+                cur.execute("SET LOCAL ROLE postgres")
+
+            # ---------------------------------------------------------
             # 반대 방향 — 정상 동작이 막히지 않았는가
             #
             # 전부 차단해버려도 위 침투 시험은 통과한다. 그래서 이 시험이 필요하다.
