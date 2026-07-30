@@ -104,6 +104,55 @@ def fetch(cur):
     return tables, cols, pks, fks
 
 
+# 도메인 색. 채도를 낮춘 8색이라 옆에 놓아도 서로 싸우지 않고,
+# 전부 밝아서 검은 글씨가 얹힌다.
+DOMAIN_FILL = {
+    "기준 정보": "#E3E8E6", "유저": "#CFE6DE", "친구": "#DCE7CF",
+    "질문과 투표": "#E9E2CB", "하트": "#F0DCCB", "신고와 제재": "#EED6D6",
+    "학교 정보": "#D6E0EE", "게시판": "#E2D9EA", "기타": "#EDEDED",
+}
+
+
+def whole(domains, tables, fks) -> str:
+    """42개를 한 장에. 컬럼을 버리고 관계만 남긴다.
+
+    상자마다 키를 적으면 42개가 화면을 덮어 정작 선이 안 보인다. 한 장으로 보는
+    목적은 "무엇이 무엇에 붙어 있나"이지 "어떤 컬럼인가"가 아니다.
+    같은 두 테이블 사이의 FK 가 여럿이면(report→app_user 는 2개) 선 하나로 접고
+    ×N 을 붙인다 — 안 접으면 report 주변이 뭉갠다.
+    """
+    # id 는 **순서**로 짓는다. hash() 는 실행마다 값이 달라져 생성 파일이
+    # 매번 다르게 나온다 — git 이 의미 없는 변경으로 채워진다.
+    lines = ["flowchart LR"]
+    for i, (title, _, members) in enumerate(domains):
+        members = [t for t in members if t in tables]
+        if not members:
+            continue
+        lines.append(f'    subgraph g{i}["{title}"]')
+        lines.append("        direction TB")
+        for t in members:
+            lines.append(f"        {t}[{t}]")
+        lines.append("    end")
+
+    pairs: dict[tuple[str, str], int] = {}
+    for child, _col, parent in fks:
+        if parent not in tables or child not in tables:
+            continue          # auth.users 처럼 스키마 밖 부모는 그리지 않는다
+        pairs[(child, parent)] = pairs.get((child, parent), 0) + 1
+
+    for (child, parent), n in sorted(pairs.items()):
+        label = f'|"×{n}"|' if n > 1 else ""
+        lines.append(f"    {child} -->{label} {parent}")
+
+    for i, (title, _, members) in enumerate(domains):
+        members = [t for t in members if t in tables]
+        if members:
+            lines.append(f"    classDef c{i} fill:{DOMAIN_FILL.get(title, '#EEE')},"
+                         f"stroke:#5C6B6B,color:#14181A")
+            lines.append(f"    class {','.join(members)} c{i}")
+    return "\n".join(lines)
+
+
 def diagram(members: list[str], cols, pks, fks) -> str:
     """도메인 하나의 mermaid erDiagram.
 
@@ -183,6 +232,11 @@ def main() -> int:
         "점선(`|o`)으로 시작하는 관계는 FK 가 NULL 을 허용한다는 뜻이다.",
         "",
     ]
+
+    out += ["## 전체", "",
+            "42개를 한 장에 놓은 것이다. 색이 도메인이고, 화살표는 자식 → 부모다.",
+            "같은 두 테이블 사이에 FK 가 여럿이면 선 하나로 접고 `×N` 을 붙였다.", "",
+            "```mermaid", whole(domains, tables, fks), "```", ""]
 
     for title, note, members in domains:
         members = [t for t in members if t in tables]
