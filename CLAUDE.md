@@ -63,7 +63,7 @@ A 갈래(로컬 합성 데이터)와 계정이 필요한 B 갈래를 나눠 적�
 
 ## 현재 단계
 
-**P0·P1·P2·P4·W0~W9 완료** (2026-07-30) → 다음은 **지인 초대** 또는 **P5 품질 검증**
+**P0·P1·P2·P4·W0~W10 완료** (2026-07-30) → 다음은 **지인 초대** 또는 **P5 품질 검증**
 
 앱은 배포돼 있고, 실데이터가 BigQuery 까지 흐른다. 초대를 미룰 이유가 없어졌다
 — P4 를 먼저 한 것은 초대 후에 만들면 그동안 쌓인 데이터를 소급 적재해야 했기 때문이다.
@@ -85,7 +85,8 @@ A 갈래(로컬 합성 데이터)와 계정이 필요한 B 갈래를 나눠 적�
 | P3 NEIS (일부) | 전국 중·고 5,724개 · 학교 19곳의 학급과 급식(2,938건). DAG 화는 남음 |
 | W8 급식표 | 메인 토글 → 월 캘린더 · 끼니 선택. **시간표·공지는 남음** |
 | P4 BigQuery 적재 | 42테이블 · 789만 행 (실유저 29,761 + 합성 786만). 갱신 감지 실증, Airflow DAG 실행 확인 |
-| W9 자유게시판 | 닉네임 노출 · 학교 단위. 글·댓글·좋아요·신고. 시험 115종 통과 |
+| W9 자유게시판 | 닉네임 노출 · 학교 단위. 글·댓글·좋아요·신고 |
+| W10 친구 추천 | 같은 학교 사람 목록 → 요청 / 안 볼래. **더미는 제외.** 시험 128종 통과 |
 
 ## 스크립트
 
@@ -93,7 +94,7 @@ A 갈래(로컬 합성 데이터)와 계정이 필요한 B 갈래를 나눠 적�
 |---|---|
 | `python db/apply.py --target supabase` | DDL + 마이그레이션 적용 |
 | `python db/run_sql.py <파일>` | SQL 파일 하나를 Supabase 에 적용 |
-| `python db/rls/verify.py` | **침투·동작 시험 115항목. 배포 전 반드시 통과** |
+| `python db/rls/verify.py` | **침투·동작 시험 128항목. 배포 전 반드시 통과** |
 | `python db/neis_schools.py --schools` | 전국 중·고 목록 |
 | `python db/neis_schools.py --classes <코드> [--into <조직>]` | 학급 |
 | `python db/neis_meals.py --school <코드>` | 급식 |
@@ -119,6 +120,7 @@ python db/run_sql.py db/rls/session_log.sql   # 접속 로그 (insert_own_sessio
 python db/run_sql.py db/rls/school_picker.sql # selectable_school 뷰
 python db/run_sql.py db/rls/school_info.sql   # 급식 정책 + my_school_source 뷰
 python db/run_sql.py db/rls/board.sql         # 자유게시판 뷰 + RPC
+python db/run_sql.py db/rls/recommend.sql     # 친구 추천 뷰 + RPC
 python db/run_sql.py db/seed_org.sql          # 테스트 조직
 python db/run_sql.py db/seed_questions.sql    # 질문 24개
 python db/rls/verify.py                       # 통과해야 끝
@@ -234,6 +236,10 @@ Supabase 대시보드에서 **Authentication → Sign In / Providers → Allow a
 - **id 로 남을 지목할 수 있는 경로를 만들지 않는다.** `app_user.id` 는 1부터 이어지는
   정수다. 친구 요청 INSERT 를 열었더니 코드 없이 전체 가입자를 지목할 수 있었다.
   친구 관련 쓰기는 전부 `db/rls/friends.sql` 의 RPC 로만 한다.
+  ⚠️ **W10 친구 추천이 이 원칙을 좁은 범위에서 연다** — 같은 학교·비친구·비더미에
+  한해 코드 없이 요청할 수 있다. `send_request_to()` 가 대상이 정말 추천 목록에
+  있는지 **서버에서 다시 확인**하는 것이 이 기능의 안전장치 전부다. 손대지 말 것.
+  경위는 [[DECISIONS]].
 - ⚠️ **게시판의 학교 경계는 기술로 막혀 있지만, 소속은 자기신고다.**
   다른 학교 계정으로 14경로를 뚫어봐 전부 막힌 것을 확인했다(시험에 포함).
   그러나 온보딩에서 **아무 학교나 고를 수 있고** 익명 계정은 무제한이라,

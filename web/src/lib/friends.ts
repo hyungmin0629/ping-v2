@@ -120,3 +120,48 @@ export async function listFriends(myId: number): Promise<Person[]> {
     }))
     .sort((a, b) => a.nickname.localeCompare(b.nickname, "ko"));
 }
+
+// 친구 추천 -----------------------------------------------------------
+// 같은 학교 사람을 보여준다. 초대 코드를 모르는 상대에게 요청을 보낼 수 있는
+// **유일한 경로**라, 범위 판단은 전부 DB 가 한다(db/rls/recommend.sql).
+// 여기서 넘기는 id 는 서버가 추천 목록에 실제로 있는지 다시 확인한다.
+
+export type Suggestion = {
+  id: number;
+  nickname: string;
+  belonging: string;
+  /** 같은 반이면 화면에서 먼저 보여준다 */
+  sameClass: boolean;
+};
+
+export async function listSuggestions(): Promise<Suggestion[]> {
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .from("friend_suggestion")
+    .select("id, nickname, grade, class_num, class_label, same_class, created_at")
+    .order("same_class", { ascending: false })
+    .order("created_at", { ascending: false })
+    .limit(50);
+
+  if (error) throw error;
+  return (data ?? []).map((r) => ({
+    id: r.id,
+    nickname: r.nickname,
+    belonging: r.class_label ?? `${r.grade}학년 ${r.class_num}반`,
+    sameClass: r.same_class,
+  }));
+}
+
+export async function sendRequestTo(userId: number): Promise<SendResult> {
+  const supabase = createClient();
+  const { data, error } = await supabase.rpc("send_request_to", { p_user_id: userId });
+  if (error) throw new Error(error.message);
+  return data as SendResult;
+}
+
+/** 목록에서만 뺀다. 차단이 아니라 상대는 여전히 나에게 요청할 수 있다. */
+export async function dismissSuggestion(userId: number): Promise<void> {
+  const supabase = createClient();
+  const { error } = await supabase.rpc("dismiss_suggestion", { p_user_id: userId });
+  if (error) throw new Error(error.message);
+}

@@ -984,6 +984,125 @@ def main() -> int:
                 cur.execute("SET LOCAL ROLE postgres")
 
             # ---------------------------------------------------------
+            # 친구 추천 (W10)
+            #
+            # 이 기능은 "초대 코드로만 친구를 맺는다"를 좁은 범위에서 연다.
+            # 그래서 **범위가 정확히 그만큼인지**가 전부다 —
+            # 같은 학교만, 더미는 빼고, 코드는 내보내지 않고.
+            # ---------------------------------------------------------
+            print()
+            print("친구 추천 시험")
+
+            def rcheck(desc: str, ok: bool, detail=""):
+                print(f"  {'동작함' if ok else '실패!!'} {desc}  ({detail})")
+                if not ok:
+                    failures.append(f"[추천] {desc}")
+
+            cur.execute("SAVEPOINT recommend")
+            try:
+                # A 와 같은 학교의 생판 남 하나, 그리고 같은 학교의 더미 하나.
+                far_auth = uuid.UUID("ffffffff-0000-4000-8000-000000000006")
+                cur.execute("INSERT INTO auth.users (id) VALUES (%s) ON CONFLICT DO NOTHING",
+                            (far_auth,))
+                cur.execute("INSERT INTO grade_class (school_id, grade, class_num) "
+                            "SELECT g.school_id, 2, 7 FROM grade_class g WHERE g.id=%s "
+                            "RETURNING id", (ctx["class"],))
+                other_class = cur.fetchone()[0]
+                cur.execute("INSERT INTO app_user (auth_user_id, nickname, invite_code, class_id) "
+                            "VALUES (%s, '같은학교남', 'TESTFF', %s) RETURNING id",
+                            (far_auth, other_class))
+                stranger = cur.fetchone()[0]
+                cur.execute("INSERT INTO app_user (nickname, invite_code, class_id, is_synthetic) "
+                            "VALUES ('더미친구', 'TESTGG', %s, true) RETURNING id", (ctx["class"],))
+                dummy = cur.fetchone()[0]
+
+                # 다른 학교 사람. 게시판 블록의 것은 롤백돼 사라졌으므로 새로 만든다
+                # — 없는 유저로 시험하면 "프로필이 없어서" 0행이 나와 통과한 것처럼 보인다.
+                far2 = uuid.UUID("ffffffff-0000-4000-8000-000000000008")
+                cur.execute("INSERT INTO auth.users (id) VALUES (%s) ON CONFLICT DO NOTHING", (far2,))
+                cur.execute("INSERT INTO region (sido, sigungu) VALUES ('추천시','구') RETURNING id")
+                r2 = cur.fetchone()[0]
+                cur.execute("INSERT INTO school (name_masked, region_id, school_type) "
+                            "VALUES ('추*학교', %s, 'HIGH') RETURNING id", (r2,))
+                s2 = cur.fetchone()[0]
+                cur.execute("INSERT INTO grade_class (school_id, grade, class_num) "
+                            "VALUES (%s,1,1) RETURNING id", (s2,))
+                c2 = cur.fetchone()[0]
+                cur.execute("INSERT INTO app_user (auth_user_id, nickname, invite_code, class_id) "
+                            "VALUES (%s, '타교사람', 'TESTJJ', %s) RETURNING id", (far2, c2))
+                far_user = cur.fetchone()[0]
+
+                shown = rpc(cur, A_AUTH,
+                            "SELECT count(*) FROM friend_suggestion WHERE id=%s", (stranger,))
+                rcheck("같은 학교 사람이 추천에 뜸", shown == 1, f"{shown}건")
+
+                # ★ 더미를 남겨둔 근거가 "테스터가 마주칠 경로가 없다"였다.
+                dshown = rpc(cur, A_AUTH,
+                             "SELECT count(*) FROM friend_suggestion WHERE id=%s", (dummy,))
+                rcheck("더미는 추천에 뜨지 않음", dshown == 0, f"{dshown}건")
+
+                oshown = rpc(cur, far2,
+                             "SELECT count(*) FROM friend_suggestion WHERE id=%s", (stranger,))
+                rcheck("다른 학교 사람은 서로 추천되지 않음", oshown == 0, f"{oshown}건")
+
+                cur.execute("SELECT count(*) FROM information_schema.columns "
+                            "WHERE table_name='friend_suggestion' AND column_name='invite_code'")
+                rcheck("추천 목록에 초대 코드가 없음", cur.fetchone()[0] == 0, "컬럼 없음")
+
+                # 보내기
+                sent = rpc(cur, A_AUTH, "SELECT send_request_to(%s)", (stranger,))
+                rcheck("추천에서 요청을 보낼 수 있음", sent == "SENT", f"{sent}")
+
+                left = rpc(cur, A_AUTH,
+                           "SELECT count(*) FROM friend_suggestion WHERE id=%s", (stranger,))
+                rcheck("보낸 뒤에는 목록에서 사라짐", left == 0, f"{left}건")
+
+                # ★ 추천 밖의 사람은 지목할 수 없다. 이게 뚫리면 이 함수가
+                #   곧 전체 가입자 지목 통로가 된다.
+                rcheck("더미에게는 요청을 보낼 수 없음",
+                       rpc(cur, A_AUTH, "SELECT send_request_to(%s)", (dummy,)) == "NOT_FOUND",
+                       "NOT_FOUND")
+                rcheck("다른 학교 사람에게는 요청을 보낼 수 없음",
+                       rpc(cur, A_AUTH, "SELECT send_request_to(%s)", (far_user,)) == "NOT_FOUND",
+                       "NOT_FOUND")
+                rcheck("다른 학교에서 이쪽으로도 못 보냄",
+                       rpc(cur, far2, "SELECT send_request_to(%s)", (stranger,)) == "NOT_FOUND",
+                       "NOT_FOUND")
+
+                # 안 볼래
+                cur.execute("INSERT INTO auth.users (id) VALUES (%s) ON CONFLICT DO NOTHING",
+                            (uuid.UUID("ffffffff-0000-4000-8000-000000000007"),))
+                cur.execute("INSERT INTO app_user (auth_user_id, nickname, invite_code, class_id) "
+                            "VALUES (%s, '안볼사람', 'TESTHH', %s) RETURNING id",
+                            (uuid.UUID("ffffffff-0000-4000-8000-000000000007"), other_class))
+                skip = cur.fetchone()[0]
+
+                rcheck("안 볼래를 누르면 true",
+                       rpc(cur, A_AUTH, "SELECT dismiss_suggestion(%s)", (skip,)) is True, "true")
+                rcheck("안 볼래 한 사람은 목록에서 사라짐",
+                       rpc(cur, A_AUTH,
+                           "SELECT count(*) FROM friend_suggestion WHERE id=%s", (skip,)) == 0,
+                       "0건")
+                # 안 볼래는 차단이 아니다. 상대는 여전히 나를 부를 수 있어야 한다.
+                rcheck("안 볼래 해도 상대에게는 내가 보임",
+                       rpc(cur, uuid.UUID("ffffffff-0000-4000-8000-000000000007"),
+                           "SELECT count(*) FROM friend_suggestion WHERE id=%s", (A,)) == 1,
+                       "차단이 아님")
+
+                rcheck("friend_recommendation 에 직접 INSERT 못 함",
+                       expect_error(cur, A_AUTH,
+                                    "INSERT INTO friend_recommendation "
+                                    "(user_id, recommended_user_id, reason) "
+                                    "VALUES (%s, %s, 'SAME_SCHOOL') RETURNING id", (B, A)),
+                       "권한거부")
+            except Exception as e:
+                print(f"  실패!! 추천 RPC  ({type(e).__name__}: {e})")
+                failures.append("[추천] RPC 호출 실패")
+            finally:
+                cur.execute("ROLLBACK TO SAVEPOINT recommend")
+                cur.execute("SET LOCAL ROLE postgres")
+
+            # ---------------------------------------------------------
             # 반대 방향 — 정상 동작이 막히지 않았는가
             #
             # 전부 차단해버려도 위 침투 시험은 통과한다. 그래서 이 시험이 필요하다.

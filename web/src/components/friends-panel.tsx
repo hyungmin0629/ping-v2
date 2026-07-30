@@ -2,13 +2,17 @@
 
 import { useCallback, useEffect, useState } from "react";
 import {
+  dismissSuggestion,
   listFriends,
   listIncomingRequests,
+  listSuggestions,
   normalizeCode,
   respondToRequest,
   sendFriendRequest,
+  sendRequestTo,
   SEND_MESSAGE,
   type Person,
+  type Suggestion,
 } from "@/lib/friends";
 
 /**
@@ -29,16 +33,19 @@ export function FriendsPanel({
   const [message, setMessage] = useState("");
   const [incoming, setIncoming] = useState<Person[]>([]);
   const [friends, setFriends] = useState<Person[]>([]);
+  const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
+  const [busyId, setBusyId] = useState<number | null>(null);
   const [error, setError] = useState("");
 
   // 상태 갱신을 콜백 안에서 한다 — effect 본문에서 곧바로 setState 하면
   // 렌더가 연쇄로 도는 패턴이라 린트가 막는다.
   const reload = useCallback(
     () =>
-      Promise.all([listIncomingRequests(), listFriends(myId)])
-        .then(([reqs, mates]) => {
+      Promise.all([listIncomingRequests(), listFriends(myId), listSuggestions()])
+        .then(([reqs, mates, suggested]) => {
           setIncoming(reqs);
           setFriends(mates);
+          setSuggestions(suggested);
           setError("");
         })
         .catch((e) => setError(e instanceof Error ? e.message : String(e))),
@@ -76,6 +83,24 @@ export function FriendsPanel({
       onChanged();
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
+    }
+  }
+
+  async function suggest(userId: number, send: boolean) {
+    setBusyId(userId);
+    setMessage("");
+    try {
+      if (send) {
+        setMessage(SEND_MESSAGE[await sendRequestTo(userId)]);
+      } else {
+        await dismissSuggestion(userId);
+      }
+      await reload();
+      if (send) onChanged();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setBusyId(null);
     }
   }
 
@@ -134,6 +159,52 @@ export function FriendsPanel({
                     className="rounded border border-neutral-300 px-3 py-1.5 text-xs dark:border-neutral-700"
                   >
                     거절
+                  </button>
+                </span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {suggestions.length > 0 && (
+        <section className="flex flex-col gap-3">
+          <h2 className="text-sm font-medium">
+            알 수도 있는 사람{" "}
+            <span className="text-neutral-500">{suggestions.length}</span>
+          </h2>
+          <p className="text-xs leading-relaxed text-neutral-500">
+            같은 학교 사람입니다. 요청을 보내면 상대가 수락해야 친구가 됩니다.
+          </p>
+          <ul className="divide-y divide-neutral-200 rounded border border-neutral-200 dark:divide-neutral-800 dark:border-neutral-800">
+            {suggestions.map((s) => (
+              <li
+                key={s.id}
+                className="flex items-center justify-between gap-3 px-4 py-3"
+              >
+                <span className="min-w-0">
+                  <span className="block truncate text-sm">{s.nickname}</span>
+                  <span className="block text-xs text-neutral-500">
+                    {s.belonging}
+                    {s.sameClass && " · 같은 반"}
+                  </span>
+                </span>
+                <span className="flex shrink-0 gap-2">
+                  <button
+                    type="button"
+                    disabled={busyId === s.id}
+                    onClick={() => suggest(s.id, true)}
+                    className="rounded bg-neutral-900 px-3 py-1.5 text-xs text-white disabled:opacity-30 dark:bg-neutral-100 dark:text-neutral-900"
+                  >
+                    요청
+                  </button>
+                  <button
+                    type="button"
+                    disabled={busyId === s.id}
+                    onClick={() => suggest(s.id, false)}
+                    className="rounded border border-neutral-300 px-3 py-1.5 text-xs text-neutral-500 disabled:opacity-30 dark:border-neutral-700"
+                  >
+                    안 볼래
                   </button>
                 </span>
               </li>
