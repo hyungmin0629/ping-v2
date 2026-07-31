@@ -46,6 +46,8 @@ export type ReceivedVote = {
   basicCount: number;
   canUnlockName: boolean;
   hasName: boolean;
+  /** 내가 이미 답장을 보냈는가. 한 번뿐이다 */
+  reply: string | null;
   bought: Record<HintKind, boolean>;
   gender: string | null;
   grade: number | null;
@@ -61,12 +63,15 @@ export type MyVote = {
   question: string;
   chosenNickname: string;
   votedAt: string;
+  /** 뽑힌 사람이 보낸 한 번뿐인 답장 (W15) */
+  reply: string | null;
 };
 
 const COLUMNS = `
   id, question_text, is_read, created_at, name_length,
   basic_count, can_unlock_name,
   has_gender, has_lead, has_vowel, has_tail, has_class, has_name,
+  reply_text, replied_at,
   voter_gender, voter_grade, voter_class_num, voter_nickname,
   lead_hint, vowel_hint, tail_hint
 `;
@@ -85,6 +90,8 @@ type Row = {
   has_tail: boolean;
   has_class: boolean;
   has_name: boolean;
+  reply_text: string | null;
+  replied_at: string | null;
   voter_gender: string | null;
   voter_grade: number | null;
   voter_class_num: number | null;
@@ -104,6 +111,7 @@ function toVote(r: Row): ReceivedVote {
     basicCount: r.basic_count,
     canUnlockName: r.can_unlock_name,
     hasName: r.has_name,
+    reply: r.reply_text,
     bought: {
       GENDER: r.has_gender,
       INITIAL: r.has_lead,
@@ -215,7 +223,7 @@ export async function listMyVotes(): Promise<MyVote[]> {
   const supabase = createClient();
   const { data, error } = await supabase
     .from("my_vote_history")
-    .select("vote_item_id, question_text, chosen_nickname, voted_at")
+    .select("vote_item_id, question_text, chosen_nickname, voted_at, reply_text")
     .order("voted_at", { ascending: false });
 
   if (error) throw error;
@@ -224,6 +232,7 @@ export async function listMyVotes(): Promise<MyVote[]> {
     question: r.question_text,
     chosenNickname: r.chosen_nickname,
     votedAt: r.voted_at,
+    reply: r.reply_text,
   }));
 }
 
@@ -234,4 +243,59 @@ export function formatDay(iso: string) {
 /** 아직 아무 자모도 못 산 자리표시 — ○○○ */
 export function blankName(length: number) {
   return "○".repeat(Math.max(length, 1));
+}
+
+// 답장 (W15) ----------------------------------------------------------
+// 나를 뽑은 사람에게 **한 번만** 보낸다. 20하트, 30자.
+// 힌트와 순서가 없다 — 누군지 몰라도 고맙다고 할 수는 있다.
+//
+// ⚠️ 보내는 쪽은 상대를 모를 수 있지만, 받는 쪽은 자기가 누구를 뽑았는지
+//    알므로 **보낸 사람을 안다.** 그래서 답장은 익명이 아니다.
+
+export const REPLY_COST = 20;
+export const REPLY_MAX = 30;
+
+export type ReplyResult =
+  | "OK" | "EMPTY" | "TOO_LONG" | "ALREADY" | "NOT_ENOUGH" | "NOT_FOUND";
+
+export const REPLY_MESSAGE: Record<ReplyResult, string> = {
+  OK: "답장을 보냈습니다.",
+  EMPTY: "내용을 입력해 주세요.",
+  TOO_LONG: `${REPLY_MAX}자까지 쓸 수 있어요.`,
+  ALREADY: "이미 답장을 보냈습니다. 한 번만 보낼 수 있어요.",
+  NOT_ENOUGH: "하트가 모자랍니다.",
+  NOT_FOUND: "찾을 수 없는 투표입니다.",
+};
+
+export async function sendReply(
+  receivedId: number,
+  text: string,
+): Promise<ReplyResult> {
+  const supabase = createClient();
+  const { data, error } = await supabase.rpc("send_reply", {
+    p_received_id: receivedId,
+    p_text: text,
+  });
+  if (error) throw new Error(error.message);
+  return data as ReplyResult;
+}
+
+export const REPLY_REPORT_REASONS = [
+  { code: "U_HARASSMENT", label: "괴롭힘·비하" },
+  { code: "U_INAPPROPRIATE", label: "부적절한 내용" },
+  { code: "U_SPAM", label: "스팸·광고" },
+] as const;
+
+/** 받은 답장을 신고한다. 대상은 그 답장을 보낸 사람이다. */
+export async function reportReply(
+  voteItemId: number,
+  reasonCode: string,
+): Promise<"OK" | "ALREADY" | "NOT_FOUND"> {
+  const supabase = createClient();
+  const { data, error } = await supabase.rpc("report_reply", {
+    p_vote_item_id: voteItemId,
+    p_reason_code: reasonCode,
+  });
+  if (error) throw new Error(error.message);
+  return data as "OK" | "ALREADY" | "NOT_FOUND";
 }

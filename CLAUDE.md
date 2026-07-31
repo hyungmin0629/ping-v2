@@ -67,7 +67,7 @@ A 갈래(로컬 합성 데이터)와 계정이 필요한 B 갈래를 나눠 적�
 
 ## 현재 단계
 
-**P0·P1·P2·P4·W0~W13 완료** (2026-07-30) → 다음은 **P5 품질 검증** 또는 **P6 stg/mart**
+**P0·P1·P2·P4·W0~W15 완료** (2026-07-30) → 다음은 **P5 품질 검증** 또는 **P6 stg/mart**
 
 앱은 배포돼 있고, 실데이터가 BigQuery 까지 흐른다. 초대를 미룰 이유가 없어졌다
 — P4 를 먼저 한 것은 초대 후에 만들면 그동안 쌓인 데이터를 소급 적재해야 했기 때문이다.
@@ -96,7 +96,9 @@ A 갈래(로컬 합성 데이터)와 계정이 필요한 B 갈래를 나눠 적�
 | W13 하트 충전 | **결제 없는 스텁.** 하루 한 번 제한 |
 | W14 선택형 힌트 | 순차 4단계 → **골라 사는 5+1**. 각 20하트, 이름 100하트(기본 3개 이상).
   초·중·종성은 **각자 다른 글자**를 연다(초성 ○ㅎ○ / 중성 ○○ㅣ / 종성 ㅁ○○).
-  성별은 광고 30초로도 열린다(하루 1회). 받은 투표 → 상세 창에서 관리. **답장은 남음** |
+  성별은 광고 30초로도 열린다(하루 1회). 받은 투표 → 상세 창에서 관리 |
+| W15 1회성 답장 | 지목당한 쪽이 뽑은 쪽에게 20하트·30자·한 번. 힌트와 순서 무관.
+  ⚠️ **차단 화면 없이 연 첫 1:1 텍스트다.** 대신 받은 답장을 신고할 수 있다 |
 
 ## 스크립트
 
@@ -105,7 +107,7 @@ A 갈래(로컬 합성 데이터)와 계정이 필요한 B 갈래를 나눠 적�
 | `python db/apply.py --target supabase` | DDL + 마이그레이션 적용. **확인 절차가 있다**(`--yes` 로 생략) |
 | `python db/run_sql.py <파일>` | SQL 파일 하나를 Supabase 에 적용 |
 | `python db/erd.py` | 살아 있는 스키마에서 ERD 를 뽑아 `docs/erd.md`·`erd.json` 갱신 |
-| `python db/rls/verify.py` | **침투·동작 시험 161항목. 배포 전 반드시 통과** |
+| `python db/rls/verify.py` | **침투·동작 시험 175항목. 배포 전 반드시 통과** |
 | `python db/neis_schools.py --schools` | 전국 중·고 목록 |
 | `python db/neis_schools.py --classes <코드> [--into <조직>]` | 학급 |
 | `python db/neis_meals.py --school <코드>` | 급식 |
@@ -145,6 +147,7 @@ python db/run_sql.py db/rls/withdraw.sql      # 계정 삭제 RPC
 python db/run_sql.py db/rls/topup.sql         # 하트 충전 RPC (스텁)
 python db/run_sql.py db/rls/hangul.sql        # 한글 자모 분해·조합
 python db/run_sql.py db/rls/hints.sql         # 선택형 힌트 (received.sql 의 buy_hint 를 대체)
+python db/run_sql.py db/rls/replies.sql       # 1회성 답장 + 신고 (my_vote_history 를 갈아끼운다)
 python db/run_sql.py db/seed_org.sql          # 테스트 조직
 python db/run_sql.py db/seed_questions.sql    # 질문 24개
 python db/rls/verify.py                       # 통과해야 끝

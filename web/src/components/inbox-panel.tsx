@@ -7,6 +7,8 @@ import {
   listMyVotes,
   listReceived,
   markRead,
+  reportReply,
+  REPLY_REPORT_REASONS,
   UNLOCK_MIN,
   blankName,
   type MyVote,
@@ -37,6 +39,8 @@ export function InboxPanel({
   const [received, setReceived] = useState<ReceivedVote[]>([]);
   const [sent, setSent] = useState<MyVote[]>([]);
   const [open, setOpen] = useState<ReceivedVote | null>(null);
+  const [reporting, setReporting] = useState<number | null>(null);
+  const [notice, setNotice] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -96,6 +100,11 @@ export function InboxPanel({
         </button>
       </div>
 
+      {notice && (
+        <p className="rounded border border-neutral-300 px-4 py-3 text-sm dark:border-neutral-700">
+          {notice}
+        </p>
+      )}
       {error && (
         <p className="rounded border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-800 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300">
           {error}
@@ -156,6 +165,51 @@ export function InboxPanel({
                 <p className="mt-1 text-xs text-neutral-500">
                   {formatDay(v.votedAt)} · <strong>{v.chosenNickname}</strong>
                 </p>
+
+                {/* 뽑힌 사람이 보낸 답장. 누가 보냈는지는 이미 알고 있다. */}
+                {v.reply && (
+                  <div className="mt-2 rounded border border-neutral-300 px-3 py-2 dark:border-neutral-700">
+                    <p className="text-sm">{v.reply}</p>
+                    <p className="mt-1 flex justify-between gap-3 text-xs text-neutral-500">
+                      <span>{v.chosenNickname} 님의 답장</span>
+                      <button
+                        type="button"
+                        onClick={() => setReporting(reporting === v.id ? null : v.id)}
+                        className="underline underline-offset-2"
+                      >
+                        신고
+                      </button>
+                    </p>
+                    {reporting === v.id && (
+                      <div className="mt-2 flex flex-col gap-1.5 border-t border-neutral-200 pt-2 dark:border-neutral-800">
+                        {REPLY_REPORT_REASONS.map((r) => (
+                          <button
+                            key={r.code}
+                            type="button"
+                            onClick={async () => {
+                              setReporting(null);
+                              try {
+                                const result = await reportReply(v.id, r.code);
+                                setNotice(
+                                  result === "OK"
+                                    ? "신고했습니다. 확인 후 조치됩니다"
+                                    : result === "ALREADY"
+                                      ? "이미 신고한 사람입니다"
+                                      : "찾을 수 없습니다",
+                                );
+                              } catch (e) {
+                                setError(e instanceof Error ? e.message : String(e));
+                              }
+                            }}
+                            className="rounded border border-neutral-300 px-2 py-1.5 text-left text-xs dark:border-neutral-700"
+                          >
+                            {r.label}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
               </li>
             ))}
           </ul>

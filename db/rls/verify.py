@@ -816,6 +816,99 @@ def main() -> int:
                 cur.execute("SET LOCAL ROLE postgres")
 
             # ---------------------------------------------------------
+            # 1회성 답장 (W15)
+            #
+            # 방향이 헷갈리기 쉽다 — **지목당한 쪽이 뽑은 쪽에게** 보낸다.
+            # 한 번뿐이고, 뽑은 사람만 볼 수 있어야 한다.
+            # ---------------------------------------------------------
+            print()
+            print("답장 시험")
+
+            def rcheck2(desc: str, ok: bool, detail=""):
+                print(f"  {'동작함' if ok else '실패!!'} {desc}  ({detail})")
+                if not ok:
+                    failures.append(f"[답장] {desc}")
+
+            cur.execute("SAVEPOINT reply")
+            try:
+                recv = ctx["received"]      # A 가 B 를 뽑았다 → B 가 답장한다
+                cur.execute("UPDATE app_user SET heart_balance = 100 WHERE id=%s", (B,))
+
+                rcheck2("빈 답장은 거부",
+                        rpc(cur, B_AUTH, "SELECT send_reply(%s,'   ')", (recv,)) == "EMPTY",
+                        "EMPTY")
+                rcheck2("30자를 넘으면 거부",
+                        rpc(cur, B_AUTH, "SELECT send_reply(%s,%s)", (recv, "가" * 31))
+                        == "TOO_LONG", "TOO_LONG")
+                rcheck2("남이 받은 투표에는 답장 못 함",
+                        rpc(cur, A_AUTH, "SELECT send_reply(%s,'침입')", (recv,)) == "NOT_FOUND",
+                        "NOT_FOUND")
+
+                rcheck2("답장이 보내짐",
+                        rpc(cur, B_AUTH, "SELECT send_reply(%s,'고마워요')", (recv,)) == "OK",
+                        "OK")
+                rcheck2("두 번은 못 보냄",
+                        rpc(cur, B_AUTH, "SELECT send_reply(%s,'또')", (recv,)) == "ALREADY",
+                        "ALREADY")
+
+                cur.execute("SELECT heart_balance FROM app_user WHERE id=%s", (B,))
+                rcheck2("하트가 20 빠짐", cur.fetchone()[0] == 80, "100 → 80")
+                cur.execute("""SELECT delta, type_code FROM heart_transaction
+                                WHERE user_id=%s AND type_code='VOTE_REPLY'""", (B,))
+                rcheck2("원장에 VOTE_REPLY 로 남음", cur.fetchone() == (-20, "VOTE_REPLY"),
+                        "-20")
+
+                # my_vote_history 는 "선택된 후보"가 있어야 행을 낸다.
+                # setup 은 후보를 만들지 않으므로 여기서 하나 넣는다.
+                cur.execute("INSERT INTO vote_candidate "
+                            "(vote_item_id, candidate_user_id, shuffle_round, slot, is_chosen) "
+                            "VALUES (%s,%s,0,1,true) ON CONFLICT DO NOTHING",
+                            (ctx["item"], B))
+                got = rpc(cur, A_AUTH,
+                          "SELECT reply_text FROM my_vote_history WHERE vote_item_id=%s",
+                          (ctx["item"],))
+                rcheck2("뽑은 사람에게 답장이 보임", got == "고마워요", f"{got}")
+
+                # 힌트와 무관하다 — 아무것도 안 열어도 보냈다.
+                cur.execute("SELECT count(*) FROM hint_purchase WHERE vote_received_id=%s",
+                            (recv,))
+                rcheck2("힌트를 열지 않아도 보낼 수 있음", cur.fetchone()[0] == 0, "힌트 0개")
+
+                # 신고
+                rcheck2("받은 답장을 신고할 수 있음",
+                        rpc(cur, A_AUTH,
+                            "SELECT report_reply(%s,'U_HARASSMENT','시험')", (ctx["item"],))
+                        == "OK", "OK")
+                rcheck2("같은 사람을 두 번 신고해도 한 건",
+                        rpc(cur, A_AUTH,
+                            "SELECT report_reply(%s,'U_HARASSMENT',NULL)", (ctx["item"],))
+                        == "ALREADY", "ALREADY")
+                rcheck2("게시글용 사유로는 신고 못 함",
+                        expect_error(cur, A_AUTH,
+                                     "SELECT report_reply(%s,'P_ABUSE',NULL)", (ctx["item"],)),
+                        "차단")
+
+                # 하트가 모자라면
+                cur.execute("UPDATE app_user SET heart_balance = 5 WHERE id=%s", (B,))
+                cur.execute("UPDATE vote_received SET reply_text=NULL, replied_at=NULL "
+                            "WHERE id=%s", (recv,))
+                rcheck2("하트가 모자라면 못 보냄",
+                        rpc(cur, B_AUTH, "SELECT send_reply(%s,'또')", (recv,)) == "NOT_ENOUGH",
+                        "NOT_ENOUGH")
+
+                rcheck2("vote_received 를 직접 못 고침",
+                        expect_error(cur, B_AUTH,
+                                     "UPDATE vote_received SET reply_text='직접' "
+                                     "WHERE id=%s RETURNING id", (recv,)),
+                        "권한거부")
+            except Exception as e:
+                print(f"  실패!! 답장 RPC  ({type(e).__name__}: {e})")
+                failures.append("[답장] RPC 호출 실패")
+            finally:
+                cur.execute("ROLLBACK TO SAVEPOINT reply")
+                cur.execute("SET LOCAL ROLE postgres")
+
+            # ---------------------------------------------------------
             # 선택형 힌트 (W14)
             #
             # 순차 4단계에서 **골라 사는 5+1** 로 바뀌었다. 확인할 것은 —

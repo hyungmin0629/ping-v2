@@ -58,6 +58,9 @@ SELECT
     r.read_at,
     r.answer_status,
     r.created_at,
+    -- 답장은 힌트와 무관하다. 보냈는지 여부와 내용은 본인 것이므로 그대로 낸다.
+    r.reply_text,
+    r.replied_at,
 
     coalesce(b.has_gender, false)             AS has_gender,
     (b.lead_idx  IS NOT NULL)                 AS has_lead,
