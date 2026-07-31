@@ -24,7 +24,7 @@ CREATE TABLE question_request (
     proposed_category_id  bigint         REFERENCES question_category(id),
     status                request_status NOT NULL DEFAULT 'PENDING',
     reject_reason         varchar(200),
-    reviewed_by_admin_id  bigint         REFERENCES admin_user(id),
+    reviewed_by_admin_id  bigint         REFERENCES app_user(id),
     reviewed_at           timestamptz,
     published_question_id bigint,          -- FK는 question 생성 후 아래에서 추가
     created_at            timestamptz    NOT NULL DEFAULT now(),
@@ -47,7 +47,7 @@ CREATE TABLE question (
     status              question_status NOT NULL DEFAULT 'ACTIVE',
     source              question_source NOT NULL DEFAULT 'OFFICIAL',
     report_count        int             NOT NULL DEFAULT 0,
-    created_by_admin_id bigint          REFERENCES admin_user(id),
+    created_by_admin_id bigint          REFERENCES app_user(id),
     created_at          timestamptz     NOT NULL DEFAULT now()
 );
 CREATE INDEX idx_question_pool ON question(status, scope, category_id);

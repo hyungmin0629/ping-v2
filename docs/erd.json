@@ -73,61 +73,10 @@
    "uniques": []
   },
   {
-   "name": "admin_user",
-   "domain": "기준 정보",
-   "title": "운영자",
-   "note": "구 스키마에는 운영 행위의 주체가 남지 않았다. 질문 검수·신고 처리·수동 입력의 작성자를 추적한다.",
-   "columns": [
-    {
-     "name": "id",
-     "type": "bigint",
-     "null": false,
-     "pk": true,
-     "fk": null
-    },
-    {
-     "name": "name_masked",
-     "type": "varchar(30)",
-     "null": false,
-     "pk": false,
-     "fk": null
-    },
-    {
-     "name": "role",
-     "type": "admin_role",
-     "null": false,
-     "pk": false,
-     "fk": null
-    },
-    {
-     "name": "school_id",
-     "type": "bigint",
-     "null": true,
-     "pk": false,
-     "fk": "school"
-    },
-    {
-     "name": "is_active",
-     "type": "boolean",
-     "null": false,
-     "pk": false,
-     "fk": null
-    },
-    {
-     "name": "created_at",
-     "type": "timestamptz",
-     "null": false,
-     "pk": false,
-     "fk": null
-    }
-   ],
-   "uniques": []
-  },
-  {
    "name": "app_user",
    "domain": "유저",
    "title": "유저",
-   "note": "\"user\" 는 Postgres 예약어라 app_user 로 명명한다. ★ 개인정보를 받지 않는다. 이메일·전화번호·실명·비밀번호 컬럼이 없다. 이건 누락이 아니라 설계다. 유저가 입력하는 것은 nickname 과 소속(class_id) 둘뿐이다. auth_user_id : Supabase 익명 계정(auth.users)의 uuid. 이메일·비번 없이 접속만으로 발급된다. 합성 유저는 NULL이므로 실유저/합성 구분에도 쓰인다. nickname     : 유저가 직접 정하는 별명. 실명이 아니다. invite_code  : 친구 추가의 유일한 수단. 이 코드를 주고받아 관계를 맺는다. 전화번호·이메일을 받지 않으므로 서로를 찾을 다른 방법이 없다. heart_balance: 구 스키마에서 point/heart 로 이원화돼 보이던 것을 하나로 통합. service_unlocked_at: 친구 5명 게이트를 넘긴 시점. 온보딩 퍼널 측정용. last_active_at: 구 스키마에 로그인 기록이 없어 리텐션을 친구요청으로 추정해야 했던 문제를 해소.",
+   "note": "\"user\" 는 Postgres 예약어라 app_user 로 명명한다. ★ 개인정보를 받지 않는다. 이메일·전화번호·실명·비밀번호 컬럼이 없다. 이건 누락이 아니라 설계다. 유저가 입력하는 것은 nickname 과 소속(class_id) 둘뿐이다. auth_user_id : Supabase 익명 계정(auth.users)의 uuid. 이메일·비번 없이 접속만으로 발급된다. 합성 유저는 NULL이므로 실유저/합성 구분에도 쓰인다. nickname     : 유저가 직접 정하는 별명. 실명이 아니다. invite_code  : 친구 추가의 유일한 수단. 이 코드를 주고받아 관계를 맺는다. 전화번호·이메일을 받지 않으므로 서로를 찾을 다른 방법이 없다. heart_balance: 구 스키마에서 point/heart 로 이원화돼 보이던 것을 하나로 통합. service_unlocked_at: 친구 5명 게이트를 넘긴 시점. 온보딩 퍼널 측정용. last_active_at: 구 스키마에 로그인 기록이 없어 리텐션을 친구요청으로 추정해야 했던 문제를 해소. is_admin     : 운영자 표시. 원래는 admin_user 테이블이 따로 있었으나, 운영 화면을 만들 계획이 없어 플래그 하나로 접었다. 운영 행위의 주체(질문 검수·신고 처리)는 여전히 남는다 — 그 FK 들이 이제 이 테이블을 가리킨다. ★ 이 값을 바꾸는 경로는 앱에 없다. DB 에서 직접 켠다.",
    "columns": [
     {
      "name": "id",
@@ -223,6 +172,13 @@
     {
      "name": "updated_at",
      "type": "timestamptz",
+     "null": false,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "is_admin",
+     "type": "boolean",
      "null": false,
      "pk": false,
      "fk": null
@@ -947,7 +903,7 @@
      "type": "bigint",
      "null": true,
      "pk": false,
-     "fk": "admin_user"
+     "fk": "app_user"
     },
     {
      "name": "memo",
@@ -1071,10 +1027,24 @@
      "null": false,
      "pk": false,
      "fk": null
+    },
+    {
+     "name": "ad_impression_id",
+     "type": "bigint",
+     "null": true,
+     "pk": false,
+     "fk": "ad_impression"
+    },
+    {
+     "name": "char_index",
+     "type": "smallint",
+     "null": true,
+     "pk": false,
+     "fk": null
     }
    ],
    "uniques": [
-    "vote_received_id, step"
+    "vote_received_id, hint_type"
    ]
   },
   {
@@ -1503,7 +1473,7 @@
      "type": "bigint",
      "null": true,
      "pk": false,
-     "fk": "admin_user"
+     "fk": "app_user"
     },
     {
      "name": "created_at",
@@ -1628,7 +1598,7 @@
      "type": "bigint",
      "null": true,
      "pk": false,
-     "fk": "admin_user"
+     "fk": "app_user"
     },
     {
      "name": "reviewed_at",
@@ -1781,7 +1751,7 @@
      "type": "bigint",
      "null": true,
      "pk": false,
-     "fk": "admin_user"
+     "fk": "app_user"
     },
     {
      "name": "reviewed_at",
@@ -1890,7 +1860,7 @@
      "type": "bigint",
      "null": true,
      "pk": false,
-     "fk": "admin_user"
+     "fk": "app_user"
     },
     {
      "name": "reason",
@@ -2243,7 +2213,7 @@
      "type": "bigint",
      "null": true,
      "pk": false,
-     "fk": "admin_user"
+     "fk": "app_user"
     },
     {
      "name": "published_at",
@@ -2765,6 +2735,20 @@
      "null": false,
      "pk": false,
      "fk": null
+    },
+    {
+     "name": "reply_text",
+     "type": "varchar(30)",
+     "null": true,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "replied_at",
+     "type": "timestamptz",
+     "null": true,
+     "pk": false,
+     "fk": null
     }
    ],
    "uniques": [
@@ -2922,12 +2906,6 @@
    "null": false
   },
   {
-   "from": "admin_user",
-   "col": "school_id",
-   "to": "school",
-   "null": true
-  },
-  {
    "from": "app_user",
    "col": "class_id",
    "to": "grade_class",
@@ -3026,7 +3004,7 @@
   {
    "from": "heart_transaction",
    "col": "admin_id",
-   "to": "admin_user",
+   "to": "app_user",
    "null": true
   },
   {
@@ -3057,6 +3035,12 @@
    "from": "heart_transaction",
    "col": "vote_item_id",
    "to": "vote_item",
+   "null": true
+  },
+  {
+   "from": "hint_purchase",
+   "col": "ad_impression_id",
+   "to": "ad_impression",
    "null": true
   },
   {
@@ -3140,7 +3124,7 @@
   {
    "from": "question",
    "col": "created_by_admin_id",
-   "to": "admin_user",
+   "to": "app_user",
    "null": true
   },
   {
@@ -3158,7 +3142,7 @@
   {
    "from": "question_request",
    "col": "reviewed_by_admin_id",
-   "to": "admin_user",
+   "to": "app_user",
    "null": true
   },
   {
@@ -3182,7 +3166,7 @@
   {
    "from": "report",
    "col": "reviewed_by_admin_id",
-   "to": "admin_user",
+   "to": "app_user",
    "null": true
   },
   {
@@ -3212,7 +3196,7 @@
   {
    "from": "sanction",
    "col": "issued_by_admin_id",
-   "to": "admin_user",
+   "to": "app_user",
    "null": true
   },
   {
@@ -3254,7 +3238,7 @@
   {
    "from": "school_notice",
    "col": "created_by_admin_id",
-   "to": "admin_user",
+   "to": "app_user",
    "null": true
   },
   {

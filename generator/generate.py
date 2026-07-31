@@ -291,22 +291,6 @@ class Generator:
                                  [cls_id, sid, grade, cnum, iso(self.start)])
             self.schools.append(school)
 
-        # 운영자 — 질문 검수·신고 처리의 주체.
-        # 구 스키마에는 이 개념이 없어 운영 행위의 작성자를 알 수 없었다.
-        admins = [
-            (1, "관*자", "SUPER"),
-            (2, "김*원", "REVIEWER"),
-            (3, "이*진", "REVIEWER"),
-            (4, "박*영", "MODERATOR"),
-            (5, "최*수", "MODERATOR"),
-        ]
-        for aid, name, role in admins:
-            self.w.write("admin_user",
-                         ["id", "name_masked", "role", "school_id", "is_active", "created_at"],
-                         [aid, name, role, "", "true", iso(self.start)])
-        self.reviewer_ids = [2, 3]
-        self.moderator_ids = [4, 5]
-
         # student_count 는 유저 배정 후 갱신되므로 일단 0으로 두고 마지막에 다시 쓴다
         for s in self.schools:
             self.w.write("school",
@@ -476,6 +460,14 @@ class Generator:
     # -- 4. 질문 ------------------------------------------------------
     def gen_questions(self):
         qc = self.cfg["questions"]
+
+        # 운영자 — 질문 검수·신고 처리의 주체.
+        # 원래는 admin_user 테이블에서 뽑았다(migration 009 에서 없앰).
+        # 이제 유저 중 일부에 표시한다 — 운영자도 계정이 있어야 한다는 뜻이다.
+        # 가장 먼저 가입한 다섯 명을 쓴다.
+        self.admin_ids = [u.id for u in self.users[:5]]
+        self.reviewer_ids = self.admin_ids[1:3]
+        self.moderator_ids = self.admin_ids[3:5]
         # 90_seed_master.sql 이 넣는 카테고리 id 순서와 맞춘다
         codes = ["PERSONALITY", "RELATIONSHIP", "TALENT", "HUMOR", "SCHOOL_LIFE", "FUTURE", "TASTE"]
         for i, code in enumerate(codes, start=1):
@@ -799,12 +791,13 @@ class Generator:
             self.w.write("app_user",
                          ["id", "auth_user_id", "nickname", "invite_code", "gender", "class_id",
                           "heart_balance", "friend_count", "service_unlocked_at", "status",
-                          "is_synthetic", "last_active_at", "created_at", "updated_at"],
+                          "is_synthetic", "is_admin", "last_active_at", "created_at", "updated_at"],
                          [u.id, "", make_nickname(self.rng, self._nicks),
                           make_invite_code(self.rng, self._codes), u.gender, u.class_id,
                           getattr(u, "final_balance", 0), len(u.friends),
                           iso(u.unlocked_at), "WITHDRAWN" if withdrawn else "ACTIVE",
-                          "true", iso(last_active), iso(u.created_at), iso(last_active)])
+                          "true", "true" if u.id in self.admin_ids else "false",
+                          iso(last_active), iso(u.created_at), iso(last_active)])
 
             if withdrawn:
                 wd_id += 1

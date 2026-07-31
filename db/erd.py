@@ -37,7 +37,7 @@ OUT_JSON = ROOT / "docs" / "erd.json"      # 카드형 ERD 가 읽는다
 # 여기 없는 테이블은 "기타"로 떨어진다 — 새 테이블이 조용히 사라지지 않게.
 DOMAINS: list[tuple[str, str, list[str]]] = [
     ("기준 정보", "지역·학교·학급. 유저를 배치할 곳이 먼저 있어야 한다.",
-     ["region", "school", "grade_class", "admin_user"]),
+     ["region", "school", "grade_class"]),
     ("유저", "익명 계정 하나에 프로필 하나. 접속 기록과 탈퇴가 딸린다.",
      ["app_user", "user_session", "user_withdrawal", "withdrawal_reason"]),
     ("친구", "요청(방향 있음) → 수락 → friendship(방향 없음).",

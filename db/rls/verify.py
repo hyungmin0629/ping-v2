@@ -212,8 +212,8 @@ def main() -> int:
                  B_AUTH, "SELECT 1 FROM my_vote_received WHERE voter_id IS NOT NULL", (), 0),
                 ("A 가 B 의 투표 기록을 조회",
                  B_AUTH, "SELECT 1 FROM vote_item WHERE user_id=%s", (A,), 0),
-                ("A 가 운영자 명단을 조회",
-                 A_AUTH, "SELECT 1 FROM admin_user", (), 0),
+                ("A 가 남의 운영자 여부를 조회",
+                 A_AUTH, "SELECT 1 FROM app_user WHERE is_admin", (), 0),
                 ("A 가 자동제재 임계값을 조회",
                  A_AUTH, "SELECT 1 FROM sanction_policy", (), 0),
                 ("비로그인 상태로 유저 목록 조회",
@@ -257,6 +257,11 @@ def main() -> int:
                          "VALUES (%s,'ADMIN_ADJUST',999999,999999)", (A,)),
                 ("A 가 B 의 닉네임을 변경",
                  A_AUTH, "UPDATE app_user SET nickname='해킹됨' WHERE id=%s", (B,)),
+                # ★ 운영자 표시를 스스로 켤 수 있으면 안 된다. admin_user 를
+                #   없애고 app_user 로 접으면서 생긴 위험이다(migration 009) —
+                #   운영자 여부가 이제 **유저가 UPDATE 하는 표**에 산다.
+                ("A 가 스스로 운영자가 되기",
+                 A_AUTH, "UPDATE app_user SET is_admin=true WHERE id=%s", (A,)),
                 ("A 가 남의 명의로 친구요청 생성",
                  A_AUTH, "INSERT INTO friend_request (sender_id,receiver_id,source) "
                          "VALUES (%s,%s,'INVITE_CODE')", (B, A)),

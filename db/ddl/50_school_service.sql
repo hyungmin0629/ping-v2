@@ -16,7 +16,7 @@ CREATE TABLE school_notice (
     source                 data_source  NOT NULL DEFAULT 'MANUAL',
     external_id            varchar(80),
     is_manually_overridden boolean      NOT NULL DEFAULT false,
-    created_by_admin_id    bigint       REFERENCES admin_user(id),
+    created_by_admin_id    bigint       REFERENCES app_user(id),
     published_at           timestamptz  NOT NULL DEFAULT now(),
     created_at             timestamptz  NOT NULL DEFAULT now(),
     updated_at             timestamptz  NOT NULL DEFAULT now()

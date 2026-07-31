@@ -6,7 +6,7 @@
 > 관계는 실제로 걸려 있는 FK 만 나온다. 컬럼은 **키(PK·FK)만** 싣는다.
 > 전체 컬럼 정의는 `db/ddl/` 이 진실이다.
 
-테이블 **42개** · FK **77개**
+테이블 **41개** · FK **77개**
 
 점선(`|o`)으로 시작하는 관계는 FK 가 NULL 을 허용한다는 뜻이다.
 
@@ -22,7 +22,6 @@ flowchart LR
         region[region]
         school[school]
         grade_class[grade_class]
-        admin_user[admin_user]
     end
     subgraph g1["유저"]
         direction TB
@@ -84,7 +83,6 @@ flowchart LR
         comment_like[comment_like]
     end
     ad_impression --> app_user
-    admin_user --> school
     app_user --> grade_class
     block_record -->|"×2"| app_user
     comment_like --> app_user
@@ -97,12 +95,12 @@ flowchart LR
     heart_purchase --> app_user
     heart_purchase --> heart_product
     heart_transaction --> ad_impression
-    heart_transaction --> admin_user
-    heart_transaction --> app_user
+    heart_transaction -->|"×2"| app_user
     heart_transaction --> heart_purchase
     heart_transaction --> heart_transaction_type
     heart_transaction --> hint_purchase
     heart_transaction --> vote_item
+    hint_purchase --> ad_impression
     hint_purchase --> app_user
     hint_purchase --> vote_received
     meal_menu_item --> meal_plan
@@ -115,26 +113,23 @@ flowchart LR
     post_comment --> post_comment
     post_like --> app_user
     post_like --> post
-    question --> admin_user
+    question --> app_user
     question --> question_category
-    question_request --> admin_user
-    question_request --> app_user
+    question_request -->|"×2"| app_user
     question_request --> question
     question_request --> question_category
-    report --> admin_user
-    report -->|"×2"| app_user
+    report -->|"×3"| app_user
     report --> post
     report --> post_comment
     report --> question
     report --> report_reason
-    sanction --> admin_user
-    sanction --> app_user
+    sanction -->|"×2"| app_user
     sanction --> report
     sanction --> sanction_policy
     school --> region
     school --> school
     school_event --> school
-    school_notice --> admin_user
+    school_notice --> app_user
     school_notice --> school
     school_notice_read --> app_user
     school_notice_read --> school_notice
@@ -154,7 +149,7 @@ flowchart LR
     vote_shuffle --> ad_impression
     vote_shuffle --> vote_item
     classDef c0 fill:#E3E8E6,stroke:#5C6B6B,color:#14181A
-    class region,school,grade_class,admin_user c0
+    class region,school,grade_class c0
     classDef c1 fill:#CFE6DE,stroke:#5C6B6B,color:#14181A
     class app_user,user_session,user_withdrawal,withdrawal_reason c1
     classDef c2 fill:#DCE7CF,stroke:#5C6B6B,color:#14181A
@@ -189,11 +184,6 @@ erDiagram
         bigint id PK
         bigint school_id FK
     }
-    admin_user {
-        bigint id PK
-        bigint school_id FK
-    }
-    school |o--o{ admin_user : "school_id"
     school ||--o{ grade_class : "school_id"
     school |o--o{ school : "info_school_id"
     region ||--o{ school : "region_id"
@@ -304,6 +294,7 @@ erDiagram
         bigint voter_id FK
     }
     hint_purchase {
+        bigint ad_impression_id FK
         bigint id PK
         bigint user_id FK
         bigint vote_received_id FK
@@ -312,6 +303,7 @@ erDiagram
         bigint id PK
         bigint user_id FK
     }
+    ad_impression |o--o{ hint_purchase : "ad_impression_id"
     vote_received ||--o{ hint_purchase : "vote_received_id"
     question_category ||--o{ question : "category_id"
     question_category |o--o{ question_request : "proposed_category_id"
@@ -481,19 +473,19 @@ erDiagram
 | post_comment <sub>(게시판)</sub> | `author_id` | app_user <sub>(유저)</sub> |
 | post_like <sub>(게시판)</sub> | `user_id` | app_user <sub>(유저)</sub> |
 | report <sub>(신고와 제재)</sub> | `reporter_id` | app_user <sub>(유저)</sub> |
-| report <sub>(신고와 제재)</sub> | `reviewed_by_admin_id` | admin_user <sub>(기준 정보)</sub> |
+| report <sub>(신고와 제재)</sub> | `reviewed_by_admin_id` | app_user <sub>(유저)</sub> |
 | report <sub>(신고와 제재)</sub> | `target_comment_id` | post_comment <sub>(게시판)</sub> |
 | report <sub>(신고와 제재)</sub> | `target_post_id` | post <sub>(게시판)</sub> |
 | report <sub>(신고와 제재)</sub> | `target_question_id` | question <sub>(질문과 투표)</sub> |
 | report <sub>(신고와 제재)</sub> | `target_user_id` | app_user <sub>(유저)</sub> |
-| sanction <sub>(신고와 제재)</sub> | `issued_by_admin_id` | admin_user <sub>(기준 정보)</sub> |
+| sanction <sub>(신고와 제재)</sub> | `issued_by_admin_id` | app_user <sub>(유저)</sub> |
 | sanction <sub>(신고와 제재)</sub> | `user_id` | app_user <sub>(유저)</sub> |
 | app_user <sub>(유저)</sub> | `auth_user_id` | auth.users <sub>(스키마 밖)</sub> |
 | app_user <sub>(유저)</sub> | `class_id` | grade_class <sub>(기준 정보)</sub> |
 | ad_impression <sub>(질문과 투표)</sub> | `user_id` | app_user <sub>(유저)</sub> |
 | hint_purchase <sub>(질문과 투표)</sub> | `user_id` | app_user <sub>(유저)</sub> |
-| question <sub>(질문과 투표)</sub> | `created_by_admin_id` | admin_user <sub>(기준 정보)</sub> |
-| question_request <sub>(질문과 투표)</sub> | `reviewed_by_admin_id` | admin_user <sub>(기준 정보)</sub> |
+| question <sub>(질문과 투표)</sub> | `created_by_admin_id` | app_user <sub>(유저)</sub> |
+| question_request <sub>(질문과 투표)</sub> | `reviewed_by_admin_id` | app_user <sub>(유저)</sub> |
 | question_request <sub>(질문과 투표)</sub> | `user_id` | app_user <sub>(유저)</sub> |
 | vote_candidate <sub>(질문과 투표)</sub> | `candidate_user_id` | app_user <sub>(유저)</sub> |
 | vote_item <sub>(질문과 투표)</sub> | `user_id` | app_user <sub>(유저)</sub> |
@@ -510,14 +502,14 @@ erDiagram
 | friendship <sub>(친구)</sub> | `user_low_id` | app_user <sub>(유저)</sub> |
 | heart_purchase <sub>(하트)</sub> | `user_id` | app_user <sub>(유저)</sub> |
 | heart_transaction <sub>(하트)</sub> | `ad_impression_id` | ad_impression <sub>(질문과 투표)</sub> |
-| heart_transaction <sub>(하트)</sub> | `admin_id` | admin_user <sub>(기준 정보)</sub> |
+| heart_transaction <sub>(하트)</sub> | `admin_id` | app_user <sub>(유저)</sub> |
 | heart_transaction <sub>(하트)</sub> | `hint_purchase_id` | hint_purchase <sub>(질문과 투표)</sub> |
 | heart_transaction <sub>(하트)</sub> | `user_id` | app_user <sub>(유저)</sub> |
 | heart_transaction <sub>(하트)</sub> | `vote_item_id` | vote_item <sub>(질문과 투표)</sub> |
 | external_sync_log <sub>(학교 정보)</sub> | `school_id` | school <sub>(기준 정보)</sub> |
 | meal_plan <sub>(학교 정보)</sub> | `school_id` | school <sub>(기준 정보)</sub> |
 | school_event <sub>(학교 정보)</sub> | `school_id` | school <sub>(기준 정보)</sub> |
-| school_notice <sub>(학교 정보)</sub> | `created_by_admin_id` | admin_user <sub>(기준 정보)</sub> |
+| school_notice <sub>(학교 정보)</sub> | `created_by_admin_id` | app_user <sub>(유저)</sub> |
 | school_notice <sub>(학교 정보)</sub> | `school_id` | school <sub>(기준 정보)</sub> |
 | school_notice_read <sub>(학교 정보)</sub> | `user_id` | app_user <sub>(유저)</sub> |
 | timetable <sub>(학교 정보)</sub> | `class_id` | grade_class <sub>(기준 정보)</sub> |

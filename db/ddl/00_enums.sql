@@ -9,7 +9,6 @@
 
 -- 조직 ---------------------------------------------------------------
 CREATE TYPE school_type      AS ENUM ('MIDDLE', 'HIGH');
-CREATE TYPE admin_role       AS ENUM ('REVIEWER', 'MODERATOR', 'SCHOOL_ADMIN', 'SUPER');
 
 -- 유저 ---------------------------------------------------------------
 CREATE TYPE gender_type      AS ENUM ('F', 'M', 'X');

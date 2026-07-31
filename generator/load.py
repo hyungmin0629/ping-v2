@@ -35,7 +35,6 @@ LOAD_ORDER = [
     "region",
     "school",
     "grade_class",
-    "admin_user",
     "app_user",
     "user_session",
     "user_withdrawal",

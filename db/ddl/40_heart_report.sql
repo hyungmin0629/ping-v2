@@ -68,7 +68,7 @@ CREATE TABLE heart_transaction (
     hint_purchase_id bigint      REFERENCES hint_purchase(id),
     purchase_id      bigint      REFERENCES heart_purchase(id),
     ad_impression_id bigint      REFERENCES ad_impression(id),
-    admin_id         bigint      REFERENCES admin_user(id),
+    admin_id         bigint      REFERENCES app_user(id),
     memo             varchar(200),
     created_at       timestamptz NOT NULL DEFAULT now()
 );
@@ -125,7 +125,7 @@ CREATE TABLE report (
     reason_code          varchar(30)   NOT NULL REFERENCES report_reason(code),
     detail_text          varchar(500),
     status               report_status NOT NULL DEFAULT 'PENDING',
-    reviewed_by_admin_id bigint        REFERENCES admin_user(id),
+    reviewed_by_admin_id bigint        REFERENCES app_user(id),
     reviewed_at          timestamptz,
     created_at           timestamptz   NOT NULL DEFAULT now(),
     -- target_type 과 실제로 채워진 대상 컬럼이 일치해야 한다
@@ -148,7 +148,7 @@ CREATE TABLE sanction (
     type                  sanction_type NOT NULL,
     triggered_by_report_id bigint       REFERENCES report(id),
     policy_id             bigint        REFERENCES sanction_policy(id),
-    issued_by_admin_id    bigint        REFERENCES admin_user(id),
+    issued_by_admin_id    bigint        REFERENCES app_user(id),
     reason                varchar(200)  NOT NULL,
     starts_at             timestamptz   NOT NULL DEFAULT now(),
     ends_at               timestamptz,

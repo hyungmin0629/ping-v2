@@ -34,7 +34,6 @@ full:
   - withdrawal_reason       # 6   · pk: code
   - sanction_policy         # 5
   - board_category          # 5
-  - admin_user              # 0
 
 # 활동 데이터 — 바뀐 것만 -----------------------------------------------
 incremental:
