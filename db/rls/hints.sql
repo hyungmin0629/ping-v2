@@ -96,6 +96,25 @@ GRANT SELECT ON public.my_vote_received TO authenticated;
 
 
 -- ---------------------------------------------------------------------
+-- 1-1. 옛 초성 힌트에 글자 자리를 메운다
+-- ---------------------------------------------------------------------
+-- 순차 힌트 시절(W6)에 산 INITIAL 은 char_index 가 없다. 그대로 두면
+-- **300하트를 낸 사람이 아무것도 못 본다** — 뷰가 char_index 로 판정하기 때문이다.
+-- 이미 산 것이니 지금 규칙으로 자리를 정해 준다.
+--
+-- 이 자리에 두는 이유는 pick_hint_char 가 hangul.sql 에 있어서다.
+-- 마이그레이션은 rls 파일보다 먼저 도는데 그때는 함수가 없다.
+-- 새로 만든 DB 에는 채울 행이 없으므로 아무 일도 하지 않는다.
+UPDATE public.hint_purchase h
+   SET char_index = public.pick_hint_char(u.nickname, 'lead')
+  FROM public.vote_received r
+  JOIN public.app_user u ON u.id = r.voter_id
+ WHERE r.id = h.vote_received_id
+   AND h.hint_type = 'INITIAL'
+   AND h.char_index IS NULL;
+
+
+-- ---------------------------------------------------------------------
 -- 2. 힌트 사기
 -- ---------------------------------------------------------------------
 -- 광고로 여는 경로(p_ad_impression_id)는 GENDER 에만 열려 있고 하루 한 번이다.
