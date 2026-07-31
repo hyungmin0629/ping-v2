@@ -186,12 +186,14 @@ def main() -> int:
         print("  깨끗함")
 
     # ── 5. 색인 ────────────────────────────────────────────────
-    print("5. docs/index.md 가 최신인가")
-    r = subprocess.run([sys.executable, str(ROOT / "db" / "wiki_index.py"), "--check"],
-                       capture_output=True, text=True, encoding="utf-8")
-    if r.returncode != 0:
-        bad("docs/index.md 가 낡음 — python db/wiki_index.py")
-    else:
+    print("5. 생성물이 최신인가 (색인 · 테이블 페이지)")
+    for script, what in (("wiki_index.py", "docs/index.md"),
+                         ("wiki_tables.py", "docs/tables/")):
+        r = subprocess.run([sys.executable, str(ROOT / "db" / script), "--check"],
+                           capture_output=True, text=True, encoding="utf-8")
+        if r.returncode != 0:
+            bad(f"{what} 가 낡음 — python db/{script}")
+    if not any(w in p for p in problems for w in ("index.md", "tables/")):
         print("  깨끗함")
 
     # ── 6. 반영 안 된 원본 ─────────────────────────────────────

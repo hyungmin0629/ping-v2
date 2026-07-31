@@ -129,6 +129,7 @@ A 갈래(로컬 합성 데이터)와 계정이 필요한 B 갈래를 나눠 적�
 | `python db/rls/verify.py` | **침투·동작 시험 201항목. 배포 전 반드시 통과** |
 | `python db/doc_lint.py` | 문서 주장을 실제와 대조 (위키 lint). 문서·스키마를 손댄 뒤 |
 | `python db/wiki_index.py` | `docs/index.md` 재생성 |
+| `python db/wiki_tables.py` | `docs/tables/` 재생성 — 표마다 DDL·결정·검사·정책을 모은 한 장 |
 | `python db/replay_check.py` | **처음부터 다시 만들어도 같은 스키마가 나오는지.** 표를 지우거나 이름을 바꾼 뒤 반드시 |
 | `python db/neis_schools.py --schools` | 전국 중·고 목록 |
 | `python db/neis_schools.py --classes <코드> [--into <조직>]` | 학급 |

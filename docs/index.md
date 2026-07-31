@@ -126,6 +126,51 @@ _아직 없다._
 - [[ops-school-data|조직·학교 데이터]] — 이름은 테스트 조직이지만 급식·시간표·학사일정은 서울고등학교의 공개 데이터를 쓴다.
 - [[ops-webapp|웹앱 (web/)]] — 프로덕션 빌드는 정상이지만 로컬에서 확인이 불가능하므로, 동적 라우트 대신
 
+## 테이블 <sub>`docs/tables` · 40</sub>
+
+표 하나당 한 장. DDL·결정·검사·정책을 모아 뽑는다.
+
+- [[ad_impression|ad_impression]] — 생성기가 만든다.
+- [[app_user|app_user]] — "user" 는 Postgres 예약어라 app_user 로 명명한다. ★ 개인정보를 받지 않는다. 이메일·전화번호·실명·비밀번호 컬럼이 없
+- [[block_record|block_record]] — ⚠️ 생성기가 아직 만들지 않는다. 합성 데이터를 채우려면 새로 써야 한다.
+- [[board_category|board_category]] — 생성기가 만든다.
+- [[comment_like|comment_like]] — ⚠️ 생성기가 아직 만들지 않는다. 합성 데이터를 채우려면 새로 써야 한다.
+- [[friend_request|friend_request]] — 생성기가 만든다.
+- [[friendship|friendship]] — user_low_id < user_high_id 를 강제해 와 가 중복 저장되는 것을 막는다.
+- [[grade_class|grade_class]] — label: 화면에 보여줄 이름을 직접 지정하고 싶을 때만 채운다. 비어 있으면 앱이 "N학년 M반"으로 조립한다. 일반 학교는 비워두고, 
+- [[heart_product|heart_product]] — 구 스키마는 productId 문자열만 있고 가격·수량이 코드에만 있어 매출 계산 시 값을 하드코딩해야 했다.
+- [[heart_purchase|heart_purchase]] — 성공/실패를 한 테이블에 status 로 통합한다. 구 스키마는 별도 테이블이었고 실패 로깅이 2023-09에 조용히 끊겨 그 이후로는 실패
+- [[heart_transaction|heart_transaction]] — 이 프로젝트에서 가장 중요한 테이블. 구 스키마의 원장은 순합계가 201만인데 유저 잔액 총합은 20억이었다. 가입 지급과 충전이 원장에 남
+- [[heart_transaction_type|heart_transaction_type]] — 구 스키마는 delta_point 값만 보고 의미를 역추론해야 했다 (5~15 = 투표 적립, -300 = 힌트 구매 ... 전부 추측이었다
+- [[hint_purchase|hint_purchase]] — 구 데이터에서 확인된 누진 요금(200 → 300 → 500 → 1000)을 step 으로 명시화한다. 하트 차감은 heart_transac
+- [[meal_menu_item|meal_menu_item]] — 메뉴를 한 덩어리 텍스트가 아니라 요리 단위로 분리한다. "인기 급식 메뉴" 분석과 알레르기 필터가 가능해진다.
+- [[meal_plan|meal_plan]] — 학교·날짜·끼니에 UNIQUE. 같은 날 중복 급식이 들어오는 것을 DB가 막는다.
+- [[post|post]] — ⚠️ 생성기가 아직 만들지 않는다. 합성 데이터를 채우려면 새로 써야 한다.
+- [[post_comment|post_comment]] — anonymous_seq: 글 안에서만 유효한 익명 번호(익명1, 익명2 ...). 같은 사람은 같은 글에서 같은 번호를 유지해 대화 맥락이
+- [[post_like|post_like]] — ⚠️ 생성기가 아직 만들지 않는다. 합성 데이터를 채우려면 새로 써야 한다.
+- [[question|question]] — scope: CLASS / SCHOOL / GLOBAL. 세 스코프 모두 "친구" 안에서의 범위이며, GLOBAL 도 전체 가입자가 아니라 
+- [[question_category|question_category]] — 구 스키마에는 카테고리가 없어 "외모/신체 질문이 신고 상위 5개를 독점"한다는 사실을 사후 수동 분류로만 확인할 수 있었다. is_sens
+- [[question_request|question_request]] — 생성기가 만든다.
+- [[region|region]] — 구 스키마는 accounts_school.address 가 varchar 한 덩어리라 시/군 단위 집계가 불가능했다. 시도·시군구를 정규화한
+- [[rejected_friend_recommendations|rejected_friend_recommendations]] — ★ 이름이 말하는 그대로다 — 거절만 들어온다. 추천 자체는 저장하지 않는다. friend_suggestion 뷰가 그때그때 계산한다. 이 
+- [[report|report]] — 유저·질문·게시글·댓글 신고를 한 테이블로 통합하되, 대상별 FK를 명시 컬럼으로 두어 참조 무결성을 지킨다. (다형 참조 방식은 FK를 걸
+- [[report_reason|report_reason]] — 생성기가 만든다.
+- [[sanction|sanction]] — triggered_by_report_id 로 근거 신고를 명시한다. 이 연결이 구 시스템에는 아예 없었다.
+- [[sanction_policy|sanction_policy]] — 임계값을 코드가 아니라 데이터로 정의한다. 구 시스템은 피신고 10회 이상 116명 중 제재된 사람이 0명이었고, 253회 신고받은 유저도 
+- [[school|school]] — 구 스키마에는 학교 이름 컬럼이 아예 없었다. 마스킹된 이름을 저장한다. neis_school_code 는 NEIS 공개 API 연동 키.
+- [[school_event|school_event]] — 시작·종료일을 분리해 기간 일정을 지원한다. grade_scope 가 NULL 이면 전교 대상, 값이 있으면 해당 학년만 해당한다.
+- [[school_notice|school_notice]] — ⚠️ 생성기가 아직 만들지 않는다. 합성 데이터를 채우려면 새로 써야 한다.
+- [[school_notice_read|school_notice_read]] — 어떤 공지가 실제로 읽히는지 측정해 알림 정책을 조정한다.
+- [[timetable|timetable]] — 학급·학기·요일·교시에 UNIQUE → 한 칸에 두 과목이 들어갈 수 없다. 교사명은 마스킹해서 저장한다.
+- [[user_session|user_session]] — 리텐션을 추정이 아니라 실측하기 위한 테이블.
+- [[user_withdrawal|user_withdrawal]] — 구 스키마 최대 결함의 해소 지점. accounts_userwithdraw 는 70,764건(가입자의 10.5%)이었지만 유저 식별자가 없어
+- [[vote_candidate|vote_candidate]] — 구 스키마는 세트↔피스 관계를 JSON 배열로만 들고 있었다. 행으로 저장한다. shuffle_round: 0 = 최초 후보, 1 = 셔플 
+- [[vote_item|vote_item]] — 스킵 컬럼이 없다. 스킵 기능을 폐지했기 때문이다. candidate_scope 는 출제 시점의 스코프 스냅샷이다. 질문의 scope 가 나
+- [[vote_received|vote_received]] — 생성기가 만든다.
+- [[vote_session|vote_session]] — 생성기가 만든다.
+- [[vote_shuffle|vote_shuffle]] — vote_item_id 에 UNIQUE → DB 차원에서 1회 제한을 강제한다. ad_impression_id 가 NOT NULL → 광고 
+- [[withdrawal_reason|withdrawal_reason]] — 생성기가 만든다.
+
 ---
 
-문서 79개 · `python db/wiki_index.py` 로 갱신
+문서 119개 · `python db/wiki_index.py` 로 갱신
