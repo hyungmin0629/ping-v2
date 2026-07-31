@@ -78,7 +78,7 @@ A 갈래(로컬 합성 데이터)와 계정이 필요한 B 갈래를 나눠 적�
 | P0 스키마·DDL | 제약 위반 16종 차단 검증 |
 | P1 합성 데이터 | 786만 행 생성 (25초). ⚠️ **지금은 지웠다** — 아래 참조 |
 | P2 적재 | 로컬 Postgres 적재 (89초). ⚠️ **지금은 지웠다** |
-| W0 익명 인증 대응 | 42 테이블 / 정합성 17종 / 개인정보 컬럼 0개 (지금은 41 — W17) |
+| W0 익명 인증 대응 | 42 테이블 / 정합성 17종 / 개인정보 컬럼 0개 (지금은 40) |
 | W1 Supabase + RLS | 침투 15종 차단 + 정상동작 9종 |
 | W2 앱 뼈대 | Next.js 16 + 익명 로그인. 새로고침 유지·시크릿창 분리 확인 |
 | W3 온보딩 | 가입 RPC + 화면. 온보딩 시험 4종 추가, 브라우저에서 실가입 확인 |
@@ -122,6 +122,7 @@ A 갈래(로컬 합성 데이터)와 계정이 필요한 B 갈래를 나눠 적�
 |---|---|
 | `python db/apply.py --target supabase` | DDL + 마이그레이션 적용. **확인 절차가 있다**(`--yes` 로 생략) |
 | `python db/run_sql.py <파일>` | SQL 파일 하나를 Supabase 에 적용 |
+| `python generator/generate.py` · `load.py` | 합성 데이터 생성 → 로컬 적재. **지금 합성 데이터는 없다** |
 | `python db/erd.py` | 살아 있는 스키마에서 ERD 를 뽑아 `docs/erd.md`·`erd.json` 갱신.
   **행 수와 빈 표 사유도 함께 싣는다** — 빈 표가 왜 비었는지는 `EMPTY_REASON` 에 적는다 |
 | `python db/erd_board.py` | `erd.json` → `docs/erd-board.html` (카드형 ERD 아티팩트). erd.py 다음에 돌린다 |
@@ -308,7 +309,7 @@ Supabase 대시보드에서 **Authentication → Sign In / Providers → Allow a
 
 ## ⚠️ verify.py 가 못 잡는 것 — safeupdate
 
-**시험 128항목이 전부 통과해도 실제 앱이 죽을 수 있다.** 2026-07-30 에 실제로 그랬다.
+**시험이 전부 통과해도 실제 앱이 죽을 수 있다.**(당시 128항목) 2026-07-30 에 실제로 그랬다.
 
 브라우저는 PostgREST 를 거쳐 **`authenticator`** 역할로 접속하고, 그 역할에는
 `session_preload_libraries = supautils, safeupdate` 가 걸려 있다.
@@ -355,17 +356,23 @@ DELETE/UPDATE 가 있으면 실패한다. 새 RPC 를 쓸 때 `WHERE true` 를 �
 - RLS 를 고친 뒤에는 **양방향으로** 검증한다. 전부 막아도 침투 시험은 통과하므로,
   정상 동작 시험이 함께 있어야 의미가 있다.
 
-## 합성 데이터가 없는 테이블
+## 비어 있는 테이블 (실데이터 기준 · 8개)
 
-생성기가 아직 다루지 않아 비어 있다. 필요해지면 그때 만든다.
+합성 데이터는 **전체가 없으므로** 여기서 세지 않는다. 아래는 실서비스에서
+아직 한 줄도 안 쌓인 표다. **비었다는 것 자체가 정보**라 이유를 갈라 둔다.
 
-| 테이블 | 이유 |
-|---|---|
-| `block_record`, `rejected_friend_recommendations` | MVP 화면 범위 밖 |
-| `report`, `sanction` | MVP 화면 범위 밖 (설정값은 yaml에 준비됨) |
-| `timetable`, `school_notice` | P3 NEIS 연동에서 채운다. 화면 없음 |
-| ~~`meal_plan`~~, ~~`school_event`~~ | **채웠다.** 서울고 급식 2,938건 · 학사일정 139건 |
-| `post`, `post_comment`, `post_like`, `comment_like` | 실유저는 W9 부터 쓴다. **합성 생성기는 아직 안 만듦** |
+| 갈래 | 테이블 | 뜻 |
+|---|---|---|
+| **기능은 살아 있는데 아무도 안 함** | `rejected_friend_recommendations` · `user_withdrawal` | "안 볼래" 0회, 탈퇴 0명. 결함이 아니라 실측이다 |
+| **화면·코드가 없다** | `block_record` · `question_request` · `sanction` · `timetable` · `school_notice` · `school_notice_read` | `sanction` 은 신고가 PENDING 으로 고인다 — 처리 경로가 없다 |
+
+⚠️ 이 목록은 **손으로 관리하지 않는다.** `python db/erd.py` 가 살아 있는 DB 에서
+세어 `docs/erd.json` 에 싣고, 카드형 ERD 가 사유와 함께 보여준다.
+사유는 `db/erd.py` 의 `EMPTY_REASON` 에 적는다 — 안 적으면 화면이 "사유 미기재"로
+드러낸다.
+
+**생성기가 아직 안 만드는 표는 14개다**(게시판 4 · 신고제재차단 3 · 추천거절 1 ·
+학교정보 6). 합성 데이터를 만들 때 이 부분을 새로 써야 한다.
 
 ## 스키마 적용 시 주의
 

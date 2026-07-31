@@ -43,7 +43,7 @@ BigQuery 로 적재되고 있다.
 컬럼 자동 추가를 구현했다.
 
 **컬럼 삭제가 위험한 근거** — 웹앱과 RPC 가 컬럼명을 직접 참조한다.
-`db/rls/verify.py` 128항목이 대부분 검출하지만, 검출 시점은 이미 Supabase 에
+`db/rls/verify.py` 201항목이 대부분 검출하지만, 검출 시점은 이미 Supabase 에
 적용한 이후다.
 
 ---
@@ -202,7 +202,7 @@ WHERE _source = 'supabase'      -- 누락 시 합성 데이터 5,000명이 혼�
 | 운영 적용 확인 절차 | 3.1 마이그레이션 지연 적용 | `db/apply.py` |
 | 매니페스트 대조 | 3.2 신규 테이블 누락 | `pipeline/verify_load.py` |
 | WHERE 누락 검사 | `safeupdate` 차단 (2026-07-30 장애) | `db/rls/verify.py` |
-| 침투·동작 시험 128항목 | 권한 설계 오류 | `db/rls/verify.py` |
+| 침투·동작 시험 201항목 | 권한 설계 오류 | `db/rls/verify.py` |
 | 정합성 검사 17종 | 제약으로 표현 불가능한 규칙 위반 | `qa/checks/integrity.sql` |
 | 행 수 대조 | 적재 누락 | `pipeline/verify_load.py` |
 
