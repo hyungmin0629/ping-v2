@@ -407,7 +407,7 @@ MVP에서는 이를 감수하고, 안내 문구로 알린다. 복구 코드 기�
 | `pipeline/extract_load.py` | Postgres → BigQuery raw 적재 |
 | `pipeline/verify_load.py` | 원천 ↔ BigQuery 행 수 대조 |
 | `qa/checks/integrity.sql` | 정합성 17종 |
-| `db/rls/verify.py` | RLS 침투·동작 시험 162항목 |
+| `db/rls/verify.py` | RLS 침투·동작 시험 161항목 |
 
 ## 3.6 산출물 형식
 

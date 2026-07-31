@@ -104,7 +104,7 @@ A 갈래(로컬 합성 데이터)와 계정이 필요한 B 갈래를 나눠 적�
 | `python db/apply.py --target supabase` | DDL + 마이그레이션 적용. **확인 절차가 있다**(`--yes` 로 생략) |
 | `python db/run_sql.py <파일>` | SQL 파일 하나를 Supabase 에 적용 |
 | `python db/erd.py` | 살아 있는 스키마에서 ERD 를 뽑아 `docs/erd.md`·`erd.json` 갱신 |
-| `python db/rls/verify.py` | **침투·동작 시험 162항목. 배포 전 반드시 통과** |
+| `python db/rls/verify.py` | **침투·동작 시험 161항목. 배포 전 반드시 통과** |
 | `python db/neis_schools.py --schools` | 전국 중·고 목록 |
 | `python db/neis_schools.py --classes <코드> [--into <조직>]` | 학급 |
 | `python db/neis_meals.py --school <코드>` | 급식 |
