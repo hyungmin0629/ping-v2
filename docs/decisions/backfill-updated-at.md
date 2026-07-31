@@ -30,6 +30,10 @@ BigQuery raw 테이블은 `updated_at` 으로 파티션을 나눈다. 전부 한
 - 원래부터 `updated_at` 이 있던 4개 테이블(`app_user`·`school`·`post`·`post_comment`)은
   건드리지 않는다. 그 값은 **진짜 수정 이력**이라 `created_at` 으로 덮으면 데이터를 잃는다.
 
+## 이어지는 결정
+- [[watermark-updated-at|증분 워터마크를 `updated_at` 하나로 통일한다]]
+  — 증분 키를 통일하고, 대량 적재가 그것을 망가뜨리는 것을 되돌린다
+
 ---
 
 `2026-07-30` · [[DECISIONS|결정 이력]] 으로 돌아가기

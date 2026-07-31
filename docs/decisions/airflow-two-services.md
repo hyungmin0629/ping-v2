@@ -25,6 +25,10 @@ tags: [결정, 인프라]
 - 적재 뒤에 반드시 행 수를 대조한다(`verify_load.py`). 증분은 조용히 틀리기 때문에
   "오류가 안 났다"는 것이 성공의 증거가 되지 못한다.
 
+## 이어지는 결정
+- [[local-docker-airflow|Cloud Composer 대신 로컬 Docker Airflow]]
+  — Airflow 를 이 프로젝트 크기로 줄인다
+
 ---
 
 `2026-07-30` · [[DECISIONS|결정 이력]] 으로 돌아가기

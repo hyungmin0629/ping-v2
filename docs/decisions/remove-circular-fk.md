@@ -20,6 +20,14 @@ tags: [결정, 스키마]
 **영향** — "선택된 후보"는 `vote_candidate.is_chosen = true`로 조회한다.
 아이템당 1명만 선택되는 것은 부분 유니크 인덱스가 강제한다.
 
+## 이어지는 결정
+- [[drop-admin-user|admin_user 를 없애고 app_user.is_admin 하나로 접는다]]
+  — 쓰지 않는 구조를 걷어내 스키마를 줄인 판단 둘
+- [[local-db-via-apply|로컬 DB 는 `apply.py` 로만 만든다]]
+  — 스키마를 한 경로로만 만든다
+- [[report-sanction-fk|신고와 제재를 FK로 연결하고 정책을 데이터로 정의]]
+  — 관계를 DB 에 선언한다. 구 서비스는 FK 39개 중 17개만 걸려 있었다
+
 ---
 
 `2026-07-29` · [[DECISIONS|결정 이력]] 으로 돌아가기

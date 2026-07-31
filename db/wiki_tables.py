@@ -59,9 +59,16 @@ def mentions(text: str, table: str) -> bool:
 
 
 def decisions_for(tables: list[str]) -> dict[str, list[tuple[str, str]]]:
+    """각 표를 실제로 다루는 결정을 찾는다.
+
+    ⚠️ "이어지는 결정" 블록은 빼고 본다. 거기 실린 것은 **다른 결정의 제목**이고,
+       그 제목에 표 이름이 들어 있으면(예: drop-admin-user 의 "app_user.is_admin")
+       그 표를 다루지도 않는 결정이 딸려온다.
+    """
     out: dict[str, list[tuple[str, str]]] = {t: [] for t in tables}
     for path in sorted((ROOT / "docs" / "decisions").glob("*.md")):
         text = path.read_text(encoding="utf-8")
+        text = re.split(r"^## 이어지는 결정$", text, flags=re.M)[0]
         title = m.group(1).strip() if (m := re.search(r"^title:\s*(.+)$", text, re.M)) else path.stem
         for t in tables:
             if mentions(text, t):

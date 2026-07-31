@@ -20,6 +20,18 @@ tags: [결정, 보안]
 `GRANT UPDATE (nickname, class_id, gender)` 로 **컬럼 단위**로만 허용했다.
 RLS 는 행 단위라 컬럼을 제한할 수 없어 GRANT 와 함께 써야 한다.
 
+## 이어지는 결정
+- [[drop-admin-user|admin_user 를 없애고 app_user.is_admin 하나로 접는다]]
+  — 운영자 여부가 **유저가 UPDATE 하는 표**로 옮겨왔다 — 스스로 켤 수 없어야 한다
+- [[profile-edit-rpc|프로필 수정도 RPC 하나로 — 직접 UPDATE 권한 회수]]
+  — 직접 UPDATE 권한을 회수하고 RPC 로 몬다
+- [[school-info-write-revoked|학사일정·공지의 쓰기 권한이 열려 있었다]]
+  — 권한을 아예 주지 않는 것이 **정책 실수를 사고로 만들지 않는 길**이다
+- [[signup-single-rpc|가입은 RPC 하나로만 한다]]
+  — 쓰기를 RPC 하나로 좁힌다는 원칙과, 그 첫 적용
+- [[voter-identity-view-only|투표자 신원은 뷰로만 노출한다]]
+  — 읽기도 필요한 만큼만. 유료 정보는 뷰로 가린다
+
 ---
 
 `2026-07-29` · [[DECISIONS|결정 이력]] 으로 돌아가기

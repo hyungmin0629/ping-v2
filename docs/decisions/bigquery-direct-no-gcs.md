@@ -30,6 +30,10 @@ tags: [결정, 파이프라인]
 대신 무료 한도(저장 10GiB · 쿼리 1TiB/월)를 넘으면 막히지 않고 과금되므로
 예산 알림을 걸어 둔다.
 
+## 이어지는 결정
+- [[local-docker-airflow|Cloud Composer 대신 로컬 Docker Airflow]]
+  — 규모에 맞게 구성을 줄인 판단 둘
+
 ---
 
 `2026-07-30` · [[DECISIONS|결정 이력]] 으로 돌아가기
