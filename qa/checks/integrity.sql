@@ -127,6 +127,14 @@ FROM (
     JOIN vote_candidate c ON c.vote_item_id = v.id
     JOIN app_user cand ON cand.id = c.candidate_user_id
     WHERE v.candidate_scope = 'CLASS'
+      -- 셔플하면 후보가 두 벌(라운드 0·1) 쌓이는데 padded_count 는 **마지막
+      -- 라운드**의 값이다. 두 벌을 함께 세면 항상 초과로 잡힌다.
+      AND c.shuffle_round = v.shuffle_count
+      -- 투표한 뒤 소속을 바꾸면(W11 프로필 수정) 그때는 같은 반이던 후보가
+      -- 지금은 타반으로 보인다. 출제 시점의 반을 저장하지 않으므로
+      -- 되짚을 수 없다. 프로필이 그 뒤에 바뀐 건은 판정에서 뺀다.
+      AND voter.updated_at <= v.served_at
+      AND cand.updated_at  <= v.served_at
     GROUP BY v.id, v.padded_count, voter.class_id
     HAVING count(*) FILTER (WHERE cand.class_id <> voter.class_id) > v.padded_count
 ) t
@@ -144,6 +152,10 @@ FROM (
     JOIN app_user cand ON cand.id = c.candidate_user_id
     JOIN grade_class cc ON cc.id = cand.class_id
     WHERE v.candidate_scope = 'SCHOOL'
+      -- 13번과 같은 이유다(셔플 라운드, 그 뒤의 소속 변경)
+      AND c.shuffle_round = v.shuffle_count
+      AND voter.updated_at <= v.served_at
+      AND cand.updated_at  <= v.served_at
     GROUP BY v.id, v.padded_count, vc.school_id
     HAVING count(*) FILTER (WHERE cc.school_id <> vc.school_id) > v.padded_count
 ) t

@@ -84,7 +84,7 @@ A 갈래(로컬 합성 데이터)와 계정이 필요한 B 갈래를 나눠 적�
 | W3 온보딩 | 가입 RPC + 화면. 온보딩 시험 4종 추가, 브라우저에서 실가입 확인 |
 | W4 친구 | 요청·수락·거절 RPC + 화면. 시험 42종 통과, 창 두 개로 실제 교환 확인 |
 | W5 투표 | 후보 추출·투표·셔플 RPC + 화면. 질문 24개 시드, 접속 로그 추가. 시험 67종 통과 |
-| W6 받은 투표 | 힌트 4단계(성별→초성→반→공개, 200·300·500·1000) + 내가 한 투표 목록 |
+| W6 받은 투표 | 받은 투표·내가 한 투표 목록 (힌트 구조는 W14 에서 교체) |
 | W7 배포 | Vercel 배포, 개인정보처리방침, 초대 링크(`/add?code=`) |
 | P3 NEIS (일부) | 전국 중·고 5,724개 · 학교 19곳의 학급과 급식(2,938건). DAG 화는 남음 |
 | W8 급식표 | 메인 토글 → 월 캘린더 · 끼니 선택. **시간표·공지는 남음** |
@@ -93,7 +93,9 @@ A 갈래(로컬 합성 데이터)와 계정이 필요한 B 갈래를 나눠 적�
 | W10 친구 추천 | 같은 학교 사람 목록 → 요청 / 안 볼래. **더미는 제외** |
 | W11 프로필 수정 | 닉네임·성별·소속 변경. 온보딩 폼 재사용 |
 | W12 계정 삭제·뒤로가기 | 탈퇴(사유 기록·행 보존) + 휴대폰 뒤로가기 |
-| W13 하트 충전 | **결제 없는 스텁.** 하루 한 번 제한. 시험 156종 통과 |
+| W13 하트 충전 | **결제 없는 스텁.** 하루 한 번 제한 |
+| W14 선택형 힌트 (DB) | 순차 4단계 → **골라 사는 5+1**. 각 20하트, 이름 100하트.
+  초·중·종성은 같은 글자를 가리킨다(○ㅎ○ → ○혀○ → ○형○). **화면은 남음** |
 
 ## 스크립트
 
@@ -102,7 +104,7 @@ A 갈래(로컬 합성 데이터)와 계정이 필요한 B 갈래를 나눠 적�
 | `python db/apply.py --target supabase` | DDL + 마이그레이션 적용. **확인 절차가 있다**(`--yes` 로 생략) |
 | `python db/run_sql.py <파일>` | SQL 파일 하나를 Supabase 에 적용 |
 | `python db/erd.py` | 살아 있는 스키마에서 ERD 를 뽑아 `docs/erd.md`·`erd.json` 갱신 |
-| `python db/rls/verify.py` | **침투·동작 시험 156항목. 배포 전 반드시 통과** |
+| `python db/rls/verify.py` | **침투·동작 시험 160항목. 배포 전 반드시 통과** |
 | `python db/neis_schools.py --schools` | 전국 중·고 목록 |
 | `python db/neis_schools.py --classes <코드> [--into <조직>]` | 학급 |
 | `python db/neis_meals.py --school <코드>` | 급식 |
@@ -140,6 +142,8 @@ python db/run_sql.py db/rls/recommend.sql     # 친구 추천 뷰 + RPC
 python db/run_sql.py db/rls/profile.sql       # 프로필 수정 RPC (직접 UPDATE 를 회수)
 python db/run_sql.py db/rls/withdraw.sql      # 계정 삭제 RPC
 python db/run_sql.py db/rls/topup.sql         # 하트 충전 RPC (스텁)
+python db/run_sql.py db/rls/hangul.sql        # 한글 자모 분해·조합
+python db/run_sql.py db/rls/hints.sql         # 선택형 힌트 (received.sql 의 buy_hint 를 대체)
 python db/run_sql.py db/seed_org.sql          # 테스트 조직
 python db/run_sql.py db/seed_questions.sql    # 질문 24개
 python db/rls/verify.py                       # 통과해야 끝
