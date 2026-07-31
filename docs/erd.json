@@ -3365,5 +3365,132 @@
   "신고와 제재",
   "학교 정보",
   "게시판"
- ]
+ ],
+ "data": {
+  "counted_at": "2026-07-31",
+  "counts": {
+   "ad_impression": 21,
+   "app_user": 23,
+   "block_record": 0,
+   "board_category": 5,
+   "comment_like": 3,
+   "external_sync_log": 0,
+   "friend_recommendation": 0,
+   "friend_request": 220,
+   "friendship": 164,
+   "grade_class": 538,
+   "heart_product": 4,
+   "heart_purchase": 4,
+   "heart_transaction": 1281,
+   "heart_transaction_type": 9,
+   "hint_purchase": 91,
+   "meal_menu_item": 19929,
+   "meal_plan": 2938,
+   "post": 20,
+   "post_comment": 14,
+   "post_like": 14,
+   "question": 24,
+   "question_category": 8,
+   "question_request": 0,
+   "region": 266,
+   "report": 3,
+   "report_reason": 13,
+   "sanction": 0,
+   "sanction_policy": 5,
+   "school": 5725,
+   "school_event": 139,
+   "school_notice": 0,
+   "school_notice_read": 0,
+   "timetable": 0,
+   "user_session": 57,
+   "user_withdrawal": 0,
+   "vote_candidate": 2748,
+   "vote_item": 670,
+   "vote_received": 582,
+   "vote_session": 67,
+   "vote_shuffle": 17,
+   "withdrawal_reason": 6
+  },
+  "kind": {
+   "ad_impression": "activity",
+   "app_user": "activity",
+   "block_record": "activity",
+   "board_category": "master",
+   "comment_like": "activity",
+   "external_sync_log": "activity",
+   "friend_recommendation": "activity",
+   "friend_request": "activity",
+   "friendship": "activity",
+   "grade_class": "reference",
+   "heart_product": "master",
+   "heart_purchase": "activity",
+   "heart_transaction": "activity",
+   "heart_transaction_type": "master",
+   "hint_purchase": "activity",
+   "meal_menu_item": "reference",
+   "meal_plan": "reference",
+   "post": "activity",
+   "post_comment": "activity",
+   "post_like": "activity",
+   "question": "master",
+   "question_category": "master",
+   "question_request": "activity",
+   "region": "reference",
+   "report": "activity",
+   "report_reason": "master",
+   "sanction": "activity",
+   "sanction_policy": "master",
+   "school": "reference",
+   "school_event": "reference",
+   "school_notice": "reference",
+   "school_notice_read": "activity",
+   "timetable": "reference",
+   "user_session": "activity",
+   "user_withdrawal": "activity",
+   "vote_candidate": "activity",
+   "vote_item": "activity",
+   "vote_received": "activity",
+   "vote_session": "activity",
+   "vote_shuffle": "activity",
+   "withdrawal_reason": "master"
+  },
+  "empty_reason": {
+   "friend_recommendation": {
+    "kind": "live",
+    "why": "‘안 볼래’ 0회. W10 화면도 RPC 도 살아 있다"
+   },
+   "user_withdrawal": {
+    "kind": "live",
+    "why": "탈퇴 0명. 전원 ACTIVE. W12 기능은 검증까지 끝났다"
+   },
+   "block_record": {
+    "kind": "no-screen",
+    "why": "차단 화면 없음. 1:1 텍스트를 열 때 먼저 만들기로 한 것"
+   },
+   "question_request": {
+    "kind": "no-screen",
+    "why": "유저가 질문을 제안하는 화면이 없다"
+   },
+   "sanction": {
+    "kind": "no-screen",
+    "why": "제재를 내리는 경로가 없다. 신고가 PENDING 으로 고인다"
+   },
+   "timetable": {
+    "kind": "no-screen",
+    "why": "수집기 없음. 빌려 쓰는 조직의 학급 매핑이 미해결"
+   },
+   "school_notice": {
+    "kind": "no-screen",
+    "why": "수집기 없음. W8 에서 미뤄둔 것"
+   },
+   "school_notice_read": {
+    "kind": "no-screen",
+    "why": "공지가 없으니 따라서 빈다"
+   },
+   "external_sync_log": {
+    "kind": "no-writer",
+    "why": "수집기 셋 중 어느 것도 이 표를 쓰지 않는다"
+   }
+  }
+ }
 }

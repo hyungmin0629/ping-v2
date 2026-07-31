@@ -22,6 +22,7 @@ import argparse
 import json
 import re
 import sys
+from datetime import date
 from pathlib import Path
 
 import psycopg
@@ -279,7 +280,46 @@ def table_notes() -> dict[str, dict]:
     return out
 
 
-def as_json(domains, tables, cols, pks, fks, order, uniques) -> dict:
+# 행 수를 셀 때 "쌓인 것"과 아닌 것을 갈라야 한다. withdrawal_reason 6행은
+# 탈퇴 사유 선택지 6개지 탈퇴 6건이 아니다 — 이걸 안 나누면 숫자가 거짓말을 한다.
+MASTER = {
+    "question", "question_category", "heart_product", "heart_transaction_type",
+    "report_reason", "withdrawal_reason", "sanction_policy", "board_category",
+}
+REFERENCE = {
+    "region", "school", "grade_class",
+    "meal_plan", "meal_menu_item", "timetable", "school_notice", "school_event",
+}
+
+# 비어 있는 이유. DB 에 물어봐도 알 수 없는 것이라 여기 적는다.
+#   live       기능이 살아 있는데 아직 아무도 안 했다 (0 이라는 사실이 곧 실측)
+#   no-screen  화면이나 실행 코드가 없다
+#   no-writer  계획에는 있는데 쓰는 코드가 없다
+EMPTY_REASON: dict[str, tuple[str, str]] = {
+    "friend_recommendation": ("live", "‘안 볼래’ 0회. W10 화면도 RPC 도 살아 있다"),
+    "user_withdrawal":       ("live", "탈퇴 0명. 전원 ACTIVE. W12 기능은 검증까지 끝났다"),
+    "block_record":          ("no-screen", "차단 화면 없음. 1:1 텍스트를 열 때 먼저 만들기로 한 것"),
+    "question_request":      ("no-screen", "유저가 질문을 제안하는 화면이 없다"),
+    "sanction":              ("no-screen", "제재를 내리는 경로가 없다. 신고가 PENDING 으로 고인다"),
+    "timetable":             ("no-screen", "수집기 없음. 빌려 쓰는 조직의 학급 매핑이 미해결"),
+    "school_notice":         ("no-screen", "수집기 없음. W8 에서 미뤄둔 것"),
+    "school_notice_read":    ("no-screen", "공지가 없으니 따라서 빈다"),
+    "external_sync_log":     ("no-writer", "수집기 셋 중 어느 것도 이 표를 쓰지 않는다"),
+}
+
+
+def row_counts(cur, tables: list[str]) -> dict[str, int]:
+    """살아 있는 DB 의 행 수. 한 번에 세어 한 왕복으로 끝낸다."""
+    if not tables:
+        return {}
+    parts = " UNION ALL ".join(
+        f'SELECT {psycopg.sql.Literal(t).as_string(cur)} AS t, count(*) AS n FROM "{t}"'
+        for t in tables)
+    cur.execute(parts)
+    return {t: n for t, n in cur.fetchall()}
+
+
+def as_json(domains, tables, cols, pks, fks, order, uniques, counts=None) -> dict:
     """카드형 ERD 가 읽는 데이터. **모든 컬럼과 타입**을 담는다.
 
     mermaid 도표는 키만 실었지만 카드형은 컬럼 정의를 다 보여주는 것이 목적이다.
@@ -317,6 +357,17 @@ def as_json(domains, tables, cols, pks, fks, order, uniques) -> dict:
         seen.add((child, parent, col))
         out["edges"].append({"from": child, "col": col, "to": parent,
                              "null": cols.get((child, col), (True, ""))[0]})
+
+    # 실데이터 현황. 구조만 보여주면 "이게 실제로 쓰이긴 하나"에 답이 안 된다.
+    if counts is not None:
+        out["data"] = {
+            "counted_at": date.today().isoformat(),
+            "counts": counts,
+            "kind": {t: ("master" if t in MASTER else
+                         "reference" if t in REFERENCE else "activity") for t in tables},
+            "empty_reason": {t: {"kind": k, "why": w}
+                             for t, (k, w) in EMPTY_REASON.items() if t in tables},
+        }
     return out
 
 
@@ -333,6 +384,8 @@ def main() -> int:
 
     with psycopg.connect(dsn(args.target), connect_timeout=30) as conn, conn.cursor() as cur:
         tables, cols, pks, fks, order, uniques = fetch(cur)
+        # 구조만 보여주면 "이게 실제로 쓰이긴 하나"에 답이 안 된다.
+        counts = row_counts(cur, tables)
 
     placed = {t for _, _, members in DOMAINS for t in members}
     leftover = [t for t in tables if t not in placed]
@@ -383,7 +436,7 @@ def main() -> int:
 
     if not args.stdout:
         OUT_JSON.write_text(
-            json.dumps(as_json(domains, tables, cols, pks, fks, order, uniques),
+            json.dumps(as_json(domains, tables, cols, pks, fks, order, uniques, counts),
                        ensure_ascii=False, indent=1), encoding="utf-8")
 
     text = "\n".join(out)

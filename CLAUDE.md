@@ -112,7 +112,9 @@ A 갈래(로컬 합성 데이터)와 계정이 필요한 B 갈래를 나눠 적�
 |---|---|
 | `python db/apply.py --target supabase` | DDL + 마이그레이션 적용. **확인 절차가 있다**(`--yes` 로 생략) |
 | `python db/run_sql.py <파일>` | SQL 파일 하나를 Supabase 에 적용 |
-| `python db/erd.py` | 살아 있는 스키마에서 ERD 를 뽑아 `docs/erd.md`·`erd.json` 갱신 |
+| `python db/erd.py` | 살아 있는 스키마에서 ERD 를 뽑아 `docs/erd.md`·`erd.json` 갱신.
+  **행 수와 빈 표 사유도 함께 싣는다** — 빈 표가 왜 비었는지는 `EMPTY_REASON` 에 적는다 |
+| `python db/erd_board.py` | `erd.json` → `docs/erd-board.html` (카드형 ERD 아티팩트). erd.py 다음에 돌린다 |
 | `python db/rls/verify.py` | **침투·동작 시험 189항목. 배포 전 반드시 통과** |
 | `python db/neis_schools.py --schools` | 전국 중·고 목록 |
 | `python db/neis_schools.py --classes <코드> [--into <조직>]` | 학급 |
