@@ -8,30 +8,44 @@
   "collapse-color-groups": false,
   "colorGroups": [
     {
-      "query": "path:raw  ",
+      "query": "path:raw",
       "color": {
         "a": 1,
-        "rgb": 14048348
+        "rgb": 12613946
       }
     },
     {
-      "query": "path:docs/decisions  ",
+      "query": "path:docs/decisions",
       "color": {
         "a": 1,
-        "rgb": 14069084
+        "rgb": 3887008
       }
     },
     {
-      "query": "path",
+      "query": "path:docs/tables",
       "color": {
         "a": 1,
-        "rgb": 11392604
+        "rgb": 2914906
+      }
+    },
+    {
+      "query": "path:docs/ops",
+      "color": {
+        "a": 1,
+        "rgb": 8018600
+      }
+    },
+    {
+      "query": "status:superseded",
+      "color": {
+        "a": 1,
+        "rgb": 10697531
       }
     }
   ],
   "collapse-display": true,
-  "showArrow": false,
-  "textFadeMultiplier": 0,
+  "showArrow": true,
+  "textFadeMultiplier": -0.8,
   "nodeSizeMultiplier": 1,
   "lineSizeMultiplier": 1,
   "collapse-forces": true,
@@ -39,6 +53,6 @@
   "repelStrength": 10,
   "linkStrength": 1,
   "linkDistance": 250,
-  "scale": 0.0939292790284698,
+  "scale": 0.258838656218163,
   "close": false
 }

@@ -1,1 +1,11 @@
-{}
+{
+  "userIgnoreFilters": [
+    "web/node_modules/",
+    ".venv/",
+    "airflow/logs/",
+    "web/.next/"
+  ],
+  "alwaysUpdateLinks": true,
+  "newLinkFormat": "shortest",
+  "attachmentFolderPath": "raw/external"
+}

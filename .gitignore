@@ -70,3 +70,16 @@ desktop.ini
 .idea/
 *.swp
 *~
+
+
+# =====================================================================
+# Obsidian — 설정은 공유하고, 작업 상태는 공유하지 않는다
+# =====================================================================
+# graph.json(그래프 색·물리) · core-plugins.json(켠 기능) · app.json(제외 필터)
+# 은 팀이 같은 화면을 보게 하므로 커밋한다.
+# workspace 는 "지금 어느 탭을 열어뒀나"라서 사람마다 다르고, 공유하면
+# 서로의 창 배치를 덮어쓴다.
+.obsidian/workspace.json
+.obsidian/workspace-mobile.json
+.obsidian/cache
+.obsidian/plugins/*/data.json
