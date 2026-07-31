@@ -112,15 +112,22 @@ def fetch(cur):
     for t, col, _ in cur.fetchall():
         order.setdefault(t, []).append(col)
 
+    # UNIQUE 는 **제약이 아니라 인덱스**에서 읽는다. 부분 UNIQUE
+    # (CREATE UNIQUE INDEX ... WHERE ...) 는 pg_constraint 에 안 나오는데,
+    # 이 스키마는 그걸 쓴다 — friendship 은 "살아 있는 관계"에만 UNIQUE 다(W19).
+    # 제약만 보면 그 표가 UNIQUE 가 없는 것처럼 보인다.
     cur.execute("""
-        SELECT c.relname, string_agg(a.attname, ', ' ORDER BY k.ord)
-          FROM pg_constraint con
-          JOIN pg_class c ON c.oid = con.conrelid
+        SELECT c.relname,
+               string_agg(a.attname, ', ' ORDER BY k.ord)
+                 || coalesce(' · 단, ' || pg_get_expr(i.indpred, i.indrelid), '')
+          FROM pg_index i
+          JOIN pg_class c ON c.oid = i.indrelid
           JOIN pg_namespace n ON n.oid = c.relnamespace
-          JOIN LATERAL unnest(con.conkey) WITH ORDINALITY AS k(attnum, ord) ON true
+          JOIN LATERAL unnest(i.indkey) WITH ORDINALITY AS k(attnum, ord) ON true
           JOIN pg_attribute a ON a.attrelid = c.oid AND a.attnum = k.attnum
-         WHERE con.contype = 'u' AND n.nspname = 'public'
-         GROUP BY c.relname, con.oid
+         WHERE i.indisunique AND NOT i.indisprimary
+           AND n.nspname = 'public' AND c.relkind = 'r'
+         GROUP BY c.relname, i.indexrelid, i.indpred, i.indrelid
     """)
     uniques: dict[str, list[str]] = {}
     for t, cols_txt in cur.fetchall():

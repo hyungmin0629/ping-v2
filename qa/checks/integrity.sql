@@ -38,11 +38,19 @@ FROM heart_transaction WHERE balance_after < 0
 
 UNION ALL
 
--- 4. 힌트 구매에 대응하는 원장이 있는가
+-- 4. 하트를 낸 힌트 구매에 대응하는 원장이 있는가
 --    구 시스템은 결제가 원장에 안 남아 잔액 재구성이 불가능했다.
-SELECT '원장 없는 힌트 구매', 'HIGH', count(*)
+--
+--    ⚠️ heart_cost = 0 은 뺀다. W14 에서 **광고로 여는 무료 힌트**가 생겼고,
+--       하트가 움직이지 않았으므로 원장에 행이 없는 것이 옳다. 원장은 하트의
+--       움직임을 적는 곳이지 힌트를 연 사실을 적는 곳이 아니다.
+--       (그 사실은 hint_purchase 자신과 ad_impression 이 남긴다)
+--       이 조건이 없던 동안 광고로 연 힌트 4건이 위반으로 잡혔다 — 데이터가
+--       아니라 검사가 낡은 것이었다.
+SELECT '원장 없는 유료 힌트 구매', 'HIGH', count(*)
 FROM hint_purchase h
-WHERE NOT EXISTS (SELECT 1 FROM heart_transaction t WHERE t.hint_purchase_id = h.id)
+WHERE h.heart_cost > 0
+  AND NOT EXISTS (SELECT 1 FROM heart_transaction t WHERE t.hint_purchase_id = h.id)
 
 UNION ALL
 
@@ -73,9 +81,21 @@ FROM vote_item WHERE voted_at IS NOT NULL AND voted_at < served_at
 
 UNION ALL
 
--- 8. 친구 5명 미만인데 서비스가 해금된 유저
-SELECT '게이트 위반(친구<5인데 해금)', 'HIGH', count(*)
-FROM app_user WHERE service_unlocked_at IS NOT NULL AND friend_count < 5
+-- 8. 친구를 5명 맺어본 적이 없는데 서비스가 해금된 유저
+--
+-- ⚠️ 예전에는 "지금 친구<5인데 해금"이었다. 그건 **설계와 어긋난 검사**였다.
+--    refresh_friend_state 는 service_unlocked_at 을 한 번 찍으면 유지한다
+--    (이미 연 서비스를 닫지 않는다 — 투표 기록이 쌓였을 수 있으므로).
+--    친구가 줄어드는 경로가 관리자 삭제뿐이던 시절에는 안 드러났는데,
+--    W19 에서 친구 끊기를 열면서 **정상 이용자가 이 검사에 걸리게 됐다.**
+--
+--    끊은 관계도 행으로 남으므로(friendship.ended_at) 이제 제대로 물을 수 있다 —
+--    "지금 5명인가"가 아니라 "통틀어 5명을 맺어본 적이 있는가".
+SELECT '게이트 위반(5명을 맺어본 적 없는데 해금)', 'HIGH', count(*)
+FROM app_user u
+WHERE u.service_unlocked_at IS NOT NULL
+  AND (SELECT count(*) FROM friendship f
+        WHERE f.user_low_id = u.id OR f.user_high_id = u.id) < 5
 
 UNION ALL
 
@@ -105,6 +125,11 @@ UNION ALL
 
 -- 12. 후보가 투표자의 친구가 아닌 경우
 --     세 스코프 모두 친구 안에서 뽑아야 한다(GLOBAL = 친구 전체)
+--
+--     ★ ended_at 을 일부러 안 본다. 지금 친구인지가 아니라 **투표 당시 친구였는지**를
+--       묻는 검사이기 때문이다. 끊은 관계도 행으로 남으므로(W19) 옛 투표가
+--       그대로 설명된다. 여기에 `ended_at IS NULL` 을 붙이면 친구를 끊는 순간
+--       그 사람이 나온 옛 투표가 전부 위반으로 잡힌다.
 SELECT '친구 아닌 후보', 'HIGH', count(*)
 FROM vote_candidate c
 JOIN vote_item v ON v.id = c.vote_item_id
@@ -170,11 +195,14 @@ WHERE c.candidate_user_id = v.user_id
 UNION ALL
 
 -- 16. friend_count 가 실제 친구 수와 다른가
+-- friend_count 는 **살아 있는** 관계만 센다(refresh_friend_state 와 같은 기준).
+-- 12번과 반대로 여기서는 ended_at 을 봐야 한다.
 SELECT 'friend_count 불일치', 'MEDIUM', count(*)
 FROM app_user u
 WHERE u.friend_count <> (
     SELECT count(*) FROM friendship f
-    WHERE f.user_low_id = u.id OR f.user_high_id = u.id
+    WHERE (f.user_low_id = u.id OR f.user_high_id = u.id)
+      AND f.ended_at IS NULL
 )
 
 ORDER BY 3 DESC, 1;

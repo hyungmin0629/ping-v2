@@ -79,7 +79,8 @@ AS $FN$
                            ELSE f.user_low_id END
            AND u.status = 'ACTIVE'
           JOIN public.grade_class g ON g.id = u.class_id
-         WHERE f.user_low_id = p_user OR f.user_high_id = p_user
+         WHERE (f.user_low_id = p_user OR f.user_high_id = p_user)
+           AND f.ended_at IS NULL          -- 끊은 친구는 후보에 안 나온다(011)
     ), in_scope AS (
         SELECT fr.id
           FROM friends fr CROSS JOIN me

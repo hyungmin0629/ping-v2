@@ -405,7 +405,7 @@
     }
    ],
    "uniques": [
-    "sender_id, receiver_id"
+    "sender_id, receiver_id · 단, (status = 'PENDING'::friend_req_status)"
    ]
   },
   {
@@ -455,10 +455,17 @@
      "null": false,
      "pk": false,
      "fk": null
+    },
+    {
+     "name": "ended_at",
+     "type": "timestamptz",
+     "null": true,
+     "pk": false,
+     "fk": null
     }
    ],
    "uniques": [
-    "user_low_id, user_high_id"
+    "user_low_id, user_high_id · 단, (ended_at IS NULL)"
    ]
   },
   {
@@ -760,7 +767,11 @@
      "fk": null
     }
    ],
-   "uniques": []
+   "uniques": [
+    "hint_purchase_id · 단, (hint_purchase_id IS NOT NULL)",
+    "purchase_id · 단, (purchase_id IS NOT NULL)",
+    "ad_impression_id · 단, (ad_impression_id IS NOT NULL)"
+   ]
   },
   {
    "name": "heart_transaction_type",
@@ -877,7 +888,8 @@
     }
    ],
    "uniques": [
-    "vote_received_id, hint_type"
+    "vote_received_id, hint_type",
+    "ad_impression_id · 단, (ad_impression_id IS NOT NULL)"
    ]
   },
   {
@@ -1462,7 +1474,9 @@
      "fk": null
     }
    ],
-   "uniques": []
+   "uniques": [
+    "published_question_id · 단, (published_question_id IS NOT NULL)"
+   ]
   },
   {
    "name": "region",
@@ -2051,7 +2065,9 @@
      "fk": null
     }
    ],
-   "uniques": []
+   "uniques": [
+    "school_id, external_id · 단, (external_id IS NOT NULL)"
+   ]
   },
   {
    "name": "school_notice",
@@ -2137,7 +2153,9 @@
      "fk": null
     }
    ],
-   "uniques": []
+   "uniques": [
+    "school_id, external_id · 단, (external_id IS NOT NULL)"
+   ]
   },
   {
    "name": "school_notice_read",
@@ -2455,7 +2473,8 @@
     }
    ],
    "uniques": [
-    "vote_item_id, shuffle_round, slot"
+    "vote_item_id, shuffle_round, slot",
+    "vote_item_id · 단, is_chosen"
    ]
   },
   {
@@ -3267,19 +3286,19 @@
    "app_user": 23,
    "block_record": 0,
    "board_category": 5,
-   "comment_like": 3,
+   "comment_like": 6,
    "friend_request": 220,
-   "friendship": 164,
+   "friendship": 170,
    "grade_class": 538,
    "heart_product": 4,
-   "heart_purchase": 4,
-   "heart_transaction": 1281,
+   "heart_purchase": 6,
+   "heart_transaction": 1316,
    "heart_transaction_type": 9,
-   "hint_purchase": 91,
+   "hint_purchase": 114,
    "meal_menu_item": 19929,
    "meal_plan": 2938,
    "post": 20,
-   "post_comment": 15,
+   "post_comment": 17,
    "post_like": 16,
    "question": 24,
    "question_category": 8,
@@ -3295,11 +3314,11 @@
    "school_notice": 0,
    "school_notice_read": 0,
    "timetable": 0,
-   "user_session": 60,
+   "user_session": 63,
    "user_withdrawal": 0,
    "vote_candidate": 2788,
    "vote_item": 680,
-   "vote_received": 582,
+   "vote_received": 587,
    "vote_session": 68,
    "vote_shuffle": 17,
    "withdrawal_reason": 6

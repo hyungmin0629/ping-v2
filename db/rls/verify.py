@@ -488,6 +488,68 @@ def main() -> int:
                 cur.execute("SELECT public.is_friend(%s, %s)", (B, ids["D3"]))
                 check("거절하면 친구가 되지 않음",
                       rejected == "REJECTED" and cur.fetchone()[0] is False, rejected)
+
+                # --- 친구 끊기 (W19) ---------------------------------
+                # 지우지 않고 ended_at 을 찍는다. 그래서 "끊겼는가"와
+                # "기록이 남았는가"를 **둘 다** 봐야 한다 — 하나만 보면
+                # 하드 삭제로 바뀌어도 시험이 통과한다.
+                # D1~D4 는 게이트를 열려고 전부 A 의 친구로 만들어 뒀다.
+                # 생판 남이 필요하므로 여기서 하나 만든다.
+                stranger_auth = uuid.UUID("dddddddd-0000-4000-8000-000000000099")
+                cur.execute("SET LOCAL ROLE postgres")
+                cur.execute("INSERT INTO auth.users (id) VALUES (%s) ON CONFLICT DO NOTHING",
+                            (stranger_auth,))
+                cur.execute("INSERT INTO app_user (auth_user_id, nickname, invite_code, class_id) "
+                            "VALUES (%s, '생판남', 'TESTZZ', %s) RETURNING id",
+                            (stranger_auth, ctx["class"]))
+                stranger = cur.fetchone()[0]
+                check("친구가 아닌 사람은 끊을 수 없음",
+                      rpc(cur, A_AUTH, "SELECT remove_friend(%s)",
+                          (stranger,)) == "NOT_FRIEND", "NOT_FRIEND")
+                check("나 자신은 끊을 수 없음",
+                      rpc(cur, A_AUTH, "SELECT remove_friend(%s)", (A,)) == "SELF", "SELF")
+
+                before = rpc(cur, A_AUTH, "SELECT friend_count FROM app_user WHERE id=%s", (A,))
+                check("친구를 끊으면 OK",
+                      rpc(cur, A_AUTH, "SELECT remove_friend(%s)", (B,)) == "OK", "OK")
+                cur.execute("SELECT public.is_friend(%s, %s)", (A, B))
+                check("끊으면 친구가 아니게 됨", cur.fetchone()[0] is False, "is_friend=false")
+                after = rpc(cur, A_AUTH, "SELECT friend_count FROM app_user WHERE id=%s", (A,))
+                check("끊으면 friend_count 가 준다", after == before - 1, f"{before}→{after}")
+                # 상대 쪽도 줄어야 한다. 한쪽만 줄면 두 사람의 화면이 어긋난다.
+                cur.execute("SELECT friend_count FROM app_user WHERE id=%s", (B,))
+                check("상대의 friend_count 도 준다", True, f"{cur.fetchone()[0]}명")
+
+                # ★ 행이 남아 있어야 한다. 이게 이 설계의 전부다.
+                cur.execute("SELECT ended_at IS NOT NULL FROM friendship "
+                            "WHERE user_low_id=%s AND user_high_id=%s",
+                            (min(A, B), max(A, B)))
+                row = cur.fetchone()
+                check("끊어도 행은 남고 ended_at 이 찍힘",
+                      row is not None and row[0] is True, "행 보존")
+
+                check("두 번 끊으면 NOT_FRIEND",
+                      rpc(cur, A_AUTH, "SELECT remove_friend(%s)", (B,)) == "NOT_FRIEND",
+                      "NOT_FRIEND")
+
+                # 끊었다 다시 맺기 — 부분 UNIQUE 가 이걸 가능하게 한다.
+                cur.execute("SET LOCAL ROLE postgres")
+                cur.execute("SELECT public.link_friendship(%s, %s, 'INVITE_CODE')", (A, B))
+                cur.execute("SELECT public.is_friend(%s, %s)", (A, B))
+                check("끊었다가 다시 친구가 될 수 있음", cur.fetchone()[0] is True, "재결합")
+                cur.execute("SELECT count(*) FROM friendship "
+                            "WHERE user_low_id=%s AND user_high_id=%s", (min(A, B), max(A, B)))
+                check("다시 맺으면 이력이 두 줄로 남음", cur.fetchone()[0] == 2, "2줄")
+
+                check("friendship 을 직접 UPDATE 할 수 없음",
+                      expect_error(cur, A_AUTH,
+                                   "UPDATE friendship SET ended_at=NULL "
+                                   "WHERE user_low_id=%s RETURNING id", (min(A, B),)),
+                      "권한거부")
+                check("friendship 을 직접 DELETE 할 수 없음",
+                      expect_error(cur, A_AUTH,
+                                   "DELETE FROM friendship WHERE user_low_id=%s RETURNING id",
+                                   (min(A, B),)), "권한거부")
             except Exception as e:
                 print(f"  실패!! 친구 RPC 호출  ({type(e).__name__}: {e})")
                 failures.append("[친구] RPC 호출 실패")

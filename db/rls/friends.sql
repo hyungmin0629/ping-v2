@@ -41,7 +41,8 @@ AS $$
            updated_at = now()
       FROM (SELECT count(*) AS n
               FROM public.friendship f
-             WHERE f.user_low_id = p_user_id OR f.user_high_id = p_user_id) c
+             WHERE (f.user_low_id = p_user_id OR f.user_high_id = p_user_id)
+               AND f.ended_at IS NULL) c
      WHERE u.id = p_user_id
 $$;
 
@@ -58,9 +59,12 @@ RETURNS void
 LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path = ''
 AS $$
 BEGIN
+    -- 부분 UNIQUE(살아 있는 관계에만) 라 조건까지 적어야 짝이 맞는다.
+    -- 끊었던 사이면 옛 행은 그대로 두고 **새 행**이 생긴다 —
+    -- 그래야 "몇 번 끊었다 붙었나"가 행 수로 남는다(011).
     INSERT INTO public.friendship (user_low_id, user_high_id, source)
     VALUES (LEAST(a, b), GREATEST(a, b), p_source)
-    ON CONFLICT (user_low_id, user_high_id) DO NOTHING;
+    ON CONFLICT (user_low_id, user_high_id) WHERE ended_at IS NULL DO NOTHING;
 
     PERFORM public.refresh_friend_state(a);
     PERFORM public.refresh_friend_state(b);
@@ -123,18 +127,21 @@ BEGIN
         RETURN 'ACCEPTED';
     END IF;
 
-    -- 거절당한 뒤 다시 보내는 경우가 있어 UNIQUE(sender,receiver) 충돌을
-    -- 오류로 두지 않고 PENDING 으로 되돌린다. 오타로 거절한 상대를 영영
-    -- 다시 부를 수 없게 만들지 않기 위해서다.
-    INSERT INTO public.friend_request AS fr (sender_id, receiver_id, status, source)
-    VALUES (v_me, v_target, 'PENDING', 'INVITE_CODE')
-    ON CONFLICT (sender_id, receiver_id) DO UPDATE
-       SET status = 'PENDING', responded_at = NULL, created_at = now()
-     WHERE fr.status <> 'PENDING';
-
-    IF NOT FOUND THEN
+    -- 이미 보내둔 요청이 있으면 다시 보내지 않는다.
+    IF EXISTS (SELECT 1 FROM public.friend_request r
+                WHERE r.sender_id = v_me AND r.receiver_id = v_target
+                  AND r.status = 'PENDING') THEN
         RETURN 'ALREADY_SENT';
     END IF;
+
+    -- 거절당한 뒤, 또는 친구였다가 끊은 뒤 다시 보내는 경우가 있다.
+    -- ⚠️ 예전에는 옛 행을 PENDING 으로 **되돌렸다.** UNIQUE(sender,receiver) 가
+    --    행 하나만 허용했기 때문이다. 그 방식은 이전 요청의 시각을 덮어써
+    --    "언제 처음 불렀나"를 지웠다. W19 에서 UNIQUE 를 PENDING 인 것에만
+    --    걸도록 바꿨으므로 이제 **새 행**을 넣는다 — 요청 이력이 쌓인다.
+    INSERT INTO public.friend_request (sender_id, receiver_id, status, source)
+    VALUES (v_me, v_target, 'PENDING', 'INVITE_CODE');
+
     RETURN 'SENT';
 END;
 $$;
@@ -230,7 +237,61 @@ GRANT SELECT ON public.my_friend_request TO authenticated;
 
 
 -- ---------------------------------------------------------------------
--- 6. 직접 쓰기를 닫는다
+-- 6. 친구 끊기 (W19)
+-- ---------------------------------------------------------------------
+-- 행을 지우지 않고 ended_at 을 찍는다. 왜인지는 migration 011 에 적었다 —
+-- 요약하면 친구 끊기가 관계 이탈 신호라서 지우면 못 본다.
+--
+-- 한쪽이 끊으면 양쪽 다 끊긴다. friendship 은 방향이 없는 간선이고,
+-- "나는 친구인데 상대는 아니다"를 담을 자리가 없다. 담을 수 있게 만들 수도
+-- 있지만 그건 팔로우지 친구가 아니다.
+--
+-- 끊어도 **차단이 아니다.** 상대는 초대 코드로 다시 요청할 수 있다.
+-- 차단은 block_record 가 할 일이고 아직 화면이 없다.
+--
+--   NOT_FRIEND  친구가 아니다(이미 끊었거나 애초에 아니었다)
+--   SELF        나 자신
+--   OK          끊었다
+CREATE OR REPLACE FUNCTION public.remove_friend(p_user_id bigint)
+RETURNS text
+LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path = ''
+AS $$
+DECLARE
+    v_me bigint := public.current_app_user_id();
+    v_hit int;
+BEGIN
+    IF v_me IS NULL THEN
+        RETURN 'NOT_FRIEND';
+    END IF;
+    IF v_me = p_user_id THEN
+        RETURN 'SELF';
+    END IF;
+
+    UPDATE public.friendship
+       SET ended_at = now(), updated_at = now()
+     WHERE user_low_id  = LEAST(v_me, p_user_id)
+       AND user_high_id = GREATEST(v_me, p_user_id)
+       AND ended_at IS NULL;
+
+    GET DIAGNOSTICS v_hit = ROW_COUNT;
+    IF v_hit = 0 THEN
+        RETURN 'NOT_FRIEND';
+    END IF;
+
+    -- 양쪽 friend_count 를 다시 센다. service_unlocked_at 은 그대로 둔다 —
+    -- 이미 연 서비스를 닫지 않는 것이 refresh_friend_state 의 규칙이다.
+    PERFORM public.refresh_friend_state(v_me);
+    PERFORM public.refresh_friend_state(p_user_id);
+    RETURN 'OK';
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.remove_friend(bigint) FROM public;
+GRANT EXECUTE ON FUNCTION public.remove_friend(bigint) TO authenticated;
+
+
+-- ---------------------------------------------------------------------
+-- 7. 직접 쓰기를 닫는다
 -- ---------------------------------------------------------------------
 -- policies.sql 의 insert_own_friend_request / respond_friend_request 를 대체한다.
 DROP POLICY IF EXISTS insert_own_friend_request ON public.friend_request;

@@ -14,9 +14,11 @@ CREATE TABLE friend_request (
     source       relation_source   NOT NULL,
     created_at   timestamptz       NOT NULL DEFAULT now(),
     responded_at timestamptz,
-    CONSTRAINT uq_friend_request UNIQUE (sender_id, receiver_id),
     CONSTRAINT ck_no_self_request CHECK (sender_id <> receiver_id)
 );
+-- 옛 ACCEPTED/REJECTED 가 남아 있어도 새 요청을 보낼 수 있어야 한다(011).
+CREATE UNIQUE INDEX uq_friend_request_pending
+    ON friend_request (sender_id, receiver_id) WHERE status = 'PENDING';
 CREATE INDEX idx_freq_receiver ON friend_request(receiver_id, status);
 CREATE INDEX idx_freq_sender   ON friend_request(sender_id, status);
 
@@ -28,9 +30,14 @@ CREATE TABLE friendship (
     user_high_id  bigint          NOT NULL REFERENCES app_user(id),
     source        relation_source NOT NULL,
     created_at    timestamptz     NOT NULL DEFAULT now(),
-    CONSTRAINT uq_friendship UNIQUE (user_low_id, user_high_id),
+    -- ★ 끊어도 행을 지우지 않는다. 끊었다는 사실이 관계 이탈 신호다.
+    --   UNIQUE 가 살아 있는 관계에만 걸리므로 끊었다 다시 맺기가 된다(011).
+    ended_at      timestamptz,
     CONSTRAINT ck_friendship_order CHECK (user_low_id < user_high_id)
 );
+CREATE UNIQUE INDEX uq_friendship_active
+    ON friendship (user_low_id, user_high_id) WHERE ended_at IS NULL;
+CREATE INDEX idx_friendship_ended ON friendship (ended_at);
 CREATE INDEX idx_friendship_low  ON friendship(user_low_id);
 CREATE INDEX idx_friendship_high ON friendship(user_high_id);
 

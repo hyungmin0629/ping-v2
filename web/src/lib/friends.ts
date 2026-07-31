@@ -121,6 +121,32 @@ export async function listFriends(myId: number): Promise<Person[]> {
     .sort((a, b) => a.nickname.localeCompare(b.nickname, "ko"));
 }
 
+// 친구 끊기 (W19) -----------------------------------------------------
+// 행을 지우지 않고 ended_at 을 찍는다 — 친구를 끊은 것은 관계 이탈 신호라
+// 지우면 분석에서 사라진다. (db/migrations/011)
+//
+// 한쪽이 끊으면 양쪽 다 끊긴다. friendship 은 방향이 없는 간선이라
+// "나는 친구인데 상대는 아니다"를 담을 자리가 없다.
+//
+// ⚠️ 끊는다고 차단이 되는 것은 아니다. 상대는 초대 코드로 다시 요청할 수 있다.
+
+export type RemoveResult = "OK" | "NOT_FRIEND" | "SELF";
+
+export const REMOVE_MESSAGE: Record<RemoveResult, string> = {
+  OK: "친구를 끊었습니다.",
+  NOT_FRIEND: "이미 친구가 아닙니다.",
+  SELF: "나 자신은 끊을 수 없어요.",
+};
+
+export async function removeFriend(userId: number): Promise<RemoveResult> {
+  const supabase = createClient();
+  const { data, error } = await supabase.rpc("remove_friend", {
+    p_user_id: userId,
+  });
+  if (error) throw new Error(error.message);
+  return data as RemoveResult;
+}
+
 // 친구 추천 -----------------------------------------------------------
 // 같은 학교 사람을 보여준다. 초대 코드를 모르는 상대에게 요청을 보낼 수 있는
 // **유일한 경로**라, 범위 판단은 전부 DB 가 한다(db/rls/recommend.sql).

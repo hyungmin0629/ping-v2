@@ -211,6 +211,7 @@ python pipeline/verify_load.py  --source local                  # 행 수 대조
 | W8 | 학교 정보 — 급식표 | **완료** |
 | W16 | 학교 정보 — 학사일정 | **완료** · 급식 달력에 얹음 · 시간표·공지는 남음 |
 | W17 | 운영자 테이블 제거 | **완료** · `admin_user` → `app_user.is_admin` · 41테이블 |
+| W19 | 친구 끊기 | **완료** · 지우지 않고 `ended_at` · 정합성 검사 3종 교정 |
 | W18 | 이름·군더더기 정리 | **완료** · `rejected_friend_recommendations` 로 개명 · `external_sync_log` 삭제 · 40테이블 |
 | W9 | 자유게시판 (닉네임 노출) | **완료** — 글·댓글·좋아요·신고 |
 | W10 | 친구 추천 (같은 학교) | **완료** — 요청 / 안 볼래 |

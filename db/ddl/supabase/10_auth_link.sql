@@ -57,6 +57,7 @@ AS $$
         SELECT 1 FROM public.friendship f
         WHERE f.user_low_id  = LEAST(a, b)
           AND f.user_high_id = GREATEST(a, b)
+          AND f.ended_at IS NULL          -- 끊은 관계는 친구가 아니다(011)
     )
 $$;
 

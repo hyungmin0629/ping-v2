@@ -407,7 +407,7 @@ MVP에서는 이를 감수하고, 안내 문구로 알린다. 복구 코드 기�
 | `pipeline/extract_load.py` | Postgres → BigQuery raw 적재 |
 | `pipeline/verify_load.py` | 원천 ↔ BigQuery 행 수 대조 |
 | `qa/checks/integrity.sql` | 정합성 17종 |
-| `db/rls/verify.py` | RLS 침투·동작 시험 189항목 |
+| `db/rls/verify.py` | RLS 침투·동작 시험 201항목 |
 
 ## 3.6 산출물 형식
 
@@ -450,6 +450,7 @@ MVP에서는 이를 감수하고, 안내 문구로 알린다. 복구 코드 기�
 | 22 | W16 학사일정 | **완료** · 급식 달력에 얹음 | |
 | 23 | W17 운영자 테이블 제거 | **완료** · admin_user → app_user.is_admin | |
 | 24 | W18 이름·군더더기 정리 | **완료** · 개명 + external_sync_log 삭제 | |
+| 25 | W19 친구 끊기 | **완료** · `friendship.ended_at` · 정합성 검사 3종 교정 | |
 | 15 | **W9 자유게시판** | 닉네임 노출 · 학교 단위 · 신고 포함 | **완료** |
 | 16 | **W10 친구 추천** | 같은 학교 목록 → 요청 / 안 볼래 | **완료** |
 | 17 | **W11 프로필 수정** | 닉네임·성별·소속 변경 | **완료** |

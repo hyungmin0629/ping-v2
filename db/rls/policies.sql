@@ -144,6 +144,7 @@ CREATE POLICY read_own_friend_request ON public.friend_request
 -- 초대 코드 하나여야 한다.
 
 -- 내가 낀 친구 관계만 보인다
+-- 끊은 관계도 보인다. 내 이력이고, 화면이 "언제 끊었나"를 띄울 수 있어야 한다.
 CREATE POLICY read_own_friendship ON public.friendship
     FOR SELECT TO authenticated
     USING (user_low_id = public.current_app_user_id()
