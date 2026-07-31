@@ -1,9 +1,10 @@
 {
   "userIgnoreFilters": [
-    "web/node_modules/",
+    "web/",
     ".venv/",
     "airflow/logs/",
-    "web/.next/"
+    "final/",
+    "news_dashborad/"
   ],
   "alwaysUpdateLinks": true,
   "newLinkFormat": "shortest",
