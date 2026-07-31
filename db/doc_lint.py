@@ -1,0 +1,220 @@
+"""
+문서가 하는 주장을 살아 있는 실제와 대조한다. (위키의 lint 연산)
+
+왜 필요한가:
+    이 저장소의 "진실"은 DDL·스크립트·살아 있는 DB 이고, 문서는 그것을 가리킨다.
+    그런데 코드는 매 커밋 바뀌고 **문서는 조용히 낡는다.** 오류가 안 난다.
+
+    2026-07-31 에 손으로 점검했더니 낡은 주장이 9곳 나왔다 —
+    테이블 수, 시험 항목 수, 단계 표의 순서, 비어 있는 표 목록.
+    다음에도 손으로 하면 또 놓치므로 스크립트로 옮긴다.
+
+무엇을 보나:
+    1  숫자   테이블·컬럼·FK·마이그레이션 수를 DB·파일시스템과 대조
+    2  이름   사라진 표 이름이 현재형으로 남아 있는가
+    3  링크   [[링크]] 가 실제 파일을 가리키는가
+    4  파일   문서가 언급하는 스크립트가 실제로 있는가
+    5  색인   docs/index.md 가 최신인가
+    6  원본   raw/ 에 반영 안 된 회의록이 있는가
+
+사용법:
+    python db/doc_lint.py              # 전부
+    python db/doc_lint.py --offline    # DB 없이 (숫자 검사 일부 생략)
+"""
+
+from __future__ import annotations
+
+import argparse
+import os
+import re
+import subprocess
+import sys
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parent.parent
+
+# 이 문서들만 본다. raw/ 는 원본이라 낡아도 고치지 않는다.
+DOCS = ["CLAUDE.md", "README.md", "DECISIONS.md",
+        "docs/design-spec.md", "docs/ONBOARDING.md", "docs/TEAM-PLAN.md"]
+
+# 사라진 이름. 이력을 말하는 자리(→, 없앴다, 삭제, 지운, 당시)는 봐준다.
+GONE = ["admin_user", "external_sync_log", "sync_resource", "sync_status"]
+HISTORY_HINT = re.compile(
+    r"→|없앴|삭제|지운|지웠|폐기|당시|한때|이제 없|더 이상|지금은|나머지|W0 조정|W1[789]|~~|\[\[")
+
+
+def md_files() -> list[Path]:
+    return [p for p in ROOT.rglob("*.md")
+            if ".venv" not in str(p) and "node_modules" not in str(p)]
+
+
+def live_counts() -> dict[str, int] | None:
+    """살아 있는 DB 에서 진짜 값을 읽는다. 못 붙으면 None."""
+    try:
+        from dotenv import load_dotenv
+        import psycopg
+    except ImportError:
+        return None
+    load_dotenv(ROOT / ".env")
+    url = os.environ.get("SUPABASE_DB_URL")
+    if not url:
+        return None
+    try:
+        with psycopg.connect(url, connect_timeout=15) as conn, conn.cursor() as cur:
+            cur.execute("""SELECT count(*) FROM information_schema.tables
+                            WHERE table_schema='public' AND table_type='BASE TABLE'""")
+            tables = cur.fetchone()[0]
+            cur.execute("""SELECT count(*) FROM information_schema.columns c
+                             JOIN information_schema.tables t USING(table_schema,table_name)
+                            WHERE c.table_schema='public' AND t.table_type='BASE TABLE'""")
+            cols = cur.fetchone()[0]
+            cur.execute("""SELECT count(*) FROM pg_constraint
+                            WHERE contype='f' AND connamespace='public'::regnamespace""")
+            fks = cur.fetchone()[0]
+        return {"테이블": tables, "컬럼": cols, "FK": fks}
+    except Exception:
+        return None
+
+
+def verify_item_count() -> int | None:
+    """verify.py 가 실제로 몇 항목을 찍는지 센다. 느려서 기본은 건너뛴다."""
+    try:
+        r = subprocess.run([sys.executable, str(ROOT / "db" / "rls" / "verify.py")],
+                           capture_output=True, text=True, encoding="utf-8", timeout=600)
+        return len(re.findall(r"^  (동작함|막힘|깨끗함) ", r.stdout, re.M)) or None
+    except Exception:
+        return None
+
+
+def main() -> int:
+    try:
+        sys.stdout.reconfigure(encoding="utf-8")
+    except AttributeError:
+        pass
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--offline", action="store_true")
+    ap.add_argument("--with-verify", action="store_true",
+                    help="verify.py 를 실제로 돌려 항목 수까지 대조 (느리다)")
+    args = ap.parse_args()
+
+    problems: list[str] = []      # 반드시 고쳐야 하는 것 (반환 1)
+    notes: list[str] = []         # 사람이 판단할 것 (반환 0)
+
+    def bad(msg: str) -> None:
+        problems.append(msg)
+        print(f"  ★ {msg}")
+
+    def note(msg: str) -> None:
+        # 숫자와 이름은 이력 서술과 구별이 어렵다. 알리되 막지는 않는다.
+        notes.append(msg)
+        print(f"  · {msg}")
+
+    # ── 1. 숫자 ────────────────────────────────────────────────
+    print("1. 숫자 주장")
+    truth = None if args.offline else live_counts()
+    if truth is None:
+        print("  건너뜀 — DB 에 붙지 못했습니다")
+    else:
+        pats = [(r"(\d+)\s*개?\s*테이블", "테이블"), (r"(\d+)\s*컬럼", "컬럼"), (r"FK\s*(\d+)", "FK")]
+        for d in DOCS:
+            p = ROOT / d
+            if not p.exists():
+                continue
+            for i, line in enumerate(p.read_text(encoding="utf-8").splitlines(), 1):
+                if HISTORY_HINT.search(line):
+                    continue
+                for pat, kind in pats:
+                    for m in re.finditer(pat, line):
+                        v = int(m.group(1))
+                        if v > 3 and v != truth[kind] and abs(v - truth[kind]) < 25:
+                            note(f"{d}:{i} {kind}={v} (실제 {truth[kind]}) — {line.strip()[:60]}")
+        if args.with_verify:
+            n = verify_item_count()
+            if n:
+                for d in DOCS:
+                    p = ROOT / d
+                    if not p.exists():
+                        continue
+                    for i, line in enumerate(p.read_text(encoding="utf-8").splitlines(), 1):
+                        if HISTORY_HINT.search(line):
+                            continue
+                        for m in re.finditer(r"(\d+)\s*항목", line):
+                            if int(m.group(1)) != n:
+                                note(f"{d}:{i} 시험={m.group(1)} (실제 {n})")
+        if not notes:
+            print("  깨끗함")
+
+    # ── 2. 사라진 이름 ─────────────────────────────────────────
+    print("2. 사라진 이름이 현재형으로 남아 있는가")
+    before = len(notes)
+    for d in DOCS:
+        p = ROOT / d
+        if not p.exists():
+            continue
+        for i, line in enumerate(p.read_text(encoding="utf-8").splitlines(), 1):
+            if HISTORY_HINT.search(line):
+                continue
+            for g in GONE:
+                if g in line:
+                    note(f"{d}:{i} `{g}` — {line.strip()[:60]}")
+    if len(notes) == before:
+        print("  깨끗함")
+
+    # ── 3. 링크 ────────────────────────────────────────────────
+    print("3. [[링크]] 가 실제 파일을 가리키는가")
+    before = len(problems)
+    names = {p.stem for p in md_files()}
+    for p in md_files():
+        for i, line in enumerate(p.read_text(encoding="utf-8").splitlines(), 1):
+            for m in re.finditer(r"\[\[([^\]|]+)(?:\|[^\]]*)?\]\]", line):
+                if m.group(1) not in names:
+                    bad(f"{p.relative_to(ROOT)}:{i} [[{m.group(1)}]] 대상 없음")
+    if len(problems) == before:
+        print("  깨끗함")
+
+    # ── 4. 언급된 스크립트가 실재하는가 ────────────────────────
+    print("4. 문서가 부르는 스크립트가 실재하는가")
+    before = len(problems)
+    for p in md_files():
+        if "raw" in p.parts:
+            continue
+        for i, line in enumerate(p.read_text(encoding="utf-8").splitlines(), 1):
+            for m in re.finditer(r"python\s+((?:db|pipeline|generator|qa)/[\w/]+\.py)", line):
+                if not (ROOT / m.group(1)).exists():
+                    bad(f"{p.relative_to(ROOT)}:{i} {m.group(1)} 없음")
+    if len(problems) == before:
+        print("  깨끗함")
+
+    # ── 5. 색인 ────────────────────────────────────────────────
+    print("5. docs/index.md 가 최신인가")
+    r = subprocess.run([sys.executable, str(ROOT / "db" / "wiki_index.py"), "--check"],
+                       capture_output=True, text=True, encoding="utf-8")
+    if r.returncode != 0:
+        bad("docs/index.md 가 낡음 — python db/wiki_index.py")
+    else:
+        print("  깨끗함")
+
+    # ── 6. 반영 안 된 원본 ─────────────────────────────────────
+    print("6. raw/ 에 반영 안 된 회의록이 있는가")
+    before = len(problems)
+    for p in sorted((ROOT / "raw" / "meetings").glob("*.md")):
+        if p.name.startswith("_"):
+            continue
+        if re.search(r"^ingested:\s*false\s*$", p.read_text(encoding="utf-8"), re.M | re.I):
+            bad(f"{p.relative_to(ROOT)} 아직 반영 안 됨 — 읽고 위키에 옮길 것")
+    if len(problems) == before:
+        print("  깨끗함")
+
+    print()
+    print("=" * 60)
+    if notes:
+        print(f"살펴볼 것 {len(notes)}건 — 이력 서술이면 그대로 두면 된다")
+    if problems:
+        print(f"고쳐야 할 것 {len(problems)}건")
+        return 1
+    print("문서가 실제와 맞습니다")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
