@@ -163,7 +163,10 @@ def main() -> int:
     # ── 3. 링크 ────────────────────────────────────────────────
     print("3. [[링크]] 가 실제 파일을 가리키는가")
     before = len(problems)
+    # 옵시디언은 [[이름]](파일명)과 [[폴더/이름]](볼트 상대경로) 둘 다 받는다.
+    # 이름이 겹칠 때는 경로를 붙여야 하므로 두 형태를 모두 인정한다.
     names = {p.stem for p in md_files()}
+    names |= {p.relative_to(ROOT).with_suffix("").as_posix() for p in md_files()}
     for p in md_files():
         for i, line in enumerate(p.read_text(encoding="utf-8").splitlines(), 1):
             for m in re.finditer(r"\[\[([^\]|]+)(?:\|[^\]]*)?\]\]", line):
