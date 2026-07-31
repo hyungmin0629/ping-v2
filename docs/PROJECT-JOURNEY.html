@@ -1,0 +1,488 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>ping-v2 — 합성 데이터 생성 이전까지의 경과</title>
+<style>
+  @font-face { font-family:"MalgunLocal"; font-weight:400;
+               src:url("file:///C:/Windows/Fonts/malgun.ttf") format("truetype"); }
+  @font-face { font-family:"MalgunLocal"; font-weight:700;
+               src:url("file:///C:/Windows/Fonts/malgunbd.ttf") format("truetype"); }
+  @page { size: A4; margin: 18mm 16mm 16mm; }
+
+  :root {
+    --ink:#15201C; --ink2:#4A5A54; --ink3:#7C8C86;
+    --rule:#D5DFDA; --rule2:#E8EEEB; --accent:#116B57; --warn:#A6522A;
+    --mono: "Consolas","MalgunLocal",monospace;
+    --sans: "MalgunLocal","Malgun Gothic",sans-serif;
+  }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family:var(--sans); color:var(--ink);
+         font-size:10.2pt; line-height:1.62; }
+
+  /* ── 표지 ───────────────────────────────────────── */
+  .cover { height:245mm; display:flex; flex-direction:column; justify-content:center;
+           page-break-after:always; }
+  .cover .eyebrow { font-family:var(--mono); font-size:9pt; letter-spacing:.22em;
+           text-transform:uppercase; color:var(--accent); margin-bottom:10mm; }
+  .cover h1 { font-size:27pt; line-height:1.25; margin:0 0 6mm; letter-spacing:-.02em;
+           font-weight:700; text-wrap:balance; }
+  .cover .sub { font-size:12pt; color:var(--ink2); margin:0 0 16mm; max-width:135mm; }
+  .cover dl { display:grid; grid-template-columns:26mm 1fr; gap:2.5mm 6mm;
+           margin:0; padding-top:8mm; border-top:1px solid var(--rule);
+           font-size:9.5pt; }
+  .cover dt { font-family:var(--mono); font-size:8.5pt; color:var(--ink3);
+           letter-spacing:.06em; padding-top:.5mm; }
+  .cover dd { margin:0; color:var(--ink2); }
+
+  h2 { font-size:15pt; margin:0 0 1mm; letter-spacing:-.01em; font-weight:700;
+       page-break-after:avoid; }
+  h2 .num { font-family:var(--mono); font-size:10pt; color:var(--accent);
+       margin-right:3mm; font-weight:600; }
+  .lede { color:var(--ink2); margin:0 0 5mm; font-size:10pt;
+       padding-bottom:3mm; border-bottom:1px solid var(--rule); }
+  h3 { font-size:11pt; margin:7mm 0 2mm; font-weight:650; page-break-after:avoid; }
+  h4 { font-size:9.5pt; margin:5mm 0 1.5mm; font-weight:650; color:var(--ink2);
+       page-break-after:avoid; }
+  p { margin:0 0 3mm; }
+  section { page-break-before:always; }
+  section.cont { page-break-before:auto; }
+
+  strong { font-weight:650; }
+  code { font-family:var(--mono); font-size:8.8pt; background:#F0F4F2;
+         padding:.3mm 1.1mm; border-radius:1.5px; }
+
+  table { border-collapse:collapse; width:100%; margin:3mm 0 5mm; font-size:9pt;
+          page-break-inside:avoid; }
+  th { text-align:left; font-size:8pt; letter-spacing:.09em; text-transform:uppercase;
+       color:var(--ink3); font-weight:650; border-bottom:1.2px solid var(--rule);
+       padding:0 3mm 1.5mm 0; }
+  td { padding:1.6mm 3mm 1.6mm 0; border-bottom:1px solid var(--rule2);
+       vertical-align:top; }
+  td.n { font-family:var(--mono); font-variant-numeric:tabular-nums;
+         white-space:nowrap; }
+  tr.tot td { border-top:1.2px solid var(--rule); border-bottom:0; font-weight:650; }
+
+  ul,ol { margin:0 0 3mm; padding-left:5mm; }
+  li { margin-bottom:1.2mm; }
+
+  .note { border-left:2.5px solid var(--accent); padding:1mm 0 1mm 4mm;
+          margin:4mm 0; color:var(--ink2); font-size:9.4pt;
+          page-break-inside:avoid; }
+  .warn { border-left-color:var(--warn); }
+  .note b { color:var(--ink); }
+
+  pre { font-family:var(--mono); font-size:8.4pt; line-height:1.5;
+        background:#F4F7F6; border:1px solid var(--rule2); border-radius:2px;
+        padding:3mm 4mm; margin:3mm 0 5mm; overflow:hidden;
+        white-space:pre-wrap; page-break-inside:avoid; }
+
+  /* 단계 흐름 */
+  .flow { margin:4mm 0 6mm; }
+  .step { display:grid; grid-template-columns:20mm 1fr; gap:5mm;
+          padding:2.5mm 0; border-top:1px solid var(--rule2);
+          page-break-inside:avoid; }
+  .step:first-child { border-top:1.2px solid var(--rule); }
+  .step .k { font-family:var(--mono); font-size:8.2pt; color:var(--accent);
+             letter-spacing:.06em; padding-top:.8mm; }
+  .step .t { font-weight:650; font-size:10pt; }
+  .step .d { color:var(--ink2); font-size:9.2pt; margin-top:.6mm; }
+
+  .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:0 8mm; }
+  .kpi { display:grid; grid-template-columns:repeat(4,1fr); gap:0;
+         border:1px solid var(--rule); border-radius:2px; margin:3mm 0 5mm;
+         page-break-inside:avoid; }
+  .kpi div { padding:3mm; border-right:1px solid var(--rule2); }
+  .kpi div:last-child { border-right:0; }
+  .kpi b { display:block; font-family:var(--mono); font-size:15pt; font-weight:650;
+           letter-spacing:-.02em; font-variant-numeric:tabular-nums; }
+  .kpi span { font-size:8pt; color:var(--ink3); font-family:var(--mono);
+              letter-spacing:.05em; }
+
+  footer { margin-top:8mm; padding-top:3mm; border-top:1px solid var(--rule);
+           font-family:var(--mono); font-size:8pt; color:var(--ink3); }
+</style>
+</head>
+<body>
+
+<!-- ══════════════════ 표지 ══════════════════ -->
+<div class="cover">
+  <div class="eyebrow">ping-v2 · 데이터 파이프라인 프로젝트</div>
+  <h1>합성 데이터를 만들기 전까지<br>무엇을 했고 무엇을 확인했나</h1>
+  <p class="sub">구 서비스의 분석 불가 지점을 찾아 스키마를 다시 설계하고,
+     그 스키마를 실제로 돌려본 뒤, 파이프라인을 붙이기까지의 경과.</p>
+  <dl>
+    <dt>기준일</dt><dd>2026년 7월 31일</dd>
+    <dt>범위</dt><dd>합성 데이터 생성 <em>직전</em>까지. 생성 계획은 별도 문서</dd>
+    <dt>산출물</dt><dd>스키마 40테이블 342컬럼 · 웹앱 배포본 · BigQuery 적재 파이프라인</dd>
+    <dt>커밋</dt><dd>61개</dd>
+  </dl>
+</div>
+
+<!-- ══════════════════ 1 ══════════════════ -->
+<section class="cont">
+<h2><span class="num">01</span>왜 데이터를 새로 만들기로 했나</h2>
+<p class="lede">받은 데이터로는 답할 수 없는 질문이 많았다. 데이터가 부족해서가 아니라
+<b>구조가 답을 막고 있어서</b>였다.</p>
+
+<p>기존 학교 소셜 투표 서비스의 DB(가입자 <b>67.7만 명</b>, 14개월치)를 분석하면서
+분석을 가로막는 결함이 반복해서 나왔다. 세 가지가 특히 컸다.</p>
+
+<h3>발견한 구조적 결함</h3>
+<table>
+  <thead><tr><th style="width:34mm">무엇이</th><th>어떻게 막았나</th></tr></thead>
+  <tbody>
+    <tr><td><b>탈퇴 기록에<br>유저 식별자 없음</b></td>
+        <td>탈퇴 <b>70,764건</b>(가입자의 10.5%)이 쌓였지만 누가 나갔는지 알 수 없었다.
+            <b>이탈 분석이 원천적으로 불가능</b>했고, 사유는 "기타 57%"라는 블랙박스로 남았다.</td></tr>
+    <tr><td><b>하트 원장이<br>잔액을 설명 못 함</b></td>
+        <td>원장의 순합계는 201만인데 유저 잔액 총합은 <b>20억</b>이었다. 가입 지급과 결제가
+            원장을 거치지 않았기 때문이다. 잔액을 원장으로 재구성할 수 없었고,
+            <b>누락을 탐지할 방법조차 없었다.</b></td></tr>
+    <tr><td><b>FK 39개 중<br>17개만 선언</b></td>
+        <td>관계가 코드에만 있고 DB에 없었다. 고아 행이 생겨도 막히지 않았고,
+            조인 결과를 신뢰할 근거가 없었다.</td></tr>
+  </tbody>
+</table>
+
+<div class="note">
+  <b>핵심 인식 —</b> 이 결함들의 공통점은 <b>오류를 내지 않는다</b>는 것이다.
+  서비스는 정상 동작했고, 로그도 쌓였다. 다만 나중에 물어볼 수 없게 되어 있었을 뿐이다.
+  이후 프로젝트 전체의 판단 기준이 여기서 나왔다 — <b>"조용히 틀리는 것"을 찾아 코드로 막는다.</b>
+</div>
+
+<p>그래서 데이터를 새로 만들되, <b>같은 결함을 반복하지 않는 스키마</b>를 먼저 설계하기로 했다.</p>
+</section>
+
+<!-- ══════════════════ 2 ══════════════════ -->
+<section>
+<h2><span class="num">02</span>전체 흐름</h2>
+<p class="lede">스키마 설계 → <b>실제 서비스로 검증</b> → 파이프라인 → 데이터 생성.
+가운데 단계가 이 프로젝트의 특징이다.</p>
+
+<div class="flow">
+  <div class="step"><div class="k">STEP 1</div><div>
+    <div class="t">스키마 재설계</div>
+    <div class="d">구 서비스의 결함을 하나씩 닫는 방향으로 새로 설계.
+      탈퇴에 <code>user_id NOT NULL</code>, 모든 하트 증감이 원장을 거치도록,
+      관계는 전부 FK로 선언.</div></div></div>
+
+  <div class="step"><div class="k">STEP 2</div><div>
+    <div class="t">합성 데이터로 1차 검증</div>
+    <div class="d">786만 행을 만들어 제약이 실제로 작동하는지 확인.
+      제약 위반 16종이 차단되는 것을 검증.</div></div></div>
+
+  <div class="step"><div class="k">STEP 3 ★</div><div>
+    <div class="t">MVP 서비스를 실제로 구동</div>
+    <div class="d">스키마 위에 웹앱을 올려 지인에게 열고 <b>실제 쓰기</b>를 받았다.
+      설계만으로는 알 수 없는 것들이 여기서 드러났다.</div></div></div>
+
+  <div class="step"><div class="k">STEP 4</div><div>
+    <div class="t">파이프라인 연결</div>
+    <div class="d">Airflow + BigQuery. 증분 적재, 삭제 감지, 행 수 대조까지.</div></div></div>
+
+  <div class="step"><div class="k">STEP 5</div><div>
+    <div class="t">스키마 확정 · 옛 합성 데이터 폐기</div>
+    <div class="d">MVP 운영 중 스키마가 계속 바뀌어 786만 행이 낡았다. 전부 지웠다.</div></div></div>
+
+  <div class="step"><div class="k">다음</div><div>
+    <div class="t">합성 데이터 생성 → 분석 · 시각화</div>
+    <div class="d">확정된 40테이블 342컬럼 위에서 처음부터 다시 만든다.</div></div></div>
+</div>
+
+<div class="note">
+  <b>STEP 3 이 왜 중요한가 —</b> 보통은 스키마를 설계하고 곧바로 합성 데이터를 뽑는다.
+  그러면 <b>그 스키마가 실제 쓰기를 견디는지 아무도 모른 채</b> 수천만 행을 만들게 된다.
+  제약이 너무 빡빡한지, 권한 설계가 감당되는지, 정합성이 유지되는지가 전부 미검증으로 남는다.
+  MVP를 먼저 돌린 덕에 그것들이 증명됐고, <b>지금 만드는 합성 데이터는 구조적으로 신뢰할 수 있다.</b>
+</div>
+</section>
+
+<!-- ══════════════════ 3 ══════════════════ -->
+<section>
+<h2><span class="num">03</span>MVP 서비스 — 무엇을 만들었나</h2>
+<p class="lede">데이터를 만들기 위한 수단이지만, 실제로 접속해서 쓸 수 있는 서비스다.</p>
+
+<h3>서비스 개요</h3>
+<p>학교 기반 익명 투표. 친구를 5명 맺으면 투표가 열리고, 질문마다 친구 4명이 후보로 나온다.
+지목당한 사람은 <b>누가 자기를 뽑았는지</b>를 하트로 사서 알아낸다. 그 하트가 이 서비스의 통화다.</p>
+
+<h4>개인정보를 받지 않는다 — 설계 제약</h4>
+<table>
+  <thead><tr><th style="width:42mm">받지 않는 것</th><th>대신</th></tr></thead>
+  <tbody>
+    <tr><td>이메일 · 비밀번호</td><td>익명 계정 (접속 즉시 자동 생성)</td></tr>
+    <tr><td>전화번호</td><td>친구 추가는 <b>초대 코드</b>로만</td></tr>
+    <tr><td>실명</td><td>유저가 정하는 닉네임</td></tr>
+  </tbody>
+</table>
+<p>유저가 입력하는 것은 <b>닉네임 · 성별 · 소속(학교·반)</b> 셋뿐이다.
+이메일·전화번호·실명 컬럼이 스키마에 <b>아예 없다.</b> 누락이 아니라 설계다.</p>
+
+<h3>구현한 기능 20단계</h3>
+<table>
+  <thead><tr><th style="width:14mm">단계</th><th>기능</th></tr></thead>
+  <tbody>
+    <tr><td class="n">W0–W2</td><td>익명 인증 · 권한 설계 · 앱 뼈대</td></tr>
+    <tr><td class="n">W3–W5</td><td>온보딩 · 친구 맺기 · 투표</td></tr>
+    <tr><td class="n">W6–W7</td><td>받은 투표 · <b>배포</b> (개인정보처리방침, 초대 링크)</td></tr>
+    <tr><td class="n">W8</td><td>급식표 (NEIS 연동)</td></tr>
+    <tr><td class="n">W9–W10</td><td>자유게시판 · 친구 추천</td></tr>
+    <tr><td class="n">W11–W13</td><td>프로필 수정 · 계정 삭제 · 하트 충전</td></tr>
+    <tr><td class="n">W14–W15</td><td>선택형 힌트 · 1회성 답장</td></tr>
+    <tr><td class="n">W16–W19</td><td>학사일정 · 스키마 정리 · 친구 끊기</td></tr>
+  </tbody>
+</table>
+
+<h3>실제 이용 실적 (2026-07-31)</h3>
+<div class="kpi">
+  <div><b>23</b><span>유저</span></div>
+  <div><b>670</b><span>투표</span></div>
+  <div><b>1,316</b><span>하트 거래</span></div>
+  <div><b>110</b><span>힌트 구매</span></div>
+</div>
+<p style="font-size:9.2pt;color:var(--ink2)">
+  성인 지인 대상 클로즈드 테스트. 상용 출시가 목적이 아니라 <b>실제 쓰기가 발생하는
+  환경</b>을 만드는 것이 목적이었다.</p>
+</section>
+
+<!-- ══════════════════ 4 ══════════════════ -->
+<section>
+<h2><span class="num">04</span>실제로 돌려봐서 잡은 것들</h2>
+<p class="lede">설계 검토나 합성 데이터만으로는 <b>하나도 나오지 않았을</b> 문제들이다.
+이 장이 STEP 3의 값어치다.</p>
+
+<h3>운영 중 드러난 결함</h3>
+<table>
+  <thead><tr><th style="width:38mm">무엇이</th><th>어떻게 드러났나</th></tr></thead>
+  <tbody>
+    <tr><td><b>프로덕션 투표가<br>죽었다</b></td>
+        <td>WHERE 없는 <code>DELETE</code> 한 줄. 운영 환경은 브라우저 접속 역할에
+            안전장치가 걸려 있어 임시 테이블에서도 막는다.
+            <b>시험 128항목이 전부 통과하는데도</b> 앱이 죽었다 — 시험은 다른 역할로
+            접속해 그 설정이 적용되지 않았기 때문. 이후 <b>소스를 직접 훑는 검사</b>를 추가했다.</td></tr>
+    <tr><td><b>돈 낸 사람이<br>빈 화면을 봤다</b></td>
+        <td>힌트 구조를 바꾸면서 옛 구매 19건에 필요한 값이 비어 있었다.
+            오류는 없고 <b>화면만 비어 있었다.</b> 300하트를 낸 사람이 아무것도 못 보는 상태.</td></tr>
+    <tr><td><b>정합성 검사<br>3종이 낡았다</b></td>
+        <td>친구 끊기를 열자 검사 세 개가 한꺼번에 틀리기 시작했다.
+            <b>셋 다 데이터가 아니라 검사가 틀린</b> 경우였다.
+            검사는 쓰인 시점의 세계를 알고 있고, 그 세계는 기능이 늘 때마다 바뀐다.</td></tr>
+    <tr><td><b>지운 계정이<br>오늘 활동했다</b></td>
+        <td>BigQuery는 원천의 삭제를 모른다. 지운 계정과 그 활동이 계속 집계에 남아
+            "오늘 들어온 사람"이 실제보다 부풀었다. 삭제를 <b>표시로 남기는</b> 방식으로 해결.</td></tr>
+    <tr><td><b>786만 행이 전부<br>NULL이었다</b></td>
+        <td>컬럼을 추가해도 갱신 시각이 움직이지 않아 증분 적재가 <b>아무것도 잡지 못했다.</b>
+            새 컬럼이 조용히 비어 있었다.</td></tr>
+    <tr><td><b>옛 마이그레이션이<br>새 스키마에서 깨졌다</b></td>
+        <td>표를 지우거나 이름을 바꾸자 옛 마이그레이션이 실행 불가가 됐다.
+            <b>운영 DB에서는 멀쩡했다</b> — 거기엔 옛 표가 실제로 있었으므로.
+            새로 받은 사람만 막혔을 문제.</td></tr>
+  </tbody>
+</table>
+
+<div class="note warn">
+  <b>여섯 건의 공통점 —</b> 전부 <b>오류를 내지 않았다.</b> 1장에서 구 서비스를 보며
+  찾아낸 결함과 정확히 같은 성질이다. 그래서 발견할 때마다 문서 경고로 남기지 않고
+  <b>실행되는 검사로 바꿨다.</b>
+</div>
+</section>
+
+<!-- ══════════════════ 5 ══════════════════ -->
+<section>
+<h2><span class="num">05</span>검증 체계</h2>
+<p class="lede">위 문제들을 겪으면서 만든 <b>자동 검사 4종</b>. 배포 전에 전부 통과해야 한다.</p>
+
+<table>
+  <thead><tr><th style="width:44mm">검사</th><th style="width:14mm">항목</th><th>무엇을 막나</th></tr></thead>
+  <tbody>
+    <tr><td><code>db/rls/verify.py</code><br><span style="font-size:8.5pt;color:var(--ink3)">권한 침투·정상동작</span></td>
+        <td class="n">201</td>
+        <td>남의 데이터가 보이는지, <b>그리고 열려 있어야 할 것이 막히지 않았는지.</b>
+            전부 차단해도 침투 시험은 통과하므로 양방향이 필요하다.</td></tr>
+    <tr><td><code>qa/checks/integrity.sql</code><br><span style="font-size:8.5pt;color:var(--ink3)">정합성</span></td>
+        <td class="n">17</td>
+        <td>하트 원장이 잔액을 설명하는가, 후보가 전부 친구인가 등.
+            <b>제약으로 표현할 수 없는 규칙</b>만 본다.</td></tr>
+    <tr><td><code>db/replay_check.py</code><br><span style="font-size:8.5pt;color:var(--ink3)">재현성</span></td>
+        <td class="n">—</td>
+        <td>처음부터 다시 만들어도 같은 스키마가 나오는가.
+            임시 DB에 전부 다시 돌려 운영 DB와 대조한다.</td></tr>
+    <tr><td><code>pipeline/verify_load.py</code><br><span style="font-size:8.5pt;color:var(--ink3)">적재 대조</span></td>
+        <td class="n">40표</td>
+        <td>원천과 BigQuery의 행 수 대조. <b>증분 적재는 조용히 틀린다.</b></td></tr>
+  </tbody>
+</table>
+
+<div class="note">
+  <b>설계 원칙 —</b> 검사는 <b>실패를 재현할 수 있을 때만</b> 의미가 있다.
+  권한 시험이 128항목을 통과하고도 프로덕션을 못 지킨 경험 이후,
+  "이 검사가 정말 그 실패를 잡는가"를 항상 되묻는다.
+  잡지 못하는 종류(세션 설정에 딸린 동작)는 <b>소스를 직접 훑는 방식</b>으로 따로 막았다.
+</div>
+
+<h3>보안 설계의 뼈대</h3>
+<ul>
+  <li><b>읽기는 필요한 것만, 쓰기는 거의 열지 않는다.</b> 하트·투표 조작은 전부 서버 함수로.
+      클라이언트가 원장에 직접 쓸 수 있으면 하트를 무한정 만들 수 있다.</li>
+  <li><b>id로 남을 지목할 수 있는 경로를 만들지 않는다.</b> 유저 id는 1부터 이어지는 정수다.
+      친구 요청을 직접 열었더니 코드 없이 전체 가입자를 지목할 수 있었다.</li>
+  <li><b>컬럼을 가려야 하면 뷰를 쓴다.</b> 행 단위 보안으로는 컬럼을 숨기지 못한다.
+      "누가 나를 뽑았나"는 하트를 받고 파는 유료 정보라 뷰로만 노출한다.</li>
+</ul>
+</section>
+
+<!-- ══════════════════ 6 ══════════════════ -->
+<section>
+<h2><span class="num">06</span>파이프라인</h2>
+<p class="lede">운영 DB → BigQuery. 증분 적재가 <b>조용히 틀리지 않게</b> 하는 데 대부분의 노력이 들어갔다.</p>
+
+<pre>운영 DB (PostgreSQL)          NEIS 교육정보 개방포털
+      │                              │
+      │  증분 추출 (updated_at)       │  학교·학급·급식·학사일정
+      ▼                              ▼
+   Airflow ─────────────────────────┘
+      │
+      ▼
+  BigQuery raw   ← 원본 보존 · _source 로 원천 구분
+      │
+      ▼
+  stg / mart     ← 다음 단계</pre>
+
+<h3>증분 적재에서 실제로 걸린 함정</h3>
+<table>
+  <thead><tr><th style="width:40mm">함정</th><th>어떻게 막았나</th></tr></thead>
+  <tbody>
+    <tr><td><b>적재 중 커밋된 건이<br>영영 누락</b></td>
+        <td>기준 시각을 <b>5분 뒤로 물려</b> 저장한다. 스냅샷 시각 그대로 쓰면
+            그 사이에 커밋된 트랜잭션이 다음 회차에도 안 잡힌다.</td></tr>
+    <tr><td><b>지운 행이<br>영원히 남음</b></td>
+        <td>원천의 삭제를 <b>표시로 기록</b>한다. 원본 층은 이력을 잃지 않되,
+            분석 쿼리는 그 표시를 반드시 걸러야 한다.</td></tr>
+    <tr><td><b>컬럼을 추가해도<br>증분이 못 잡음</b></td>
+        <td>스키마 변경은 갱신 시각을 건드리지 않는다.
+            컬럼 추가 후에는 <b>그 표를 통째로 다시</b> 적재한다.</td></tr>
+    <tr><td><b>두 원천의 id가<br>실제로 겹침</b></td>
+        <td>실유저와 합성이 같은 표에 들어가고 둘 다 id가 1부터다.
+            <b>원천 구분 없이 조인하면 조용히 섞인다.</b></td></tr>
+  </tbody>
+</table>
+
+<h3>현재 적재 상태</h3>
+<div class="kpi">
+  <div><b>40</b><span>테이블</span></div>
+  <div><b>35,976</b><span>행 (실유저)</span></div>
+  <div><b>2.9</b><span>MB</span></div>
+  <div><b>0</b><span>누락</span></div>
+</div>
+</section>
+
+<!-- ══════════════════ 7 ══════════════════ -->
+<section>
+<h2><span class="num">07</span>확정된 스키마</h2>
+<p class="lede">구 서비스의 결함을 닫고, MVP 운영으로 검증된 상태. <b>40테이블 342컬럼 FK 76개.</b></p>
+
+<h3>구 서비스 대비 무엇이 달라졌나</h3>
+<table>
+  <thead><tr><th style="width:34mm">영역</th><th style="width:52mm">구 서비스</th><th>새 스키마</th></tr></thead>
+  <tbody>
+    <tr><td><b>이탈</b></td><td>탈퇴에 유저 식별자 없음</td>
+        <td>탈퇴에 <code>user_id NOT NULL</code> + 사유 코드 + 자유 서술</td></tr>
+    <tr><td><b>하트</b></td><td>원장이 잔액을 설명 못 함</td>
+        <td>모든 증감이 원장 하나를 거친다. 거래마다 <b>직후 잔액</b>을 남겨
+            즉시 대조 가능</td></tr>
+    <tr><td><b>관계</b></td><td>FK 39개 중 17개만 선언</td>
+        <td><b>FK 76개 전부 선언.</b> 신고와 제재도 FK로 연결</td></tr>
+    <tr><td><b>질문</b></td><td>카테고리 없음 — 사후 수동 분류</td>
+        <td>카테고리 + <b>민감 표시</b>를 사전에</td></tr>
+    <tr><td><b>제재</b></td><td>임계값이 코드에만. 253회 신고받은 유저도 정상 상태</td>
+        <td>임계값을 <b>데이터로</b> 정의 — 감사 가능</td></tr>
+    <tr><td><b>관계 종료</b></td><td>—</td>
+        <td>친구를 끊어도 <b>행을 지우지 않고</b> 종료 시각을 남긴다.
+            관계 이탈 신호를 잃지 않는다</td></tr>
+  </tbody>
+</table>
+
+<h3>규모</h3>
+<table>
+  <thead><tr><th>구분</th><th style="width:18mm">표</th><th style="width:20mm">컬럼</th><th>비고</th></tr></thead>
+  <tbody>
+    <tr><td>마스터 (선택지·코드표)</td><td class="n">7</td><td class="n">—</td><td>시드 SQL이 채운다</td></tr>
+    <tr><td>활동 데이터</td><td class="n">19</td><td class="n">—</td><td>생성기가 채운다</td></tr>
+    <tr><td>게시판 · 신고 · 제재 · 학교정보</td><td class="n">14</td><td class="n">131</td><td><b>아직 생성기 없음</b></td></tr>
+    <tr class="tot"><td>합계</td><td class="n">40</td><td class="n">342</td><td>FK 76</td></tr>
+  </tbody>
+</table>
+
+<div class="note warn">
+  <b>합성 데이터를 지운 이유 —</b> MVP를 운영하는 동안 스키마가 계속 바뀌었다.
+  힌트 구조가 통째로 교체됐고, 컬럼이 여럿 늘었고, 표 하나가 사라졌다.
+  7월 29일에 만든 786만 행은 <b>이제 존재하지 않는 서비스</b>를 그리고 있었다.
+  보관 가치가 0이 아니라 마이너스라 전부 지웠다. 만드는 코드는 그대로 남아 있다.
+</div>
+</section>
+
+<!-- ══════════════════ 8 ══════════════════ -->
+<section>
+<h2><span class="num">08</span>지금 상태와 다음 단계</h2>
+<p class="lede">스키마 확정 · 서비스 가동 중 · 파이프라인 연결 완료 · <b>합성 데이터 없음.</b></p>
+
+<h3>완료</h3>
+<div class="grid2">
+<ul>
+  <li>스키마 40테이블 342컬럼 확정</li>
+  <li>웹앱 배포 · 지인 23명 이용 중</li>
+  <li>권한 시험 201항목 통과</li>
+  <li>정합성 검사 17종 위반 0</li>
+</ul>
+<ul>
+  <li>Airflow + BigQuery 적재 가동</li>
+  <li>NEIS 연동 (학교·학급·급식·학사일정)</li>
+  <li>재현성 검사 통과</li>
+  <li>옛 합성 데이터 정리 완료</li>
+</ul>
+</div>
+
+<h3>다음 — 합성 데이터 생성</h3>
+<p>확정된 스키마 위에서 <b>처음부터 다시</b> 만든다. 실데이터와는 <b>완전히 별개의 가상 세계</b>이며,
+"이 서비스가 활성화되었다면 어떤 데이터가 쌓였을까"를 통째로 지어낸다.
+BigQuery에는 원천 구분자로 갈라져 함께 올라간다.</p>
+
+<h4>결정된 방향</h4>
+<table>
+  <thead><tr><th style="width:38mm">구분</th><th>내용</th></tr></thead>
+  <tbody>
+    <tr><td><b>실제를 쓰는 것</b></td>
+        <td>학교 · 지역 · 학급 편성 · 급식 · 시간표 · 학사일정 —
+            전부 NEIS 공개 데이터. <b>개인 정보가 없는 것만</b> 실제를 쓴다</td></tr>
+    <tr><td><b>지어내는 것</b></td>
+        <td>유저 · 친구 · 투표 · 힌트 · 하트 · 게시판 · 신고 · 제재 — 전부</td></tr>
+    <tr><td><b>기간</b></td>
+        <td>한 학년도를 통째로. 학사 주기(학기·방학·시험)가 한 바퀴 돌아야
+            계절성이 보이고, 그 경계를 <b>NEIS가 진짜 날짜로 알려준다</b></td></tr>
+  </tbody>
+</table>
+
+<div class="note">
+  <b>발표에서 미리 밝힐 것 —</b> 합성 데이터로 하는 분석은 근본적으로
+  <b>"심어놓은 것을 다시 찾는"</b> 성격을 벗어나기 어렵다.
+  실제 학사일정을 축으로 쓰면 심는 자리가 진짜 달력이 되고 분석 파이프라인이
+  실전과 같은 모양이 되지만, 그것이 <b>서비스에 대한 발견은 아니다.</b>
+  이 데이터가 증명하는 것은 <b>파이프라인과 분석 기법</b>이며,
+  그 점을 스스로 먼저 밝히는 편이 훨씬 강하다.
+</div>
+
+<h4>남은 작업</h4>
+<ul>
+  <li>생성기가 <b>옛 힌트 모델</b>로 데이터를 만든다 — 요금이 10배 다르다. 교체 필요</li>
+  <li>게시판 · 신고 · 제재 등 <b>14개 표는 생성기가 아직 없다</b></li>
+  <li>생성 후 정합성 17종 통과 확인 → BigQuery 적재 → 행 수 대조</li>
+</ul>
+
+<footer>
+  ping-v2 · 2026-07-31 기준 · 상세 결정 이력은 저장소의 DECISIONS.md
+</footer>
+</section>
+
+</body>
+</html>
