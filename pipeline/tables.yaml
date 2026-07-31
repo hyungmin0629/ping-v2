@@ -44,7 +44,7 @@ incremental:
   # 친구·차단
   - friend_request
   - friendship
-  - friend_recommendation
+  - rejected_friend_recommendations
   - block_record
   # 질문 제안
   - question_request
@@ -75,7 +75,6 @@ incremental:
   - school_notice
   - school_notice_read
   - school_event
-  - external_sync_log
 
 # pk 가 id 가 아닌 것 (전부 full 이라 실제로는 MERGE 에 쓰이지 않는다)
 pk_overrides:

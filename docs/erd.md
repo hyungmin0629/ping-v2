@@ -6,7 +6,7 @@
 > 관계는 실제로 걸려 있는 FK 만 나온다. 컬럼은 **키(PK·FK)만** 싣는다.
 > 전체 컬럼 정의는 `db/ddl/` 이 진실이다.
 
-테이블 **41개** · FK **77개**
+테이블 **40개** · FK **76개**
 
 점선(`|o`)으로 시작하는 관계는 FK 가 NULL 을 허용한다는 뜻이다.
 
@@ -34,7 +34,7 @@ flowchart LR
         direction TB
         friend_request[friend_request]
         friendship[friendship]
-        friend_recommendation[friend_recommendation]
+        rejected_friend_recommendations[rejected_friend_recommendations]
         block_record[block_record]
     end
     subgraph g3["질문과 투표"]
@@ -72,7 +72,6 @@ flowchart LR
         school_notice[school_notice]
         school_notice_read[school_notice_read]
         school_event[school_event]
-        external_sync_log[external_sync_log]
     end
     subgraph g7["게시판"]
         direction TB
@@ -87,8 +86,6 @@ flowchart LR
     block_record -->|"×2"| app_user
     comment_like --> app_user
     comment_like --> post_comment
-    external_sync_log --> school
-    friend_recommendation -->|"×2"| app_user
     friend_request -->|"×2"| app_user
     friendship -->|"×2"| app_user
     grade_class --> school
@@ -118,6 +115,7 @@ flowchart LR
     question_request -->|"×2"| app_user
     question_request --> question
     question_request --> question_category
+    rejected_friend_recommendations -->|"×2"| app_user
     report -->|"×3"| app_user
     report --> post
     report --> post_comment
@@ -153,7 +151,7 @@ flowchart LR
     classDef c1 fill:#CFE6DE,stroke:#5C6B6B,color:#14181A
     class app_user,user_session,user_withdrawal,withdrawal_reason c1
     classDef c2 fill:#DCE7CF,stroke:#5C6B6B,color:#14181A
-    class friend_request,friendship,friend_recommendation,block_record c2
+    class friend_request,friendship,rejected_friend_recommendations,block_record c2
     classDef c3 fill:#E9E2CB,stroke:#5C6B6B,color:#14181A
     class question_category,question,question_request,vote_session,vote_item,vote_candidate,vote_shuffle,vote_received,hint_purchase,ad_impression c3
     classDef c4 fill:#F0DCCB,stroke:#5C6B6B,color:#14181A
@@ -161,7 +159,7 @@ flowchart LR
     classDef c5 fill:#EED6D6,stroke:#5C6B6B,color:#14181A
     class report_reason,report,sanction_policy,sanction c5
     classDef c6 fill:#D6E0EE,stroke:#5C6B6B,color:#14181A
-    class meal_plan,meal_menu_item,timetable,school_notice,school_notice_read,school_event,external_sync_log c6
+    class meal_plan,meal_menu_item,timetable,school_notice,school_notice_read,school_event c6
     classDef c7 fill:#E2D9EA,stroke:#5C6B6B,color:#14181A
     class board_category,post,post_comment,post_like,comment_like c7
 ```
@@ -233,7 +231,7 @@ erDiagram
         bigint user_high_id FK
         bigint user_low_id FK
     }
-    friend_recommendation {
+    rejected_friend_recommendations {
         bigint id PK
         bigint recommended_user_id FK
         bigint user_id FK
@@ -415,10 +413,6 @@ erDiagram
         bigint id PK
         bigint school_id FK
     }
-    external_sync_log {
-        bigint id PK
-        bigint school_id FK
-    }
     meal_plan ||--o{ meal_menu_item : "meal_plan_id"
     school_notice ||--o{ school_notice_read : "notice_id"
 ```
@@ -494,19 +488,18 @@ erDiagram
 | vote_session <sub>(질문과 투표)</sub> | `user_id` | app_user <sub>(유저)</sub> |
 | block_record <sub>(친구)</sub> | `blocked_user_id` | app_user <sub>(유저)</sub> |
 | block_record <sub>(친구)</sub> | `user_id` | app_user <sub>(유저)</sub> |
-| friend_recommendation <sub>(친구)</sub> | `recommended_user_id` | app_user <sub>(유저)</sub> |
-| friend_recommendation <sub>(친구)</sub> | `user_id` | app_user <sub>(유저)</sub> |
 | friend_request <sub>(친구)</sub> | `receiver_id` | app_user <sub>(유저)</sub> |
 | friend_request <sub>(친구)</sub> | `sender_id` | app_user <sub>(유저)</sub> |
 | friendship <sub>(친구)</sub> | `user_high_id` | app_user <sub>(유저)</sub> |
 | friendship <sub>(친구)</sub> | `user_low_id` | app_user <sub>(유저)</sub> |
+| rejected_friend_recommendations <sub>(친구)</sub> | `recommended_user_id` | app_user <sub>(유저)</sub> |
+| rejected_friend_recommendations <sub>(친구)</sub> | `user_id` | app_user <sub>(유저)</sub> |
 | heart_purchase <sub>(하트)</sub> | `user_id` | app_user <sub>(유저)</sub> |
 | heart_transaction <sub>(하트)</sub> | `ad_impression_id` | ad_impression <sub>(질문과 투표)</sub> |
 | heart_transaction <sub>(하트)</sub> | `admin_id` | app_user <sub>(유저)</sub> |
 | heart_transaction <sub>(하트)</sub> | `hint_purchase_id` | hint_purchase <sub>(질문과 투표)</sub> |
 | heart_transaction <sub>(하트)</sub> | `user_id` | app_user <sub>(유저)</sub> |
 | heart_transaction <sub>(하트)</sub> | `vote_item_id` | vote_item <sub>(질문과 투표)</sub> |
-| external_sync_log <sub>(학교 정보)</sub> | `school_id` | school <sub>(기준 정보)</sub> |
 | meal_plan <sub>(학교 정보)</sub> | `school_id` | school <sub>(기준 정보)</sub> |
 | school_event <sub>(학교 정보)</sub> | `school_id` | school <sub>(기준 정보)</sub> |
 | school_notice <sub>(학교 정보)</sub> | `created_by_admin_id` | app_user <sub>(유저)</sub> |

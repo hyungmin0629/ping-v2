@@ -57,7 +57,7 @@ WHERE g.school_id = mg.school_id           -- 같은 학교
           OR (r.sender_id = u.id AND r.receiver_id = me.id))
   -- "안 볼래" 한 사람
   AND NOT EXISTS (
-      SELECT 1 FROM public.friend_recommendation fr
+      SELECT 1 FROM public.rejected_friend_recommendations fr
        WHERE fr.user_id = me.id AND fr.recommended_user_id = u.id
          AND fr.dismissed_at IS NOT NULL)
   -- 차단. 화면은 아직 없지만 조건을 미리 넣어 둔다 —
@@ -143,7 +143,7 @@ BEGIN
         RETURN false;
     END IF;
 
-    INSERT INTO public.friend_recommendation
+    INSERT INTO public.rejected_friend_recommendations
         (user_id, recommended_user_id, reason, dismissed_at)
     VALUES (v_me, p_user_id, v_reason, now())
     ON CONFLICT (user_id, recommended_user_id)
@@ -164,4 +164,4 @@ GRANT EXECUTE ON FUNCTION public.dismiss_suggestion(bigint) TO authenticated;
 
 -- 추천 테이블 자체는 브라우저가 손대지 못한다. 열어주면 남의 추천 이력을
 -- 만들거나 지울 수 있다.
-REVOKE INSERT, UPDATE, DELETE ON public.friend_recommendation FROM authenticated;
+REVOKE INSERT, UPDATE, DELETE ON public.rejected_friend_recommendations FROM authenticated;

@@ -67,7 +67,7 @@ A 갈래(로컬 합성 데이터)와 계정이 필요한 B 갈래를 나눠 적�
 
 ## 현재 단계
 
-**P0·P1·P2·P4·W0~W17 완료** (2026-07-31) → 다음은 **P5 품질 검증** 또는 **P6 stg/mart**
+**P0·P1·P2·P4·W0~W18 완료** (2026-07-31) → 다음은 **P5 품질 검증** 또는 **P6 stg/mart**
 
 앱은 배포돼 있고, 실데이터가 BigQuery 까지 흐른다. 초대를 미룰 이유가 없어졌다
 — P4 를 먼저 한 것은 초대 후에 만들면 그동안 쌓인 데이터를 소급 적재해야 했기 때문이다.
@@ -88,6 +88,10 @@ A 갈래(로컬 합성 데이터)와 계정이 필요한 B 갈래를 나눠 적�
 | W7 배포 | Vercel 배포, 개인정보처리방침, 초대 링크(`/add?code=`) |
 | P3 NEIS (일부) | 전국 중·고 5,724개 · 학교 19곳의 학급과 급식(2,938건). DAG 화는 남음 |
 | W8 급식표 | 메인 토글 → 월 캘린더 · 끼니 선택. **시간표·공지는 남음** |
+| W18 이름·군더더기 정리 | `friend_recommendation` → **`rejected_friend_recommendations`**
+  (추천은 저장하지 않는다. 이 표에는 "안 볼래"만 들어온다).
+  `external_sync_log` 삭제 — 반년 가까이 0행이었고 **쓰는 코드를 한 번도 안 붙였다.**
+  41 → **40 테이블** |
 | W17 운영자 테이블 제거 | `admin_user` 를 없애고 `app_user.is_admin` 하나로 접었다.
   운영 화면을 만들 계획이 없어서다. 42 → **41 테이블.** 운영 FK 6개는 app_user 를 가리킨다.
   ⚠️ **합성 데이터 재생성 필요** — 생성기가 운영자 5명을 따로 만들던 것을 유저 표시로 바꿨다 |
@@ -116,6 +120,7 @@ A 갈래(로컬 합성 데이터)와 계정이 필요한 B 갈래를 나눠 적�
   **행 수와 빈 표 사유도 함께 싣는다** — 빈 표가 왜 비었는지는 `EMPTY_REASON` 에 적는다 |
 | `python db/erd_board.py` | `erd.json` → `docs/erd-board.html` (카드형 ERD 아티팩트). erd.py 다음에 돌린다 |
 | `python db/rls/verify.py` | **침투·동작 시험 189항목. 배포 전 반드시 통과** |
+| `python db/replay_check.py` | **처음부터 다시 만들어도 같은 스키마가 나오는지.** 표를 지우거나 이름을 바꾼 뒤 반드시 |
 | `python db/neis_schools.py --schools` | 전국 중·고 목록 |
 | `python db/neis_schools.py --classes <코드> [--into <조직>]` | 학급 |
 | `python db/neis_meals.py --school <코드>` | 급식 |
@@ -134,6 +139,29 @@ A 갈래(로컬 합성 데이터)와 계정이 필요한 B 갈래를 나눠 적�
 계정을 정리한 뒤 이 항목이 걸리면, 해당 유저의 `service_unlocked_at` 을 NULL 로
 되돌리면 된다 — 친구가 0명이면 후보가 없어 어차피 투표가 되지 않는다.
 (2026-07-30, 더미를 전부 지울 때 실제로 걸렸다)
+
+## ⚠️ 표를 지우거나 이름을 바꿀 때 — 옛 마이그레이션이 깨진다
+
+`apply.py` 는 `db/migrations/*.sql` 을 **전부** 다시 적용한다. 그래서 옛
+마이그레이션도 **새 스키마 위에서** 돌 수 있어야 한다. 이 전제는 표를 지우거나
+이름을 바꾸는 순간 조용히 깨진다 — **살아 있는 DB 에서는 안 보인다.**
+
+2026-07-31 에 두 번 실제로 걸렸다:
+
+| | 무엇이 깨졌나 |
+|---|---|
+| 009 | DDL 이 더 이상 만들지 않는 `admin_user` 를 `::regclass` 로 찾다가 실패 |
+| 010 | 004 가 이미 만든 트리거를 다시 만들다가 "이미 있다"로 실패 |
+
+둘 다 Supabase 에서는 멀쩡했다. 거기엔 옛 표가 실제로 있었기 때문이다.
+
+**`python db/replay_check.py` 를 돌린다.** 로컬에 임시 DB 를 만들어 DDL +
+마이그레이션을 전부 돌리고 Supabase 와 테이블·컬럼을 대조한 뒤 지운다.
+로컬의 합성 데이터는 건드리지 않는다(다른 데이터베이스를 쓴다).
+
+옛 마이그레이션을 고쳐도 된다 — **방어적으로만.** `IF to_regclass(...) IS NULL
+THEN RETURN`, `DROP ... IF EXISTS` 처럼, 이미 적용된 DB 에서는 아무 일도 일어나지
+않고 새 DB 에서만 건너뛰게 만든다.
 
 ## DB 를 처음부터 다시 만들 때
 
@@ -317,9 +345,9 @@ DELETE/UPDATE 가 있으면 실패한다. 새 RPC 를 쓸 때 `WHERE true` 를 �
 
 | 테이블 | 이유 |
 |---|---|
-| `block_record`, `friend_recommendation` | MVP 화면 범위 밖 |
+| `block_record`, `rejected_friend_recommendations` | MVP 화면 범위 밖 |
 | `report`, `sanction` | MVP 화면 범위 밖 (설정값은 yaml에 준비됨) |
-| `timetable`, `school_notice`, `external_sync_log` | P3 NEIS 연동에서 채운다. 화면 없음 |
+| `timetable`, `school_notice` | P3 NEIS 연동에서 채운다. 화면 없음 |
 | ~~`meal_plan`~~, ~~`school_event`~~ | **채웠다.** 서울고 급식 2,938건 · 학사일정 139건 |
 | `post`, `post_comment`, `post_like`, `comment_like` | 실유저는 W9 부터 쓴다. **합성 생성기는 아직 안 만듦** |
 

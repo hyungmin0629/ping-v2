@@ -103,8 +103,8 @@ CLEAN_STEPS = [
     ("ad_impression", f"DELETE FROM ad_impression WHERE user_id IN {SYN}"),
     ("friendship", f"DELETE FROM friendship WHERE user_low_id IN {SYN} OR user_high_id IN {SYN}"),
     ("friend_request", f"DELETE FROM friend_request WHERE sender_id IN {SYN} OR receiver_id IN {SYN}"),
-    ("friend_recommendation", f"""
-        DELETE FROM friend_recommendation
+    ("rejected_friend_recommendations", f"""
+        DELETE FROM rejected_friend_recommendations
          WHERE user_id IN {SYN} OR recommended_user_id IN {SYN}"""),
     ("block_record", f"DELETE FROM block_record WHERE user_id IN {SYN} OR blocked_user_id IN {SYN}"),
     ("user_session", f"DELETE FROM user_session WHERE user_id IN {SYN}"),

@@ -52,8 +52,6 @@ CREATE TYPE sanction_type    AS ENUM ('WARNING', 'MUTE', 'SUSPEND', 'BAN');
 CREATE TYPE data_source      AS ENUM ('NEIS', 'MANUAL');
 CREATE TYPE meal_type        AS ENUM ('BREAKFAST', 'LUNCH', 'DINNER');
 CREATE TYPE school_event_type AS ENUM ('HOLIDAY', 'EXAM', 'CEREMONY', 'FIELD_TRIP', 'ETC');
-CREATE TYPE sync_resource    AS ENUM ('MEAL', 'TIMETABLE', 'EVENT', 'NOTICE');
-CREATE TYPE sync_status      AS ENUM ('SUCCESS', 'PARTIAL', 'FAILED');
 
 -- 게시판 ---------------------------------------------------------------
 CREATE TYPE content_status   AS ENUM ('PUBLISHED', 'HIDDEN', 'DELETED');

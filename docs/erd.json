@@ -342,173 +342,6 @@
    ]
   },
   {
-   "name": "external_sync_log",
-   "domain": "학교 정보",
-   "title": "외부 동기화 이력",
-   "note": "언제 무엇을 성공/실패했는지 남긴다. 구 시스템에서 결제 실패 로그가 조용히 끊겼던 것 같은 사고를 조기에 발견한다.",
-   "columns": [
-    {
-     "name": "id",
-     "type": "bigint",
-     "null": false,
-     "pk": true,
-     "fk": null
-    },
-    {
-     "name": "school_id",
-     "type": "bigint",
-     "null": true,
-     "pk": false,
-     "fk": "school"
-    },
-    {
-     "name": "resource_type",
-     "type": "sync_resource",
-     "null": false,
-     "pk": false,
-     "fk": null
-    },
-    {
-     "name": "provider",
-     "type": "varchar(30)",
-     "null": false,
-     "pk": false,
-     "fk": null
-    },
-    {
-     "name": "status",
-     "type": "sync_status",
-     "null": false,
-     "pk": false,
-     "fk": null
-    },
-    {
-     "name": "rows_upserted",
-     "type": "integer",
-     "null": false,
-     "pk": false,
-     "fk": null
-    },
-    {
-     "name": "rows_failed",
-     "type": "integer",
-     "null": false,
-     "pk": false,
-     "fk": null
-    },
-    {
-     "name": "target_from",
-     "type": "date",
-     "null": true,
-     "pk": false,
-     "fk": null
-    },
-    {
-     "name": "target_to",
-     "type": "date",
-     "null": true,
-     "pk": false,
-     "fk": null
-    },
-    {
-     "name": "error_message",
-     "type": "varchar(500)",
-     "null": true,
-     "pk": false,
-     "fk": null
-    },
-    {
-     "name": "started_at",
-     "type": "timestamptz",
-     "null": false,
-     "pk": false,
-     "fk": null
-    },
-    {
-     "name": "finished_at",
-     "type": "timestamptz",
-     "null": true,
-     "pk": false,
-     "fk": null
-    },
-    {
-     "name": "updated_at",
-     "type": "timestamptz",
-     "null": false,
-     "pk": false,
-     "fk": null
-    }
-   ],
-   "uniques": []
-  },
-  {
-   "name": "friend_recommendation",
-   "domain": "친구",
-   "title": "친구 추천",
-   "note": "MVP에서는 SAME_CLASS / SAME_SCHOOL / MUTUAL_FRIEND 만 사용한다. MUTUAL_CONTACT 는 연락처를 받아야 하므로 v2로 미룬다. dismissed_at 으로 \"안 볼래\" 처리도 추적한다.",
-   "columns": [
-    {
-     "name": "id",
-     "type": "bigint",
-     "null": false,
-     "pk": true,
-     "fk": null
-    },
-    {
-     "name": "user_id",
-     "type": "bigint",
-     "null": false,
-     "pk": false,
-     "fk": "app_user"
-    },
-    {
-     "name": "recommended_user_id",
-     "type": "bigint",
-     "null": false,
-     "pk": false,
-     "fk": "app_user"
-    },
-    {
-     "name": "reason",
-     "type": "recommend_reason",
-     "null": false,
-     "pk": false,
-     "fk": null
-    },
-    {
-     "name": "score",
-     "type": "numeric(5,4)",
-     "null": false,
-     "pk": false,
-     "fk": null
-    },
-    {
-     "name": "created_at",
-     "type": "timestamptz",
-     "null": false,
-     "pk": false,
-     "fk": null
-    },
-    {
-     "name": "dismissed_at",
-     "type": "timestamptz",
-     "null": true,
-     "pk": false,
-     "fk": null
-    },
-    {
-     "name": "updated_at",
-     "type": "timestamptz",
-     "null": false,
-     "pk": false,
-     "fk": null
-    }
-   ],
-   "uniques": [
-    "user_id, recommended_user_id"
-   ]
-  },
-  {
    "name": "friend_request",
    "domain": "친구",
    "title": "친구 요청",
@@ -1668,6 +1501,73 @@
    ],
    "uniques": [
     "sido, sigungu"
+   ]
+  },
+  {
+   "name": "rejected_friend_recommendations",
+   "domain": "친구",
+   "title": "친구 추천 거절",
+   "note": "★ 이름이 말하는 그대로다 — **거절만** 들어온다. 추천 자체는 저장하지 않는다. friend_suggestion 뷰가 그때그때 계산한다. 이 표에 행이 생기는 경로는 dismiss_suggestion() 하나뿐이고, 그건 \"안 볼래\"를 눌렀을 때다. reason : 무엇 때문에 추천됐던 사람을 거절했나. SAME_CLASS / SAME_SCHOOL / MUTUAL_FRIEND 만 쓴다. MUTUAL_CONTACT 는 연락처를 안 받아 v2로 미룬다. score  : ⚠️ 항상 0 이다. 추천 점수를 매기던 자리인데 거절만 들어오므로 채울 사람이 없다. 추천을 미리 계산해 저장하는 날 되살아날 자리다. 분석에서 쓰지 말 것.",
+   "columns": [
+    {
+     "name": "id",
+     "type": "bigint",
+     "null": false,
+     "pk": true,
+     "fk": null
+    },
+    {
+     "name": "user_id",
+     "type": "bigint",
+     "null": false,
+     "pk": false,
+     "fk": "app_user"
+    },
+    {
+     "name": "recommended_user_id",
+     "type": "bigint",
+     "null": false,
+     "pk": false,
+     "fk": "app_user"
+    },
+    {
+     "name": "reason",
+     "type": "recommend_reason",
+     "null": false,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "score",
+     "type": "numeric(5,4)",
+     "null": false,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "created_at",
+     "type": "timestamptz",
+     "null": false,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "dismissed_at",
+     "type": "timestamptz",
+     "null": true,
+     "pk": false,
+     "fk": null
+    },
+    {
+     "name": "updated_at",
+     "type": "timestamptz",
+     "null": false,
+     "pk": false,
+     "fk": null
+    }
+   ],
+   "uniques": [
+    "user_id, recommended_user_id"
    ]
   },
   {
@@ -2936,24 +2836,6 @@
    "null": false
   },
   {
-   "from": "external_sync_log",
-   "col": "school_id",
-   "to": "school",
-   "null": true
-  },
-  {
-   "from": "friend_recommendation",
-   "col": "recommended_user_id",
-   "to": "app_user",
-   "null": false
-  },
-  {
-   "from": "friend_recommendation",
-   "col": "user_id",
-   "to": "app_user",
-   "null": false
-  },
-  {
    "from": "friend_request",
    "col": "receiver_id",
    "to": "app_user",
@@ -3147,6 +3029,18 @@
   },
   {
    "from": "question_request",
+   "col": "user_id",
+   "to": "app_user",
+   "null": false
+  },
+  {
+   "from": "rejected_friend_recommendations",
+   "col": "recommended_user_id",
+   "to": "app_user",
+   "null": false
+  },
+  {
+   "from": "rejected_friend_recommendations",
    "col": "user_id",
    "to": "app_user",
    "null": false
@@ -3374,8 +3268,6 @@
    "block_record": 0,
    "board_category": 5,
    "comment_like": 3,
-   "external_sync_log": 0,
-   "friend_recommendation": 0,
    "friend_request": 220,
    "friendship": 164,
    "grade_class": 538,
@@ -3387,12 +3279,13 @@
    "meal_menu_item": 19929,
    "meal_plan": 2938,
    "post": 20,
-   "post_comment": 14,
-   "post_like": 14,
+   "post_comment": 15,
+   "post_like": 16,
    "question": 24,
    "question_category": 8,
    "question_request": 0,
    "region": 266,
+   "rejected_friend_recommendations": 0,
    "report": 3,
    "report_reason": 13,
    "sanction": 0,
@@ -3402,12 +3295,12 @@
    "school_notice": 0,
    "school_notice_read": 0,
    "timetable": 0,
-   "user_session": 57,
+   "user_session": 60,
    "user_withdrawal": 0,
-   "vote_candidate": 2748,
-   "vote_item": 670,
+   "vote_candidate": 2788,
+   "vote_item": 680,
    "vote_received": 582,
-   "vote_session": 67,
+   "vote_session": 68,
    "vote_shuffle": 17,
    "withdrawal_reason": 6
   },
@@ -3417,8 +3310,6 @@
    "block_record": "activity",
    "board_category": "master",
    "comment_like": "activity",
-   "external_sync_log": "activity",
-   "friend_recommendation": "activity",
    "friend_request": "activity",
    "friendship": "activity",
    "grade_class": "reference",
@@ -3436,6 +3327,7 @@
    "question_category": "master",
    "question_request": "activity",
    "region": "reference",
+   "rejected_friend_recommendations": "activity",
    "report": "activity",
    "report_reason": "master",
    "sanction": "activity",
@@ -3455,7 +3347,7 @@
    "withdrawal_reason": "master"
   },
   "empty_reason": {
-   "friend_recommendation": {
+   "rejected_friend_recommendations": {
     "kind": "live",
     "why": "‘안 볼래’ 0회. W10 화면도 RPC 도 살아 있다"
    },
@@ -3486,10 +3378,6 @@
    "school_notice_read": {
     "kind": "no-screen",
     "why": "공지가 없으니 따라서 빈다"
-   },
-   "external_sync_log": {
-    "kind": "no-writer",
-    "why": "수집기 셋 중 어느 것도 이 표를 쓰지 않는다"
    }
   }
  }

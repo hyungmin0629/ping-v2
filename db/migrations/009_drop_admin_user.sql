@@ -31,10 +31,18 @@ COMMENT ON COLUMN app_user.is_admin IS
 
 -- 2. FK 를 app_user 로 옮긴다 -----------------------------------------
 -- 값이 전부 NULL 이라 제약만 바꾸면 된다. 컬럼 이름은 유지한다.
+-- ⚠️ DDL 은 이제 admin_user 를 만들지 않는다. 처음부터 새로 만들면 이 시점에
+--    그 표가 아예 없으므로, 있을 때만 옮긴다. 없으면 옮길 것도 없다.
+--    (apply.py 는 마이그레이션을 **전부** 다시 적용한다 — 옛 마이그레이션도
+--     새 스키마 위에서 돌 수 있어야 한다.)
 DO $$
 DECLARE
     r record;
 BEGIN
+    IF to_regclass('public.admin_user') IS NULL THEN
+        RETURN;
+    END IF;
+
     FOR r IN
         SELECT conrelid::regclass::text AS tbl, conname, a.attname AS col
           FROM pg_constraint c

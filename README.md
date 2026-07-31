@@ -211,6 +211,7 @@ python pipeline/verify_load.py  --source local                  # 행 수 대조
 | W8 | 학교 정보 — 급식표 | **완료** |
 | W16 | 학교 정보 — 학사일정 | **완료** · 급식 달력에 얹음 · 시간표·공지는 남음 |
 | W17 | 운영자 테이블 제거 | **완료** · `admin_user` → `app_user.is_admin` · 41테이블 |
+| W18 | 이름·군더더기 정리 | **완료** · `rejected_friend_recommendations` 로 개명 · `external_sync_log` 삭제 · 40테이블 |
 | W9 | 자유게시판 (닉네임 노출) | **완료** — 글·댓글·좋아요·신고 |
 | W10 | 친구 추천 (같은 학교) | **완료** — 요청 / 안 볼래 |
 | W11 | 프로필 수정 | **완료** — 닉네임·성별·소속 |
@@ -227,7 +228,7 @@ python pipeline/verify_load.py  --source local                  # 행 수 대조
 | P1 | 합성 데이터 생성 | **완료** |
 | P2 | Postgres 적재 | **완료** |
 | P3 | NEIS 수집 | 학교·학급·급식 **완료** · DAG 화는 남음 |
-| P4 | BigQuery 적재 DAG | **완료** — 789만 행 · 행 수 대조 통과 (지금은 41테이블) |
+| P4 | BigQuery 적재 DAG | **완료** — 789만 행 · 행 수 대조 통과 (지금은 40테이블) |
 | P5 | 품질 검증 | |
 | P6 | stg / mart | |
 | P7 | 대시보드 | |

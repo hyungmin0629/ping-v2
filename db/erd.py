@@ -42,7 +42,7 @@ DOMAINS: list[tuple[str, str, list[str]]] = [
     ("유저", "익명 계정 하나에 프로필 하나. 접속 기록과 탈퇴가 딸린다.",
      ["app_user", "user_session", "user_withdrawal", "withdrawal_reason"]),
     ("친구", "요청(방향 있음) → 수락 → friendship(방향 없음).",
-     ["friend_request", "friendship", "friend_recommendation", "block_record"]),
+     ["friend_request", "friendship", "rejected_friend_recommendations", "block_record"]),
     ("질문과 투표", "세션 하나에 아이템 여럿, 아이템 하나에 후보 넷.",
      ["question_category", "question", "question_request", "vote_session",
       "vote_item", "vote_candidate", "vote_shuffle", "vote_received",
@@ -53,7 +53,7 @@ DOMAINS: list[tuple[str, str, list[str]]] = [
      ["report_reason", "report", "sanction_policy", "sanction"]),
     ("학교 정보", "NEIS 에서 받아 채운다. 급식은 데이터를 준 학교 아래 저장한다.",
      ["meal_plan", "meal_menu_item", "timetable", "school_notice",
-      "school_notice_read", "school_event", "external_sync_log"]),
+      "school_notice_read", "school_event"]),
     ("게시판", "자유게시판(W9). 익명이 아니라 글쓴이가 드러난다.",
      ["board_category", "post", "post_comment", "post_like", "comment_like"]),
 ]
@@ -236,10 +236,10 @@ def table_notes() -> dict[str, dict]:
 
     형식은 파일 전체에서 일정하다:
 
-        -- 친구 추천 -----------------------------------------------
-        -- MVP에서는 SAME_CLASS / SAME_SCHOOL 만 사용한다.
-        -- dismissed_at 으로 "안 볼래" 처리도 추적한다.
-        CREATE TABLE friend_recommendation (
+        -- 친구 추천 거절 --------------------------------------------
+        -- ★ 이름이 말하는 그대로다 — 거절만 들어온다.
+        --   추천 자체는 friend_suggestion 뷰가 그때그때 계산한다.
+        CREATE TABLE rejected_friend_recommendations (
 
     첫 줄(대시로 끝나는)이 제목, 나머지가 설명이다.
     """
@@ -296,7 +296,7 @@ REFERENCE = {
 #   no-screen  화면이나 실행 코드가 없다
 #   no-writer  계획에는 있는데 쓰는 코드가 없다
 EMPTY_REASON: dict[str, tuple[str, str]] = {
-    "friend_recommendation": ("live", "‘안 볼래’ 0회. W10 화면도 RPC 도 살아 있다"),
+    "rejected_friend_recommendations": ("live", "‘안 볼래’ 0회. W10 화면도 RPC 도 살아 있다"),
     "user_withdrawal":       ("live", "탈퇴 0명. 전원 ACTIVE. W12 기능은 검증까지 끝났다"),
     "block_record":          ("no-screen", "차단 화면 없음. 1:1 텍스트를 열 때 먼저 만들기로 한 것"),
     "question_request":      ("no-screen", "유저가 질문을 제안하는 화면이 없다"),
@@ -304,7 +304,6 @@ EMPTY_REASON: dict[str, tuple[str, str]] = {
     "timetable":             ("no-screen", "수집기 없음. 빌려 쓰는 조직의 학급 매핑이 미해결"),
     "school_notice":         ("no-screen", "수집기 없음. W8 에서 미뤄둔 것"),
     "school_notice_read":    ("no-screen", "공지가 없으니 따라서 빈다"),
-    "external_sync_log":     ("no-writer", "수집기 셋 중 어느 것도 이 표를 쓰지 않는다"),
 }
 
 

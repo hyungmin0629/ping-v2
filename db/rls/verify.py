@@ -1437,9 +1437,9 @@ def main() -> int:
                            "SELECT count(*) FROM friend_suggestion WHERE id=%s", (A,)) == 1,
                        "차단이 아님")
 
-                rcheck("friend_recommendation 에 직접 INSERT 못 함",
+                rcheck("rejected_friend_recommendations 에 직접 INSERT 못 함",
                        expect_error(cur, A_AUTH,
-                                    "INSERT INTO friend_recommendation "
+                                    "INSERT INTO rejected_friend_recommendations "
                                     "(user_id, recommended_user_id, reason) "
                                     "VALUES (%s, %s, 'SAME_SCHOOL') RETURNING id", (B, A)),
                        "권한거부")

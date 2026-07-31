@@ -154,7 +154,7 @@ CREATE POLICY rw_own_block ON public.block_record
     USING (user_id = public.current_app_user_id())
     WITH CHECK (user_id = public.current_app_user_id());
 
-CREATE POLICY read_own_recommendation ON public.friend_recommendation
+CREATE POLICY read_own_recommendation ON public.rejected_friend_recommendations
     FOR SELECT TO authenticated
     USING (user_id = public.current_app_user_id());
 
@@ -228,7 +228,6 @@ CREATE POLICY read_own_sanction ON public.sanction
 -- ---------------------------------------------------------------------
 --   sanction_policy     자동 제재 임계값 — 알면 회피할 수 있다
 --   question_request    검수 과정. MVP 화면 없음
---   external_sync_log   내부 운영 로그
 --   vote_received       ★ voter_id 가 유료 비밀이라 직접 접근 금지. 아래 뷰로만.
 --   post, post_comment, post_like, comment_like   게시판 v1 미개통
 

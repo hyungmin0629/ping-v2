@@ -47,7 +47,7 @@ USER_DATA_TABLES = [
     "report",
     "sanction",
     "school_notice_read",
-    "friend_recommendation",
+    "rejected_friend_recommendations",
     "friendship",
     "friend_request",
     "block_record",

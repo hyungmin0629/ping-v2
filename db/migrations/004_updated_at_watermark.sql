@@ -50,7 +50,7 @@ DECLARE
         -- 유저 · 세션
         'app_user', 'user_session', 'user_withdrawal',
         -- 친구 · 차단
-        'friend_request', 'friendship', 'friend_recommendation', 'block_record',
+        'friend_request', 'friendship', 'rejected_friend_recommendations', 'block_record',
         -- 질문 요청
         'question_request',
         -- 투표
@@ -65,7 +65,7 @@ DECLARE
         'post', 'post_comment', 'post_like', 'comment_like',
         -- 학교 정보 (NEIS 동기화)
         'meal_plan', 'meal_menu_item', 'timetable',
-        'school_notice', 'school_notice_read', 'school_event', 'external_sync_log'
+        'school_notice', 'school_notice_read', 'school_event'
     ];
 BEGIN
     FOREACH t IN ARRAY targets LOOP
