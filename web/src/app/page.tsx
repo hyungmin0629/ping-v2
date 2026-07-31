@@ -5,7 +5,7 @@ import { useCallback, useEffect, useState } from "react";
 import { BoardPanel } from "@/components/board-panel";
 import { FriendsPanel } from "@/components/friends-panel";
 import { InboxPanel } from "@/components/inbox-panel";
-import { MealCalendar } from "@/components/meal-calendar";
+import { SchoolCalendar } from "@/components/school-calendar";
 import { OnboardingForm } from "@/components/onboarding-form";
 import { ProfileCard } from "@/components/profile-card";
 import { TopupPanel } from "@/components/topup-panel";
@@ -28,7 +28,7 @@ type Screen =
 export default function Home() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [screen, setScreen] = useState<Screen>("home");
-  const [mealsOpen, setMealsOpen] = useState(false);
+  const [calendarOpen, setCalendarOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -227,17 +227,17 @@ export default function Home() {
           <section className="flex flex-col gap-3 rounded border border-neutral-200 dark:border-neutral-800">
             <button
               type="button"
-              onClick={() => setMealsOpen((v) => !v)}
+              onClick={() => setCalendarOpen((v) => !v)}
               className="flex items-center justify-between px-4 py-3 text-sm font-medium"
             >
-              급식표
+              급식·학사일정
               <span className="text-xs text-neutral-500">
-                {mealsOpen ? "닫기" : "열기"}
+                {calendarOpen ? "닫기" : "열기"}
               </span>
             </button>
-            {mealsOpen && (
+            {calendarOpen && (
               <div className="border-t border-neutral-200 p-4 dark:border-neutral-800">
-                <MealCalendar />
+                <SchoolCalendar />
               </div>
             )}
           </section>

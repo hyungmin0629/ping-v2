@@ -67,7 +67,7 @@ A 갈래(로컬 합성 데이터)와 계정이 필요한 B 갈래를 나눠 적�
 
 ## 현재 단계
 
-**P0·P1·P2·P4·W0~W15 완료** (2026-07-30) → 다음은 **P5 품질 검증** 또는 **P6 stg/mart**
+**P0·P1·P2·P4·W0~W16 완료** (2026-07-31) → 다음은 **P5 품질 검증** 또는 **P6 stg/mart**
 
 앱은 배포돼 있고, 실데이터가 BigQuery 까지 흐른다. 초대를 미룰 이유가 없어졌다
 — P4 를 먼저 한 것은 초대 후에 만들면 그동안 쌓인 데이터를 소급 적재해야 했기 때문이다.
@@ -88,6 +88,9 @@ A 갈래(로컬 합성 데이터)와 계정이 필요한 B 갈래를 나눠 적�
 | W7 배포 | Vercel 배포, 개인정보처리방침, 초대 링크(`/add?code=`) |
 | P3 NEIS (일부) | 전국 중·고 5,724개 · 학교 19곳의 학급과 급식(2,938건). DAG 화는 남음 |
 | W8 급식표 | 메인 토글 → 월 캘린더 · 끼니 선택. **시간표·공지는 남음** |
+| W16 학사일정 | 급식 달력에 **얹었다.** 날짜 밑 점이 일정, 달력 아래 그 달 전체 목록.
+  NEIS 가 하루씩 주는 것을 기간으로 묶는다(여름방학 29행 → 1건).
+  ⚠️ 학사일정·공지의 **쓰기 권한이 열려 있던 것을 여기서 닫았다** |
 | P4 BigQuery 적재 | 42테이블 · 789만 행 (실유저 29,761 + 합성 786만). 갱신 감지 실증, Airflow DAG 실행 확인 |
 | W9 자유게시판 | 닉네임 노출 · 학교 단위. 글·댓글·좋아요·신고 |
 | W10 친구 추천 | 같은 학교 사람 목록 → 요청 / 안 볼래. **더미는 제외** |
@@ -107,10 +110,11 @@ A 갈래(로컬 합성 데이터)와 계정이 필요한 B 갈래를 나눠 적�
 | `python db/apply.py --target supabase` | DDL + 마이그레이션 적용. **확인 절차가 있다**(`--yes` 로 생략) |
 | `python db/run_sql.py <파일>` | SQL 파일 하나를 Supabase 에 적용 |
 | `python db/erd.py` | 살아 있는 스키마에서 ERD 를 뽑아 `docs/erd.md`·`erd.json` 갱신 |
-| `python db/rls/verify.py` | **침투·동작 시험 175항목. 배포 전 반드시 통과** |
+| `python db/rls/verify.py` | **침투·동작 시험 188항목. 배포 전 반드시 통과** |
 | `python db/neis_schools.py --schools` | 전국 중·고 목록 |
 | `python db/neis_schools.py --classes <코드> [--into <조직>]` | 학급 |
 | `python db/neis_meals.py --school <코드>` | 급식 |
+| `python db/neis_events.py --school <코드>` | 학사일정. **받은 기간을 지우고 다시 넣는다** |
 | `python db/seed_test_friends.py --for <초대코드> [--votes N]` | 더미 친구·받은 투표 |
 | `python db/reset_users.py --yes` | 유저 데이터 전체 삭제 (마스터는 보존) |
 | `python pipeline/extract_load.py --source supabase` | BigQuery raw 증분 적재 |
@@ -139,7 +143,7 @@ python db/run_sql.py db/rls/voting.sql        # 투표 RPC
 python db/run_sql.py db/rls/received.sql      # 힌트·받은 투표 뷰
 python db/run_sql.py db/rls/session_log.sql   # 접속 로그 (insert_own_session 을 대체)
 python db/run_sql.py db/rls/school_picker.sql # selectable_school 뷰
-python db/run_sql.py db/rls/school_info.sql   # 급식 정책 + my_school_source 뷰
+python db/run_sql.py db/rls/school_info.sql   # 급식·학사일정 정책 + my_school_source 뷰
 python db/run_sql.py db/rls/board.sql         # 자유게시판 뷰 + RPC
 python db/run_sql.py db/rls/recommend.sql     # 친구 추천 뷰 + RPC
 python db/run_sql.py db/rls/profile.sql       # 프로필 수정 RPC (직접 UPDATE 를 회수)
@@ -198,6 +202,7 @@ python db/rls/verify.py                       # 통과해야 끝
 python db/neis_schools.py --schools                                  # 전국 목록
 python db/neis_schools.py --classes "서울고등학교" --into "코드잇 DA 14기"
 python db/neis_meals.py --school "서울고등학교"                        # 급식 (올해)
+python db/neis_events.py --school "서울고등학교"                       # 학사일정 (올해)
 ```
 
 급식은 **데이터를 준 학교(서울고) 아래** 저장하고, RLS 가 `info_school_id` 를
@@ -309,7 +314,8 @@ DELETE/UPDATE 가 있으면 실패한다. 새 RPC 를 쓸 때 `WHERE true` 를 �
 |---|---|
 | `block_record`, `friend_recommendation` | MVP 화면 범위 밖 |
 | `report`, `sanction` | MVP 화면 범위 밖 (설정값은 yaml에 준비됨) |
-| `meal_plan`, `timetable`, `school_notice`, `school_event`, `external_sync_log` | P3 NEIS 연동에서 채운다. **화면은 W8** |
+| `timetable`, `school_notice`, `external_sync_log` | P3 NEIS 연동에서 채운다. 화면 없음 |
+| ~~`meal_plan`~~, ~~`school_event`~~ | **채웠다.** 서울고 급식 2,938건 · 학사일정 139건 |
 | `post`, `post_comment`, `post_like`, `comment_like` | 실유저는 W9 부터 쓴다. **합성 생성기는 아직 안 만듦** |
 
 ## 스키마 적용 시 주의

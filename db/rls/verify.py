@@ -1446,6 +1446,110 @@ def main() -> int:
                 cur.execute("SET LOCAL ROLE postgres")
 
             # ---------------------------------------------------------
+            # 학교 정보 — 급식 · 학사일정 (W8 · W16)
+            #
+            # 이 둘은 RPC 가 없다. **정책 하나가 안전장치 전부**라서, 그
+            # 정책이 학교 경계를 정말 지키는지 여기서 본다.
+            #
+            # 빌려 쓰는 경로(info_school_id)도 함께 본다 — 테스트 조직은
+            # 자기 학교에 급식이 없고 서울고 것을 본다. 그 연결이 끊기면
+            # 화면이 빈 달력이 되는데, 그건 오류를 내지 않는다.
+            # ---------------------------------------------------------
+            print()
+            print("학교 정보 시험 (급식 · 학사일정)")
+
+            def scheck(desc: str, ok: bool, detail=""):
+                print(f"  {'동작함' if ok else '실패!!'} {desc}  ({detail})")
+                if not ok:
+                    failures.append(f"[학교정보] {desc}")
+
+            cur.execute("SAVEPOINT schoolinfo")
+            try:
+                cur.execute("SELECT school_id FROM grade_class WHERE id=%s", (ctx["class"],))
+                my_school = cur.fetchone()[0]
+
+                # 남의 학교 하나. A 는 여기 소속이 아니다.
+                cur.execute("INSERT INTO school (name_masked, region_id, school_type) "
+                            "SELECT '남*학교', region_id, 'HIGH' FROM school WHERE id=%s "
+                            "RETURNING id", (my_school,))
+                far_school = cur.fetchone()[0]
+
+                for sid, title in [(my_school, "우리 학교 시험기간"),
+                                   (far_school, "남의 학교 시험기간")]:
+                    cur.execute(
+                        "INSERT INTO school_event (school_id, title, event_type, "
+                        "start_date, end_date, source) "
+                        "VALUES (%s, %s, 'EXAM', '2026-07-01', '2026-07-03', 'NEIS')",
+                        (sid, title))
+                    cur.execute(
+                        "INSERT INTO meal_plan (school_id, serve_date, meal_type, source) "
+                        "VALUES (%s, '2026-07-01', 'LUNCH', 'NEIS') RETURNING id", (sid,))
+                    cur.execute("INSERT INTO meal_menu_item (meal_plan_id, dish_name, sort_order) "
+                                "VALUES (%s, %s, 0)", (cur.fetchone()[0], title))
+
+                scheck("내 학교 학사일정이 보임",
+                       rpc(cur, A_AUTH, "SELECT count(*) FROM school_event") == 1, "1건")
+                scheck("남의 학교 학사일정은 안 보임",
+                       rpc(cur, A_AUTH,
+                           "SELECT count(*) FROM school_event WHERE school_id=%s",
+                           (far_school,)) == 0, "0건")
+                scheck("내 학교 급식이 보임",
+                       rpc(cur, A_AUTH, "SELECT count(*) FROM meal_plan") == 1, "1건")
+                scheck("남의 학교 급식은 안 보임",
+                       rpc(cur, A_AUTH,
+                           "SELECT count(*) FROM meal_plan WHERE school_id=%s",
+                           (far_school,)) == 0, "0건")
+                # 메뉴는 부모의 학교까지 따라가 확인해야 한다. 부모가 존재하기만
+                # 하면 통과하던 정책이 실제로 있었다(W8 에서 고침).
+                scheck("남의 학교 메뉴는 안 보임",
+                       rpc(cur, A_AUTH, "SELECT count(*) FROM meal_menu_item") == 1, "내 것 1건")
+
+                # ★ 쓰기. 정책이 없어 RLS 가 막지만, 권한도 없어야 한다 —
+                #   정책 하나를 잘못 넓히는 순간 뚫리기 때문이다.
+                scheck("학사일정에 직접 INSERT 못 함",
+                       expect_error(cur, A_AUTH,
+                                    "INSERT INTO school_event (school_id, title, event_type, "
+                                    "start_date, end_date) VALUES "
+                                    "(%s, '가짜 방학', 'HOLIDAY', '2026-07-01', '2026-07-01') "
+                                    "RETURNING id", (my_school,)),
+                       "권한거부")
+                scheck("학사일정을 고칠 수 없음",
+                       expect_error(cur, A_AUTH,
+                                    "UPDATE school_event SET title='조작' "
+                                    "WHERE school_id=%s RETURNING id", (my_school,)),
+                       "권한거부")
+                scheck("학사일정을 지울 수 없음",
+                       expect_error(cur, A_AUTH,
+                                    "DELETE FROM school_event WHERE school_id=%s RETURNING id",
+                                    (my_school,)), "권한거부")
+                scheck("급식에 직접 INSERT 못 함",
+                       expect_error(cur, A_AUTH,
+                                    "INSERT INTO meal_plan (school_id, serve_date, meal_type) "
+                                    "VALUES (%s, '2026-07-02', 'LUNCH') RETURNING id", (my_school,)),
+                       "권한거부")
+
+                # 빌려 쓰기 — 내 학교를 남의 학교 정보에 붙이면 그쪽이 보여야 한다.
+                cur.execute("UPDATE school SET info_school_id=%s WHERE id=%s",
+                            (far_school, my_school))
+                scheck("빌려 쓰면 그 학교 학사일정이 보임",
+                       rpc(cur, A_AUTH,
+                           "SELECT count(*) FROM school_event WHERE school_id=%s",
+                           (far_school,)) == 1, "1건")
+                scheck("빌려 쓰면 내 학교 것은 안 보임",
+                       rpc(cur, A_AUTH,
+                           "SELECT count(*) FROM school_event WHERE school_id=%s",
+                           (my_school,)) == 0, "0건")
+                scheck("빌려 쓰는 사실이 화면에 전달됨",
+                       rpc(cur, A_AUTH, "SELECT borrowed FROM my_school_source") is True,
+                       "borrowed=true")
+            except Exception as e:
+                print(f"  실패!! 학교 정보  ({type(e).__name__}: {e})")
+                failures.append("[학교정보] 시험 실행 실패")
+            finally:
+                cur.execute("ROLLBACK TO SAVEPOINT schoolinfo")
+                cur.execute("SET LOCAL ROLE postgres")
+
+            # ---------------------------------------------------------
             # 반대 방향 — 정상 동작이 막히지 않았는가
             #
             # 전부 차단해버려도 위 침투 시험은 통과한다. 그래서 이 시험이 필요하다.

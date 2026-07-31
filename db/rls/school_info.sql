@@ -71,9 +71,15 @@ CREATE POLICY read_own_school_event ON public.school_event
 -- ---------------------------------------------------------------------
 -- 4. 쓰기는 닫는다
 -- ---------------------------------------------------------------------
--- 급식은 수집기(서버)만 넣는다.
+-- 학교 정보는 전부 수집기(서버)만 넣는다.
 REVOKE INSERT, UPDATE, DELETE ON public.meal_plan FROM authenticated;
 REVOKE INSERT, UPDATE, DELETE ON public.meal_menu_item FROM authenticated;
+
+-- ⚠️ 급식만 회수해 두고 공지·학사일정은 빠져 있었다(W8 → W16 에서 발견).
+--   INSERT 정책이 없어 RLS 가 막고는 있었지만, 정책 하나를 잘못 넓히는 순간
+--   뚫린다. 권한을 아예 주지 않으면 정책 실수가 사고로 이어지지 않는다.
+REVOKE INSERT, UPDATE, DELETE ON public.school_event FROM authenticated;
+REVOKE INSERT, UPDATE, DELETE ON public.school_notice FROM authenticated;
 
 
 -- ---------------------------------------------------------------------
