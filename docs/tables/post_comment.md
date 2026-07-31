@@ -22,9 +22,9 @@ anonymous_seq: 글 안에서만 유효한 익명 번호(익명1, 익명2 ...). �
 | 이름 | 타입 | NULL | 키 |
 |---|---|---|---|
 | `id` | bigint | NOT NULL | **PK** |
-| `post_id` | bigint | NOT NULL | → post |
-| `parent_comment_id` | bigint |  | → post_comment |
-| `author_id` | bigint | NOT NULL | → app_user |
+| `post_id` | bigint | NOT NULL | → [[post]] |
+| `parent_comment_id` | bigint |  | → [[post_comment]] |
+| `author_id` | bigint | NOT NULL | → [[app_user]] |
 | `anonymous_seq` | smallint |  |  |
 | `body` | varchar(1000) | NOT NULL |  |
 | `like_count` | integer | NOT NULL |  |
@@ -34,7 +34,7 @@ anonymous_seq: 글 안에서만 유효한 익명 번호(익명1, 익명2 ...). �
 
 **UNIQUE** — `post_id, author_id, anonymous_seq`
 
-**이 표를 참조하는 표** — `comment_like` · `post_comment` · `report`
+**이 표를 참조하는 표** — [[comment_like]] · [[post_comment]] · [[report]]
 
 ## 얽힌 결정 4개
 
@@ -53,4 +53,4 @@ anonymous_seq: 글 안에서만 유효한 익명 번호(익명1, 익명2 ...). �
 
 ---
 
-[[index|위키 색인]] · [[erd|ERD]] · 정의는 `db/ddl/` 이 진실이다
+정의는 `db/ddl/` 이 진실이다 · [[index|위키 색인]]

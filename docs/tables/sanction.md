@@ -24,11 +24,11 @@ triggered_by_report_id 로 근거 신고를 명시한다. 이 연결이 구 시�
 | 이름 | 타입 | NULL | 키 |
 |---|---|---|---|
 | `id` | bigint | NOT NULL | **PK** |
-| `user_id` | bigint | NOT NULL | → app_user |
+| `user_id` | bigint | NOT NULL | → [[app_user]] |
 | `type` | sanction_type | NOT NULL |  |
-| `triggered_by_report_id` | bigint |  | → report |
-| `policy_id` | bigint |  | → sanction_policy |
-| `issued_by_admin_id` | bigint |  | → app_user |
+| `triggered_by_report_id` | bigint |  | → [[report]] |
+| `policy_id` | bigint |  | → [[sanction_policy]] |
+| `issued_by_admin_id` | bigint |  | → [[app_user]] |
 | `reason` | varchar(200) | NOT NULL |  |
 | `starts_at` | timestamptz | NOT NULL |  |
 | `ends_at` | timestamptz |  |  |
@@ -51,4 +51,4 @@ triggered_by_report_id 로 근거 신고를 명시한다. 이 연결이 구 시�
 
 ---
 
-[[index|위키 색인]] · [[erd|ERD]] · 정의는 `db/ddl/` 이 진실이다
+정의는 `db/ddl/` 이 진실이다 · [[index|위키 색인]]

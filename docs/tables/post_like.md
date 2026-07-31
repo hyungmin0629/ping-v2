@@ -18,8 +18,8 @@ tags: [테이블, 게시판]
 | 이름 | 타입 | NULL | 키 |
 |---|---|---|---|
 | `id` | bigint | NOT NULL | **PK** |
-| `post_id` | bigint | NOT NULL | → post |
-| `user_id` | bigint | NOT NULL | → app_user |
+| `post_id` | bigint | NOT NULL | → [[post]] |
+| `user_id` | bigint | NOT NULL | → [[app_user]] |
 | `created_at` | timestamptz | NOT NULL |  |
 | `updated_at` | timestamptz | NOT NULL |  |
 
@@ -40,4 +40,4 @@ tags: [테이블, 게시판]
 
 ---
 
-[[index|위키 색인]] · [[erd|ERD]] · 정의는 `db/ddl/` 이 진실이다
+정의는 `db/ddl/` 이 진실이다 · [[index|위키 색인]]

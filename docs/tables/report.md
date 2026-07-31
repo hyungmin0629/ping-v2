@@ -22,21 +22,21 @@ tags: [테이블, 신고와 제재]
 | 이름 | 타입 | NULL | 키 |
 |---|---|---|---|
 | `id` | bigint | NOT NULL | **PK** |
-| `reporter_id` | bigint | NOT NULL | → app_user |
+| `reporter_id` | bigint | NOT NULL | → [[app_user]] |
 | `target_type` | report_target | NOT NULL |  |
-| `target_user_id` | bigint |  | → app_user |
-| `target_question_id` | bigint |  | → question |
-| `target_post_id` | bigint |  | → post |
-| `target_comment_id` | bigint |  | → post_comment |
-| `reason_code` | varchar(30) | NOT NULL | → report_reason |
+| `target_user_id` | bigint |  | → [[app_user]] |
+| `target_question_id` | bigint |  | → [[question]] |
+| `target_post_id` | bigint |  | → [[post]] |
+| `target_comment_id` | bigint |  | → [[post_comment]] |
+| `reason_code` | varchar(30) | NOT NULL | → [[report_reason]] |
 | `detail_text` | varchar(500) |  |  |
 | `status` | report_status | NOT NULL |  |
-| `reviewed_by_admin_id` | bigint |  | → app_user |
+| `reviewed_by_admin_id` | bigint |  | → [[app_user]] |
 | `reviewed_at` | timestamptz |  |  |
 | `created_at` | timestamptz | NOT NULL |  |
 | `updated_at` | timestamptz | NOT NULL |  |
 
-**이 표를 참조하는 표** — `sanction`
+**이 표를 참조하는 표** — [[sanction]]
 
 ## 얽힌 결정 3개
 
@@ -54,4 +54,4 @@ tags: [테이블, 신고와 제재]
 
 ---
 
-[[index|위키 색인]] · [[erd|ERD]] · 정의는 `db/ddl/` 이 진실이다
+정의는 `db/ddl/` 이 진실이다 · [[index|위키 색인]]

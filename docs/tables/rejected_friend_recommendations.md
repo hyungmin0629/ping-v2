@@ -24,8 +24,8 @@ tags: [테이블, 친구]
 | 이름 | 타입 | NULL | 키 |
 |---|---|---|---|
 | `id` | bigint | NOT NULL | **PK** |
-| `user_id` | bigint | NOT NULL | → app_user |
-| `recommended_user_id` | bigint | NOT NULL | → app_user |
+| `user_id` | bigint | NOT NULL | → [[app_user]] |
+| `recommended_user_id` | bigint | NOT NULL | → [[app_user]] |
 | `reason` | recommend_reason | NOT NULL |  |
 | `score` | numeric(5,4) | NOT NULL |  |
 | `created_at` | timestamptz | NOT NULL |  |
@@ -44,4 +44,4 @@ tags: [테이블, 친구]
 
 ---
 
-[[index|위키 색인]] · [[erd|ERD]] · 정의는 `db/ddl/` 이 진실이다
+정의는 `db/ddl/` 이 진실이다 · [[index|위키 색인]]

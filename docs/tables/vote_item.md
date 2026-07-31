@@ -22,9 +22,9 @@ tags: [테이블, 질문과 투표]
 | 이름 | 타입 | NULL | 키 |
 |---|---|---|---|
 | `id` | bigint | NOT NULL | **PK** |
-| `session_id` | bigint | NOT NULL | → vote_session |
-| `user_id` | bigint | NOT NULL | → app_user |
-| `question_id` | bigint | NOT NULL | → question |
+| `session_id` | bigint | NOT NULL | → [[vote_session]] |
+| `user_id` | bigint | NOT NULL | → [[app_user]] |
+| `question_id` | bigint | NOT NULL | → [[question]] |
 | `candidate_scope` | question_scope | NOT NULL |  |
 | `position` | smallint | NOT NULL |  |
 | `shuffle_count` | smallint | NOT NULL |  |
@@ -35,7 +35,7 @@ tags: [테이블, 질문과 투표]
 
 **UNIQUE** — `session_id, position`
 
-**이 표를 참조하는 표** — `heart_transaction` · `vote_candidate` · `vote_received` · `vote_shuffle`
+**이 표를 참조하는 표** — [[heart_transaction]] · [[vote_candidate]] · [[vote_received]] · [[vote_shuffle]]
 
 ## 얽힌 결정 7개
 
@@ -69,4 +69,4 @@ tags: [테이블, 질문과 투표]
 
 ---
 
-[[index|위키 색인]] · [[erd|ERD]] · 정의는 `db/ddl/` 이 진실이다
+정의는 `db/ddl/` 이 진실이다 · [[index|위키 색인]]

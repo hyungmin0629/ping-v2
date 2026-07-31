@@ -22,15 +22,15 @@ tags: [테이블, 하트]
 | 이름 | 타입 | NULL | 키 |
 |---|---|---|---|
 | `id` | bigint | NOT NULL | **PK** |
-| `user_id` | bigint | NOT NULL | → app_user |
-| `type_code` | varchar(30) | NOT NULL | → heart_transaction_type |
+| `user_id` | bigint | NOT NULL | → [[app_user]] |
+| `type_code` | varchar(30) | NOT NULL | → [[heart_transaction_type]] |
 | `delta` | integer | NOT NULL |  |
 | `balance_after` | bigint | NOT NULL |  |
-| `vote_item_id` | bigint |  | → vote_item |
-| `hint_purchase_id` | bigint |  | → hint_purchase |
-| `purchase_id` | bigint |  | → heart_purchase |
-| `ad_impression_id` | bigint |  | → ad_impression |
-| `admin_id` | bigint |  | → app_user |
+| `vote_item_id` | bigint |  | → [[vote_item]] |
+| `hint_purchase_id` | bigint |  | → [[hint_purchase]] |
+| `purchase_id` | bigint |  | → [[heart_purchase]] |
+| `ad_impression_id` | bigint |  | → [[ad_impression]] |
+| `admin_id` | bigint |  | → [[app_user]] |
 | `memo` | varchar(200) |  |  |
 | `created_at` | timestamptz | NOT NULL |  |
 | `updated_at` | timestamptz | NOT NULL |  |
@@ -66,4 +66,4 @@ tags: [테이블, 하트]
 
 ---
 
-[[index|위키 색인]] · [[erd|ERD]] · 정의는 `db/ddl/` 이 진실이다
+정의는 `db/ddl/` 이 진실이다 · [[index|위키 색인]]

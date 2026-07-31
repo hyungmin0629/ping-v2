@@ -22,7 +22,7 @@ label: 화면에 보여줄 이름을 직접 지정하고 싶을 때만 채운다
 | 이름 | 타입 | NULL | 키 |
 |---|---|---|---|
 | `id` | bigint | NOT NULL | **PK** |
-| `school_id` | bigint | NOT NULL | → school |
+| `school_id` | bigint | NOT NULL | → [[school]] |
 | `grade` | smallint | NOT NULL |  |
 | `class_num` | smallint | NOT NULL |  |
 | `created_at` | timestamptz | NOT NULL |  |
@@ -30,7 +30,7 @@ label: 화면에 보여줄 이름을 직접 지정하고 싶을 때만 채운다
 
 **UNIQUE** — `school_id, grade, class_num`
 
-**이 표를 참조하는 표** — `app_user` · `timetable`
+**이 표를 참조하는 표** — [[app_user]] · [[timetable]]
 
 ## 이 표를 지키는 정합성 검사 1종
 
@@ -48,4 +48,4 @@ label: 화면에 보여줄 이름을 직접 지정하고 싶을 때만 채운다
 
 ---
 
-[[index|위키 색인]] · [[erd|ERD]] · 정의는 `db/ddl/` 이 진실이다
+정의는 `db/ddl/` 이 진실이다 · [[index|위키 색인]]

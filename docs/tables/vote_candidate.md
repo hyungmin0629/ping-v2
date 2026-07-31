@@ -22,8 +22,8 @@ tags: [테이블, 질문과 투표]
 | 이름 | 타입 | NULL | 키 |
 |---|---|---|---|
 | `id` | bigint | NOT NULL | **PK** |
-| `vote_item_id` | bigint | NOT NULL | → vote_item |
-| `candidate_user_id` | bigint | NOT NULL | → app_user |
+| `vote_item_id` | bigint | NOT NULL | → [[vote_item]] |
+| `candidate_user_id` | bigint | NOT NULL | → [[app_user]] |
 | `shuffle_round` | smallint | NOT NULL |  |
 | `slot` | smallint | NOT NULL |  |
 | `is_chosen` | boolean | NOT NULL |  |
@@ -59,4 +59,4 @@ tags: [테이블, 질문과 투표]
 
 ---
 
-[[index|위키 색인]] · [[erd|ERD]] · 정의는 `db/ddl/` 이 진실이다
+정의는 `db/ddl/` 이 진실이다 · [[index|위키 색인]]

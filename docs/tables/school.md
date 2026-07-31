@@ -23,18 +23,18 @@ tags: [테이블, 기준 정보]
 |---|---|---|---|
 | `id` | bigint | NOT NULL | **PK** |
 | `name_masked` | varchar(50) | NOT NULL |  |
-| `region_id` | bigint | NOT NULL | → region |
+| `region_id` | bigint | NOT NULL | → [[region]] |
 | `school_type` | school_type | NOT NULL |  |
 | `neis_school_code` | varchar(20) |  |  |
 | `student_count` | integer | NOT NULL |  |
 | `created_at` | timestamptz | NOT NULL |  |
 | `updated_at` | timestamptz | NOT NULL |  |
 | `neis_office_code` | varchar(10) |  |  |
-| `info_school_id` | bigint |  | → school |
+| `info_school_id` | bigint |  | → [[school]] |
 
 **UNIQUE** — `neis_school_code`
 
-**이 표를 참조하는 표** — `grade_class` · `meal_plan` · `post` · `school` · `school_event` · `school_notice`
+**이 표를 참조하는 표** — [[grade_class]] · [[meal_plan]] · [[post]] · [[school]] · [[school_event]] · [[school_notice]]
 
 ## 얽힌 결정 3개
 
@@ -52,4 +52,4 @@ tags: [테이블, 기준 정보]
 
 ---
 
-[[index|위키 색인]] · [[erd|ERD]] · 정의는 `db/ddl/` 이 진실이다
+정의는 `db/ddl/` 이 진실이다 · [[index|위키 색인]]

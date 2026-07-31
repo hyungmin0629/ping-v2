@@ -22,8 +22,8 @@ user_low_id < user_high_id 를 강제해 (A,B)와 (B,A)가 중복 저장되는 �
 | 이름 | 타입 | NULL | 키 |
 |---|---|---|---|
 | `id` | bigint | NOT NULL | **PK** |
-| `user_low_id` | bigint | NOT NULL | → app_user |
-| `user_high_id` | bigint | NOT NULL | → app_user |
+| `user_low_id` | bigint | NOT NULL | → [[app_user]] |
+| `user_high_id` | bigint | NOT NULL | → [[app_user]] |
 | `source` | relation_source | NOT NULL |  |
 | `created_at` | timestamptz | NOT NULL |  |
 | `updated_at` | timestamptz | NOT NULL |  |
@@ -55,4 +55,4 @@ user_low_id < user_high_id 를 강제해 (A,B)와 (B,A)가 중복 저장되는 �
 
 ---
 
-[[index|위키 색인]] · [[erd|ERD]] · 정의는 `db/ddl/` 이 진실이다
+정의는 `db/ddl/` 이 진실이다 · [[index|위키 색인]]

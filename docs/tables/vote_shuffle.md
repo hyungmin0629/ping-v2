@@ -22,8 +22,8 @@ vote_item_id 에 UNIQUE → DB 차원에서 1회 제한을 강제한다. ad_impr
 | 이름 | 타입 | NULL | 키 |
 |---|---|---|---|
 | `id` | bigint | NOT NULL | **PK** |
-| `vote_item_id` | bigint | NOT NULL | → vote_item |
-| `ad_impression_id` | bigint | NOT NULL | → ad_impression |
+| `vote_item_id` | bigint | NOT NULL | → [[vote_item]] |
+| `ad_impression_id` | bigint | NOT NULL | → [[ad_impression]] |
 | `created_at` | timestamptz | NOT NULL |  |
 | `updated_at` | timestamptz | NOT NULL |  |
 
@@ -49,4 +49,4 @@ vote_item_id 에 UNIQUE → DB 차원에서 1회 제한을 강제한다. ad_impr
 
 ---
 
-[[index|위키 색인]] · [[erd|ERD]] · 정의는 `db/ddl/` 이 진실이다
+정의는 `db/ddl/` 이 진실이다 · [[index|위키 색인]]

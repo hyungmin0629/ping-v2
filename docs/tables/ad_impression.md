@@ -18,7 +18,7 @@ tags: [테이블, 질문과 투표]
 | 이름 | 타입 | NULL | 키 |
 |---|---|---|---|
 | `id` | bigint | NOT NULL | **PK** |
-| `user_id` | bigint | NOT NULL | → app_user |
+| `user_id` | bigint | NOT NULL | → [[app_user]] |
 | `placement` | ad_placement | NOT NULL |  |
 | `ad_network` | varchar(30) | NOT NULL |  |
 | `ad_unit_id` | varchar(60) | NOT NULL |  |
@@ -27,7 +27,7 @@ tags: [테이블, 질문과 투표]
 | `completed_at` | timestamptz |  |  |
 | `updated_at` | timestamptz | NOT NULL |  |
 
-**이 표를 참조하는 표** — `heart_transaction` · `hint_purchase` · `vote_shuffle`
+**이 표를 참조하는 표** — [[heart_transaction]] · [[hint_purchase]] · [[vote_shuffle]]
 
 ## 얽힌 결정 1개
 
@@ -49,4 +49,4 @@ tags: [테이블, 질문과 투표]
 
 ---
 
-[[index|위키 색인]] · [[erd|ERD]] · 정의는 `db/ddl/` 이 진실이다
+정의는 `db/ddl/` 이 진실이다 · [[index|위키 색인]]

@@ -18,14 +18,14 @@ tags: [테이블, 질문과 투표]
 | 이름 | 타입 | NULL | 키 |
 |---|---|---|---|
 | `id` | bigint | NOT NULL | **PK** |
-| `user_id` | bigint | NOT NULL | → app_user |
+| `user_id` | bigint | NOT NULL | → [[app_user]] |
 | `status` | session_status | NOT NULL |  |
 | `item_count` | smallint | NOT NULL |  |
 | `started_at` | timestamptz | NOT NULL |  |
 | `completed_at` | timestamptz |  |  |
 | `updated_at` | timestamptz | NOT NULL |  |
 
-**이 표를 참조하는 표** — `vote_item`
+**이 표를 참조하는 표** — [[vote_item]]
 
 ## 얽힌 결정 1개
 
@@ -41,4 +41,4 @@ tags: [테이블, 질문과 투표]
 
 ---
 
-[[index|위키 색인]] · [[erd|ERD]] · 정의는 `db/ddl/` 이 진실이다
+정의는 `db/ddl/` 이 진실이다 · [[index|위키 색인]]

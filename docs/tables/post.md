@@ -18,9 +18,9 @@ tags: [테이블, 게시판]
 | 이름 | 타입 | NULL | 키 |
 |---|---|---|---|
 | `id` | bigint | NOT NULL | **PK** |
-| `school_id` | bigint | NOT NULL | → school |
-| `category_id` | bigint | NOT NULL | → board_category |
-| `author_id` | bigint | NOT NULL | → app_user |
+| `school_id` | bigint | NOT NULL | → [[school]] |
+| `category_id` | bigint | NOT NULL | → [[board_category]] |
+| `author_id` | bigint | NOT NULL | → [[app_user]] |
 | `title` | varchar(120) | NOT NULL |  |
 | `body` | text | NOT NULL |  |
 | `view_count` | integer | NOT NULL |  |
@@ -31,7 +31,7 @@ tags: [테이블, 게시판]
 | `created_at` | timestamptz | NOT NULL |  |
 | `updated_at` | timestamptz | NOT NULL |  |
 
-**이 표를 참조하는 표** — `post_comment` · `post_like` · `report`
+**이 표를 참조하는 표** — [[post_comment]] · [[post_like]] · [[report]]
 
 ## 얽힌 결정 4개
 
@@ -50,4 +50,4 @@ tags: [테이블, 게시판]
 
 ---
 
-[[index|위키 색인]] · [[erd|ERD]] · 정의는 `db/ddl/` 이 진실이다
+정의는 `db/ddl/` 이 진실이다 · [[index|위키 색인]]

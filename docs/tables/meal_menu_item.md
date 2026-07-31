@@ -22,7 +22,7 @@ tags: [테이블, 학교 정보]
 | 이름 | 타입 | NULL | 키 |
 |---|---|---|---|
 | `id` | bigint | NOT NULL | **PK** |
-| `meal_plan_id` | bigint | NOT NULL | → meal_plan |
+| `meal_plan_id` | bigint | NOT NULL | → [[meal_plan]] |
 | `dish_name` | varchar(80) | NOT NULL |  |
 | `allergy_codes` | varchar(60) |  |  |
 | `sort_order` | smallint | NOT NULL |  |
@@ -43,4 +43,4 @@ tags: [테이블, 학교 정보]
 
 ---
 
-[[index|위키 색인]] · [[erd|ERD]] · 정의는 `db/ddl/` 이 진실이다
+정의는 `db/ddl/` 이 진실이다 · [[index|위키 색인]]

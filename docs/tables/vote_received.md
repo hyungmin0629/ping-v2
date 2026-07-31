@@ -18,10 +18,10 @@ tags: [테이블, 질문과 투표]
 | 이름 | 타입 | NULL | 키 |
 |---|---|---|---|
 | `id` | bigint | NOT NULL | **PK** |
-| `vote_item_id` | bigint | NOT NULL | → vote_item |
-| `voter_id` | bigint | NOT NULL | → app_user |
-| `receiver_id` | bigint | NOT NULL | → app_user |
-| `question_id` | bigint | NOT NULL | → question |
+| `vote_item_id` | bigint | NOT NULL | → [[vote_item]] |
+| `voter_id` | bigint | NOT NULL | → [[app_user]] |
+| `receiver_id` | bigint | NOT NULL | → [[app_user]] |
+| `question_id` | bigint | NOT NULL | → [[question]] |
 | `is_read` | boolean | NOT NULL |  |
 | `read_at` | timestamptz |  |  |
 | `reveal_status` | reveal_status | NOT NULL |  |
@@ -34,7 +34,7 @@ tags: [테이블, 질문과 투표]
 
 **UNIQUE** — `vote_item_id`
 
-**이 표를 참조하는 표** — `hint_purchase`
+**이 표를 참조하는 표** — [[hint_purchase]]
 
 ## 얽힌 결정 3개
 
@@ -52,4 +52,4 @@ tags: [테이블, 질문과 투표]
 
 ---
 
-[[index|위키 색인]] · [[erd|ERD]] · 정의는 `db/ddl/` 이 진실이다
+정의는 `db/ddl/` 이 진실이다 · [[index|위키 색인]]

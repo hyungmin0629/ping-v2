@@ -22,7 +22,7 @@ tags: [테이블, 유저]
 | 이름 | 타입 | NULL | 키 |
 |---|---|---|---|
 | `id` | bigint | NOT NULL | **PK** |
-| `user_id` | bigint | NOT NULL | → app_user |
+| `user_id` | bigint | NOT NULL | → [[app_user]] |
 | `platform` | platform_type | NOT NULL |  |
 | `app_version` | varchar(20) | NOT NULL |  |
 | `device_id` | varchar(64) |  |  |
@@ -46,4 +46,4 @@ tags: [테이블, 유저]
 
 ---
 
-[[index|위키 색인]] · [[erd|ERD]] · 정의는 `db/ddl/` 이 진실이다
+정의는 `db/ddl/` 이 진실이다 · [[index|위키 색인]]

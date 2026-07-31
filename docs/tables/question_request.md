@@ -20,15 +20,15 @@ tags: [테이블, 질문과 투표]
 | 이름 | 타입 | NULL | 키 |
 |---|---|---|---|
 | `id` | bigint | NOT NULL | **PK** |
-| `user_id` | bigint | NOT NULL | → app_user |
+| `user_id` | bigint | NOT NULL | → [[app_user]] |
 | `text` | varchar(200) | NOT NULL |  |
 | `proposed_scope` | question_scope | NOT NULL |  |
-| `proposed_category_id` | bigint |  | → question_category |
+| `proposed_category_id` | bigint |  | → [[question_category]] |
 | `status` | request_status | NOT NULL |  |
 | `reject_reason` | varchar(200) |  |  |
-| `reviewed_by_admin_id` | bigint |  | → app_user |
+| `reviewed_by_admin_id` | bigint |  | → [[app_user]] |
 | `reviewed_at` | timestamptz |  |  |
-| `published_question_id` | bigint |  | → question |
+| `published_question_id` | bigint |  | → [[question]] |
 | `created_at` | timestamptz | NOT NULL |  |
 | `updated_at` | timestamptz | NOT NULL |  |
 
@@ -49,4 +49,4 @@ tags: [테이블, 질문과 투표]
 
 ---
 
-[[index|위키 색인]] · [[erd|ERD]] · 정의는 `db/ddl/` 이 진실이다
+정의는 `db/ddl/` 이 진실이다 · [[index|위키 색인]]

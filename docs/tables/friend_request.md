@@ -18,8 +18,8 @@ tags: [테이블, 친구]
 | 이름 | 타입 | NULL | 키 |
 |---|---|---|---|
 | `id` | bigint | NOT NULL | **PK** |
-| `sender_id` | bigint | NOT NULL | → app_user |
-| `receiver_id` | bigint | NOT NULL | → app_user |
+| `sender_id` | bigint | NOT NULL | → [[app_user]] |
+| `receiver_id` | bigint | NOT NULL | → [[app_user]] |
 | `status` | friend_req_status | NOT NULL |  |
 | `source` | relation_source | NOT NULL |  |
 | `created_at` | timestamptz | NOT NULL |  |
@@ -44,4 +44,4 @@ tags: [테이블, 친구]
 
 ---
 
-[[index|위키 색인]] · [[erd|ERD]] · 정의는 `db/ddl/` 이 진실이다
+정의는 `db/ddl/` 이 진실이다 · [[index|위키 색인]]

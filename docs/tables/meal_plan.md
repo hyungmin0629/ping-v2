@@ -22,7 +22,7 @@ tags: [테이블, 학교 정보]
 | 이름 | 타입 | NULL | 키 |
 |---|---|---|---|
 | `id` | bigint | NOT NULL | **PK** |
-| `school_id` | bigint | NOT NULL | → school |
+| `school_id` | bigint | NOT NULL | → [[school]] |
 | `serve_date` | date | NOT NULL |  |
 | `meal_type` | meal_type | NOT NULL |  |
 | `calorie_kcal` | numeric(6,1) |  |  |
@@ -35,7 +35,7 @@ tags: [테이블, 학교 정보]
 
 **UNIQUE** — `school_id, serve_date, meal_type`
 
-**이 표를 참조하는 표** — `meal_menu_item`
+**이 표를 참조하는 표** — [[meal_menu_item]]
 
 ## 얽힌 결정 1개
 
@@ -51,4 +51,4 @@ tags: [테이블, 학교 정보]
 
 ---
 
-[[index|위키 색인]] · [[erd|ERD]] · 정의는 `db/ddl/` 이 진실이다
+정의는 `db/ddl/` 이 진실이다 · [[index|위키 색인]]

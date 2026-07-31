@@ -24,7 +24,7 @@ tags: [테이블, 학교 정보]
 | 이름 | 타입 | NULL | 키 |
 |---|---|---|---|
 | `id` | bigint | NOT NULL | **PK** |
-| `class_id` | bigint | NOT NULL | → grade_class |
+| `class_id` | bigint | NOT NULL | → [[grade_class]] |
 | `semester` | varchar(10) | NOT NULL |  |
 | `day_of_week` | smallint | NOT NULL |  |
 | `period` | smallint | NOT NULL |  |
@@ -48,4 +48,4 @@ tags: [테이블, 학교 정보]
 
 ---
 
-[[index|위키 색인]] · [[erd|ERD]] · 정의는 `db/ddl/` 이 진실이다
+정의는 `db/ddl/` 이 진실이다 · [[index|위키 색인]]

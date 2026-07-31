@@ -22,8 +22,8 @@ tags: [테이블, 하트]
 | 이름 | 타입 | NULL | 키 |
 |---|---|---|---|
 | `id` | bigint | NOT NULL | **PK** |
-| `user_id` | bigint | NOT NULL | → app_user |
-| `product_id` | bigint | NOT NULL | → heart_product |
+| `user_id` | bigint | NOT NULL | → [[app_user]] |
+| `product_id` | bigint | NOT NULL | → [[heart_product]] |
 | `platform` | platform_type | NOT NULL |  |
 | `store_transaction_id` | varchar(120) |  |  |
 | `status` | purchase_status | NOT NULL |  |
@@ -36,7 +36,7 @@ tags: [테이블, 하트]
 
 **UNIQUE** — `store_transaction_id`
 
-**이 표를 참조하는 표** — `heart_transaction`
+**이 표를 참조하는 표** — [[heart_transaction]]
 
 ## 얽힌 결정 2개
 
@@ -59,4 +59,4 @@ tags: [테이블, 하트]
 
 ---
 
-[[index|위키 색인]] · [[erd|ERD]] · 정의는 `db/ddl/` 이 진실이다
+정의는 `db/ddl/` 이 진실이다 · [[index|위키 색인]]

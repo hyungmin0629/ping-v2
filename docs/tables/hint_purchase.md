@@ -22,19 +22,19 @@ tags: [테이블, 질문과 투표]
 | 이름 | 타입 | NULL | 키 |
 |---|---|---|---|
 | `id` | bigint | NOT NULL | **PK** |
-| `vote_received_id` | bigint | NOT NULL | → vote_received |
-| `user_id` | bigint | NOT NULL | → app_user |
+| `vote_received_id` | bigint | NOT NULL | → [[vote_received]] |
+| `user_id` | bigint | NOT NULL | → [[app_user]] |
 | `hint_type` | hint_type | NOT NULL |  |
 | `step` | smallint | NOT NULL |  |
 | `heart_cost` | integer | NOT NULL |  |
 | `created_at` | timestamptz | NOT NULL |  |
 | `updated_at` | timestamptz | NOT NULL |  |
-| `ad_impression_id` | bigint |  | → ad_impression |
+| `ad_impression_id` | bigint |  | → [[ad_impression]] |
 | `char_index` | smallint |  |  |
 
 **UNIQUE** — `vote_received_id, hint_type` · `ad_impression_id · 단, (ad_impression_id IS NOT NULL)`
 
-**이 표를 참조하는 표** — `heart_transaction`
+**이 표를 참조하는 표** — [[heart_transaction]]
 
 ## 얽힌 결정 1개
 
@@ -56,4 +56,4 @@ tags: [테이블, 질문과 투표]
 
 ---
 
-[[index|위키 색인]] · [[erd|ERD]] · 정의는 `db/ddl/` 이 진실이다
+정의는 `db/ddl/` 이 진실이다 · [[index|위키 색인]]

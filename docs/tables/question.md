@@ -24,14 +24,14 @@ scope: CLASS / SCHOOL / GLOBAL. 세 스코프 모두 "친구" 안에서의 범�
 | `id` | bigint | NOT NULL | **PK** |
 | `text` | varchar(200) | NOT NULL |  |
 | `scope` | question_scope | NOT NULL |  |
-| `category_id` | bigint | NOT NULL | → question_category |
+| `category_id` | bigint | NOT NULL | → [[question_category]] |
 | `status` | question_status | NOT NULL |  |
 | `source` | question_source | NOT NULL |  |
 | `report_count` | integer | NOT NULL |  |
-| `created_by_admin_id` | bigint |  | → app_user |
+| `created_by_admin_id` | bigint |  | → [[app_user]] |
 | `created_at` | timestamptz | NOT NULL |  |
 
-**이 표를 참조하는 표** — `question_request` · `report` · `vote_item` · `vote_received`
+**이 표를 참조하는 표** — [[question_request]] · [[report]] · [[vote_item]] · [[vote_received]]
 
 ## 얽힌 결정 3개
 
@@ -49,4 +49,4 @@ scope: CLASS / SCHOOL / GLOBAL. 세 스코프 모두 "친구" 안에서의 범�
 
 ---
 
-[[index|위키 색인]] · [[erd|ERD]] · 정의는 `db/ddl/` 이 진실이다
+정의는 `db/ddl/` 이 진실이다 · [[index|위키 색인]]

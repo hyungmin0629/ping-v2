@@ -30,7 +30,7 @@ tags: [테이블, 질문과 투표]
 
 **UNIQUE** — `code`
 
-**이 표를 참조하는 표** — `question` · `question_request`
+**이 표를 참조하는 표** — [[question]] · [[question_request]]
 
 ## 이 표를 다루는 정책·RPC
 
@@ -42,4 +42,4 @@ tags: [테이블, 질문과 투표]
 
 ---
 
-[[index|위키 색인]] · [[erd|ERD]] · 정의는 `db/ddl/` 이 진실이다
+정의는 `db/ddl/` 이 진실이다 · [[index|위키 색인]]

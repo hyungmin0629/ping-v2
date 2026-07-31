@@ -30,7 +30,7 @@ tags: [테이블, 신고와 제재]
 | `action_days` | smallint |  |  |
 | `is_active` | boolean | NOT NULL |  |
 
-**이 표를 참조하는 표** — `sanction`
+**이 표를 참조하는 표** — [[sanction]]
 
 ## 얽힌 결정 1개
 
@@ -46,4 +46,4 @@ tags: [테이블, 신고와 제재]
 
 ---
 
-[[index|위키 색인]] · [[erd|ERD]] · 정의는 `db/ddl/` 이 진실이다
+정의는 `db/ddl/` 이 진실이다 · [[index|위키 색인]]

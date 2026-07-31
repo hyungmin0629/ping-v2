@@ -20,20 +20,20 @@ tags: [테이블, 학교 정보]
 | 이름 | 타입 | NULL | 키 |
 |---|---|---|---|
 | `id` | bigint | NOT NULL | **PK** |
-| `school_id` | bigint | NOT NULL | → school |
+| `school_id` | bigint | NOT NULL | → [[school]] |
 | `title` | varchar(200) | NOT NULL |  |
 | `body` | text | NOT NULL |  |
 | `source` | data_source | NOT NULL |  |
 | `external_id` | varchar(80) |  |  |
 | `is_manually_overridden` | boolean | NOT NULL |  |
-| `created_by_admin_id` | bigint |  | → app_user |
+| `created_by_admin_id` | bigint |  | → [[app_user]] |
 | `published_at` | timestamptz | NOT NULL |  |
 | `created_at` | timestamptz | NOT NULL |  |
 | `updated_at` | timestamptz | NOT NULL |  |
 
 **UNIQUE** — `school_id, external_id · 단, (external_id IS NOT NULL)`
 
-**이 표를 참조하는 표** — `school_notice_read`
+**이 표를 참조하는 표** — [[school_notice_read]]
 
 ## 얽힌 결정 2개
 
@@ -50,4 +50,4 @@ tags: [테이블, 학교 정보]
 
 ---
 
-[[index|위키 색인]] · [[erd|ERD]] · 정의는 `db/ddl/` 이 진실이다
+정의는 `db/ddl/` 이 진실이다 · [[index|위키 색인]]

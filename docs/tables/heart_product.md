@@ -30,7 +30,7 @@ tags: [테이블, 하트]
 
 **UNIQUE** — `product_code`
 
-**이 표를 참조하는 표** — `heart_purchase`
+**이 표를 참조하는 표** — [[heart_purchase]]
 
 ## 이 표를 다루는 정책·RPC
 
@@ -42,4 +42,4 @@ tags: [테이블, 하트]
 
 ---
 
-[[index|위키 색인]] · [[erd|ERD]] · 정의는 `db/ddl/` 이 진실이다
+정의는 `db/ddl/` 이 진실이다 · [[index|위키 색인]]

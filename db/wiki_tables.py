@@ -153,7 +153,9 @@ def build_page(t: str, ctx: dict) -> str:
         if (t, c) in pks:
             key.append("**PK**")
         if (t, c) in fk_of:
-            key.append(f"→ {fk_of[(t, c)]}")
+            parent = fk_of[(t, c)]
+            # 스키마 밖 부모(auth.users)는 노드가 없으므로 링크하지 않는다
+            key.append(f"→ [[{parent}]]" if "." not in parent else f"→ {parent}")
         L.append(f"| `{c}` | {typ} | {'' if nullable else 'NOT NULL'} | {' '.join(key)} |")
     L.append("")
 
@@ -162,7 +164,7 @@ def build_page(t: str, ctx: dict) -> str:
 
     incoming = sorted({c for c, _, p in fks if p == t})
     if incoming:
-        L += ["**이 표를 참조하는 표** — " + " · ".join(f"`{c}`" for c in incoming), ""]
+        L += ["**이 표를 참조하는 표** — " + " · ".join(f"[[{c}]]" for c in incoming), ""]
 
     if ds := ctx["decisions"].get(t):
         L += [f"## 얽힌 결정 {len(ds)}개", ""]
@@ -185,7 +187,9 @@ def build_page(t: str, ctx: dict) -> str:
            "⚠️ **생성기가 아직 만들지 않는다.** 합성 데이터를 채우려면 새로 써야 한다."),
           ""]
 
-    L += ["---", "", f"[[index|위키 색인]] · [[erd|ERD]] · 정의는 `db/ddl/` 이 진실이다"]
+    # 꼬리말에 [[erd]] 를 걸면 40장이 전부 걸어 가짜 허브가 된다.
+    # 관계는 위의 FK 링크가 이미 그린다.
+    L += ["---", "", "정의는 `db/ddl/` 이 진실이다 · [[index|위키 색인]]"]
     return "\n".join(L) + "\n"
 
 

@@ -26,7 +26,7 @@ tags: [테이블, 유저]
 | `nickname` | varchar(20) | NOT NULL |  |
 | `invite_code` | varchar(8) | NOT NULL |  |
 | `gender` | gender_type |  |  |
-| `class_id` | bigint | NOT NULL | → grade_class |
+| `class_id` | bigint | NOT NULL | → [[grade_class]] |
 | `heart_balance` | bigint | NOT NULL |  |
 | `friend_count` | integer | NOT NULL |  |
 | `service_unlocked_at` | timestamptz |  |  |
@@ -39,7 +39,7 @@ tags: [테이블, 유저]
 
 **UNIQUE** — `auth_user_id` · `invite_code`
 
-**이 표를 참조하는 표** — `ad_impression` · `block_record` · `comment_like` · `friend_request` · `friendship` · `heart_purchase` · `heart_transaction` · `hint_purchase` · `post` · `post_comment` · `post_like` · `question` · `question_request` · `rejected_friend_recommendations` · `report` · `sanction` · `school_notice` · `school_notice_read` · `user_session` · `user_withdrawal` · `vote_candidate` · `vote_item` · `vote_received` · `vote_session`
+**이 표를 참조하는 표** — [[ad_impression]] · [[block_record]] · [[comment_like]] · [[friend_request]] · [[friendship]] · [[heart_purchase]] · [[heart_transaction]] · [[hint_purchase]] · [[post]] · [[post_comment]] · [[post_like]] · [[question]] · [[question_request]] · [[rejected_friend_recommendations]] · [[report]] · [[sanction]] · [[school_notice]] · [[school_notice_read]] · [[user_session]] · [[user_withdrawal]] · [[vote_candidate]] · [[vote_item]] · [[vote_received]] · [[vote_session]]
 
 ## 얽힌 결정 11개
 
@@ -77,4 +77,4 @@ tags: [테이블, 유저]
 
 ---
 
-[[index|위키 색인]] · [[erd|ERD]] · 정의는 `db/ddl/` 이 진실이다
+정의는 `db/ddl/` 이 진실이다 · [[index|위키 색인]]
