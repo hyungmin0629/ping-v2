@@ -1,6 +1,6 @@
 {
-  "collapse-filter": true,
-  "search": "",
+  "collapse-filter": false,
+  "search": "-path:\"docs/index\" -path:\"DECISIONS\" -path:\"docs/log\"",
   "showTags": false,
   "showAttachments": false,
   "hideUnresolved": false,
@@ -8,35 +8,35 @@
   "collapse-color-groups": false,
   "colorGroups": [
     {
-      "query": "path:raw",
+      "query": "path:\"raw/\"",
       "color": {
         "a": 1,
         "rgb": 12613946
       }
     },
     {
-      "query": "path:docs/decisions",
+      "query": "path:\"docs/decisions\"",
       "color": {
         "a": 1,
         "rgb": 3887008
       }
     },
     {
-      "query": "path:docs/tables",
+      "query": "path:\"docs/tables\"",
       "color": {
         "a": 1,
         "rgb": 2914906
       }
     },
     {
-      "query": "path:docs/ops",
+      "query": "path:\"docs/ops\"",
       "color": {
         "a": 1,
         "rgb": 8018600
       }
     },
     {
-      "query": "status:superseded",
+      "query": "[status:superseded]",
       "color": {
         "a": 1,
         "rgb": 10697531
