@@ -426,14 +426,72 @@ DB 를 읽는 코드를 두 벌 두지 않는다.</p>
 <h2><span class="num">06</span>어떻게 쓰나</h2>
 <p class="lede">사람이 할 일은 원본을 넣는 것, 나머지는 에이전트가 한다.</p>
 
+<h3>처음 열었다면 — 읽는 순서</h3>
+<table>
+  <thead><tr><th style="width:44mm">알고 싶은 것</th><th>어디로</th></tr></thead>
+  <tbody>
+    <tr><td>이 프로젝트가 뭔가</td><td><code>README.md</code> → <code>docs/design-spec.md</code></td></tr>
+    <tr><td>내 손으로 돌려보고 싶다</td><td><code>docs/ONBOARDING.md</code></td></tr>
+    <tr><td>문서가 다 어디 있나</td><td><code>docs/index.md</code> — 전체 목록</td></tr>
+    <tr><td><b>왜 이렇게 했지?</b></td><td><code>DECISIONS.md</code> 색인 → 해당 결정 노드</td></tr>
+    <tr><td><b>이 표는 뭐지?</b></td><td><code>docs/tables/&lt;표이름&gt;.md</code> — 한 장에 다 있다</td></tr>
+    <tr><td>최근에 무슨 일이</td><td><code>docs/log.md</code></td></tr>
+  </tbody>
+</table>
+<p><b>옵시디언으로 열면</b> 저장소 루트가 볼트다. 검색(<code>Ctrl+O</code>)으로 노드
+이름을 치는 것이 가장 빠르다. 그래프는 전체를 조망할 때만 쓴다.</p>
+
 <h3>회의록을 남길 때</h3>
 <ol>
   <li><code>raw/meetings/_template.md</code> 를 복사해 <code>YYYY-MM-DD-주제.md</code> 로</li>
-  <li>정한 것 / 못 정한 것 / 오간 이야기 / 숫자를 적는다</li>
-  <li>에이전트에게 <b>"회의록 반영해줘"</b> — 결정이 노드로 옮겨지고 색인이 갱신되고
-      이력에 남는다</li>
+  <li>정한 것 / 못 정한 것 / 오간 이야기 / 숫자를 적는다.
+      <b>숫자에는 출처를 함께</b> — 나중에 문서 곳곳에 인용된다</li>
+  <li>에이전트에게 <b>"회의록 반영해줘"</b> — 결정이 노드로 옮겨지고, 영향받는 문서가
+      고쳐지고, 색인이 갱신되고, 이력에 남는다</li>
 </ol>
 <p>반영을 잊으면 <code>db/doc_lint.py</code> 가 <code>ingested: false</code> 를 잡는다.</p>
+
+<h3>회의 없이 결정이 났을 때</h3>
+<p>실제로는 이쪽이 더 흔하다. 작업하다 판단이 서면 그 자리에서
+<code>docs/decisions/&lt;슬러그&gt;.md</code> 를 만든다.</p>
+<pre>---
+title: 친구를 끊어도 행을 지우지 않는다     # 한글. 색인에 그대로 쓰인다
+date: 2026-07-31
+group: 친구                                # 12개 갈래 중 하나
+status: active                             # 뒤집히면 superseded
+tags: [결정, 친구]
+---
+
+**결정** 무엇을 정했나   **이유** 왜, 무엇을 근거로
+**대안** 무엇을 기각했고 왜   **영향** 무엇이 따라 바뀌나</pre>
+<p><b>파일명은 ASCII 케밥케이스.</b> 한글 파일명은 git·셸에서 깨져 읽기 어렵다.</p>
+<div class="note warn">
+  <b>기존 결정을 뒤집는다면 —</b> 새 노드만 쓰고 끝내면 안 된다.
+  <b>옛 노드에 <code>status: superseded</code> 와 <code>superseded_by</code> 를 단다.</b>
+  뒤집힌 결정이 그대로 살아 있는 것이 이 위키에서 가장 위험한 상태다.
+  나중에 누군가 그것을 근거로 삼는다.
+</div>
+
+<h3>⚠️ 하지 말아야 할 것</h3>
+<table>
+  <thead><tr><th style="width:52mm">무엇</th><th>왜</th></tr></thead>
+  <tbody>
+    <tr><td><b>생성물을 손으로 고치기</b><br>
+        <code>docs/index.md</code> · <code>docs/tables/</code> · <code>docs/erd.md</code></td>
+        <td>다음 생성 때 <b>날아간다.</b> 고칠 것이 있으면 원본을 고친다 —
+            표 설명은 DDL 주석, 빈 표 사유는 <code>db/erd.py</code> 의
+            <code>EMPTY_REASON</code></td></tr>
+    <tr><td><b><code>raw/</code> 안의 파일 고치기</b></td>
+        <td>회의에서 정한 것이 바뀌어도 회의록은 그대로 둔다. 바뀐 것은
+            <b>새 결정</b>으로 적는다 — 그래야 "언제 왜 마음이 바뀌었나"가 남는다</td></tr>
+    <tr><td><b>문서에 스키마·명령어 베껴 적기</b></td>
+        <td>DDL과 스크립트가 진실이다. 베끼면 <b>두 번째 진실</b>이 생기고
+            반드시 어긋난다</td></tr>
+    <tr><td><b>결정을 색인에만 적기</b></td>
+        <td><code>DECISIONS.md</code> 는 목록일 뿐이다. 내용은 노드 파일에 있어야
+            검색·연결·<code>superseded</code> 추적이 된다</td></tr>
+  </tbody>
+</table>
 
 <h3>스키마를 바꾼 뒤</h3>
 <pre>python db/erd.py          # ERD 재생성
