@@ -130,6 +130,8 @@ A 갈래(로컬 합성 데이터)와 계정이 필요한 B 갈래를 나눠 적�
 | `python db/doc_lint.py` | 문서 주장을 실제와 대조 (위키 lint). 문서·스키마를 손댄 뒤 |
 | `python db/wiki_index.py` | `docs/index.md` 재생성 |
 | `python db/wiki_tables.py` | `docs/tables/` 재생성 — 표마다 DDL·결정·검사·정책을 모은 한 장 |
+| `python db/link_decisions.py` | 결정끼리 '이어지는 결정' 링크 재생성 |
+| `python db/wiki_merge.py` | **되돌리기** — 결정 노드를 `DECISIONS.md` 한 파일로 합친다 |
 | `python db/replay_check.py` | **처음부터 다시 만들어도 같은 스키마가 나오는지.** 표를 지우거나 이름을 바꾼 뒤 반드시 |
 | `python db/neis_schools.py --schools` | 전국 중·고 목록 |
 | `python db/neis_schools.py --classes <코드> [--into <조직>]` | 학급 |
@@ -478,6 +480,49 @@ python db/doc_lint.py
 그러면 검사 자체를 안 보게 된다.
 
 **언제 도나** — 문서를 손댄 뒤, 그리고 스키마를 바꾼 뒤.
+
+## 위키를 되돌려야 한다면
+
+문서를 노드로 쪼갠 것이 **오히려 손해로 드러나면** 되돌린다. 판단 기준은 둘 —
+같은 질문에 **토큰을 더 쓰거나**, 관련 결정을 놓쳐 **답이 나빠지거나.**
+
+측정 기준값(2026-07-31): 골라 읽기 **1,263** · 한 파일 시절 grep **1,928** ·
+매칭 노드 전부 읽기 **6,907**. 마지막 습관이 굳으면 되돌리는 편이 낫다.
+
+### ⚠️ `git revert` 로 하지 않는다
+
+되돌리는 커밋 이후에 쓴 결정이 **함께 사라진다.** 위키로 바꾼 뒤 적은 결정은
+노드 파일로만 존재하기 때문이다.
+
+```
+python db/wiki_merge.py --dry-run   # 무엇이 합쳐지는지 본다
+python db/wiki_merge.py             # DECISIONS.md 로 합친다
+```
+
+**지금 있는 노드 전부**를 읽어 합치므로 새로 쓴 결정도 살아남는다.
+`status: superseded` 는 취소선과 화살표로 옮겨진다.
+
+### 어디까지 되돌리나
+
+| | |
+|---|---|
+| **되돌린다** | `docs/decisions/` → `DECISIONS.md` 한 파일 |
+| **되돌린다** | `docs/tables/` — 생성물이라 폴더째 지우면 된다 |
+| **남긴다** | `raw/` — 원본이다. 되돌릴 성격이 아니다 |
+| **남긴다** | `db/doc_lint.py` — 한 파일이어도 낡음은 잡아야 한다 |
+| **남긴다** | `CLAUDE.md` 의 `docs/ops/` 분리 — 자동 주입 비용이라 별개 판단이다 |
+
+### 기준점
+
+`git tag pre-wiki` 가 **위키 직전 상태**(`c650ca3`)를 가리킨다.
+
+```
+git diff pre-wiki --stat -- CLAUDE.md DECISIONS.md docs/
+git show pre-wiki:DECISIONS.md > /tmp/before.md   # 그때 파일을 꺼내 본다
+```
+
+전면 복구가 필요하면 `pre-wiki` 로 되돌리되, **그 이후 커밋의 문서 작업이
+함께 사라진다는 것**을 먼저 확인한다(`git log pre-wiki..HEAD -- docs/`).
 
 ## 문서 규칙
 
