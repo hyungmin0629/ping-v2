@@ -35,78 +35,77 @@ $$;
 
 
 -- ---------------------------------------------------------------------
--- 한 글자를 부분만 아는 상태로 그린다
+-- 자모 하나만 드러낸 이름
 -- ---------------------------------------------------------------------
--- 초성과 중성을 둘 다 알면 **음절로 합친다**(ㅎ + ㅕ → 혀). 종성까지 알면 형.
--- 합칠 수 없으면 아는 자모만 나열한다. 이렇게 해야 사는 순서에 따라
--- 글자가 조금씩 또렷해지는 것이 눈에 보인다.
-CREATE OR REPLACE FUNCTION public.hangul_partial(
-    p_char    text,
-    p_lead    boolean,      -- 초성을 샀는가
-    p_vowel   boolean,
-    p_tail    boolean
-)
+-- 힌트 하나가 **글자 하나의 자모 하나**를 연다. 나머지는 전부 ○ 다.
+-- 세 힌트(초·중·종성)는 서로 다른 글자를 가리키므로 합치지 않고 따로 그린다.
+--
+--     mask_jamo('김형민', 1, 'lead')   →  ○ㅎ○
+--     mask_jamo('김형민', 2, 'vowel')  →  ○○ㅣ
+--     mask_jamo('김형민', 0, 'tail')   →  ㅁ○○
+CREATE OR REPLACE FUNCTION public.jamo_of(p_char text, p_part text)
 RETURNS text
 LANGUAGE plpgsql IMMUTABLE AS $$
-DECLARE
-    v_code int;
-    v_l int; v_v int; v_t int;
+DECLARE v_code int;
 BEGIN
     IF p_char IS NULL OR p_char = '' THEN
-        RETURN '○';
+        RETURN NULL;
     END IF;
-
-    v_code := ascii(p_char) - 44032;          -- 0xAC00
-    -- 한글 음절이 아니면(영문·숫자·기호) 자모가 없다. 산 것이 하나라도
-    -- 있으면 글자를 그대로 보여준다 — 가릴 자모가 애초에 없기 때문이다.
+    v_code := ascii(p_char) - 44032;              -- 0xAC00
+    -- 한글 음절이 아니면(영문·숫자) 자모가 없다. 글자를 그대로 보여준다 —
+    -- 가릴 자모가 없는데 ○ 로 덮으면 산 사람이 아무것도 못 받는다.
     IF v_code < 0 OR v_code > 11171 THEN
-        RETURN CASE WHEN p_lead OR p_vowel OR p_tail THEN p_char ELSE '○' END;
+        RETURN p_char;
     END IF;
 
-    v_l := v_code / 588;
-    v_v := (v_code % 588) / 28;
-    v_t := v_code % 28;
-
-    IF p_lead AND p_vowel THEN
-        -- 종성을 아직 안 샀으면 받침 없이 합친다(혀). 사면 받침이 붙는다(형).
-        RETURN chr(44032 + (v_l * 21 + v_v) * 28 + CASE WHEN p_tail THEN v_t ELSE 0 END);
-    END IF;
-
-    RETURN coalesce(
-        nullif(concat(
-            CASE WHEN p_lead  THEN public.hangul_lead(v_l)  END,
-            CASE WHEN p_vowel THEN public.hangul_vowel(v_v) END,
-            CASE WHEN p_tail  THEN public.hangul_tail(v_t)  END), ''),
-        '○');
+    RETURN CASE p_part
+        WHEN 'lead'  THEN public.hangul_lead(v_code / 588)
+        WHEN 'vowel' THEN public.hangul_vowel((v_code % 588) / 28)
+        -- 받침이 없는 글자다. 그것도 정보이므로 그렇게 알린다.
+        WHEN 'tail'  THEN coalesce(nullif(public.hangul_tail(v_code % 28), ''), '_')
+    END;
 END;
 $$;
 
-
--- ---------------------------------------------------------------------
--- 이름 전체를 마스킹한다
--- ---------------------------------------------------------------------
--- 힌트가 가리키는 글자만 부분 공개하고 나머지는 ○ 로 덮는다.
---     김형민 · index 1 · 초성만    →  ○ㅎ○
---     김형민 · index 1 · 초성+중성 →  ○혀○
---     김형민 · index 1 · 셋 다      →  ○형○
-CREATE OR REPLACE FUNCTION public.mask_nickname(
-    p_nick  text,
-    p_index int,
-    p_lead  boolean,
-    p_vowel boolean,
-    p_tail  boolean
-)
+CREATE OR REPLACE FUNCTION public.mask_jamo(p_nick text, p_index int, p_part text)
 RETURNS text
 LANGUAGE sql IMMUTABLE AS $$
     SELECT string_agg(
         CASE WHEN i - 1 = p_index
-             THEN public.hangul_partial(substr(p_nick, i, 1), p_lead, p_vowel, p_tail)
+             THEN coalesce(public.jamo_of(substr(p_nick, i, 1), p_part), '○')
              ELSE '○' END, '' ORDER BY i)
       FROM generate_series(1, char_length(coalesce(p_nick, ''))) AS i
 $$;
 
-REVOKE ALL ON FUNCTION public.hangul_lead(int)    FROM public;
-REVOKE ALL ON FUNCTION public.hangul_vowel(int)   FROM public;
-REVOKE ALL ON FUNCTION public.hangul_tail(int)    FROM public;
-REVOKE ALL ON FUNCTION public.hangul_partial(text, boolean, boolean, boolean) FROM public;
-REVOKE ALL ON FUNCTION public.mask_nickname(text, int, boolean, boolean, boolean) FROM public;
+
+-- ---------------------------------------------------------------------
+-- 어느 글자를 뽑을까
+-- ---------------------------------------------------------------------
+-- 아무 글자나 뽑으면 종성 힌트가 "받침 없음"만 돌려주는 일이 잦다.
+-- 20하트를 받고 파는 정보이므로 **줄 것이 있는 글자를 먼저** 고른다.
+-- 전부 받침이 없으면 그냥 무작위로 고른다 — 그때는 "받침이 없다"가 진짜 정보다.
+CREATE OR REPLACE FUNCTION public.pick_hint_char(p_nick text, p_part text)
+RETURNS smallint
+LANGUAGE sql VOLATILE AS $$
+    WITH scored AS (
+        SELECT i - 1 AS idx,
+               (p_part <> 'tail'
+                OR public.jamo_of(substr(p_nick, i, 1), 'tail') <> '_') AS useful
+          FROM generate_series(1, char_length(coalesce(p_nick, ''))) AS i
+    )
+    SELECT coalesce(
+        (SELECT idx FROM scored WHERE useful ORDER BY random() LIMIT 1),
+        (SELECT idx FROM scored ORDER BY random() LIMIT 1),
+        0)::smallint
+$$;
+
+REVOKE ALL ON FUNCTION public.hangul_lead(int)  FROM public;
+REVOKE ALL ON FUNCTION public.hangul_vowel(int) FROM public;
+REVOKE ALL ON FUNCTION public.hangul_tail(int)  FROM public;
+REVOKE ALL ON FUNCTION public.jamo_of(text, text)        FROM public;
+REVOKE ALL ON FUNCTION public.mask_jamo(text, int, text) FROM public;
+REVOKE ALL ON FUNCTION public.pick_hint_char(text, text) FROM public;
+
+-- 006 시절의 "한 글자를 조금씩 완성" 함수들. 쓰는 곳이 없다.
+DROP FUNCTION IF EXISTS public.mask_nickname(text, int, boolean, boolean, boolean);
+DROP FUNCTION IF EXISTS public.hangul_partial(text, boolean, boolean, boolean);

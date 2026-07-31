@@ -6,9 +6,13 @@
 --   기본 5종 · 각 20하트 · 아무 순서로나
 --     GENDER   성별   (광고 30초로도 열 수 있다. 하루 한 번)
 --     INITIAL  초성 ┐
---     MEDIAL   중성 ├ 같은 한 글자를 가리킨다. 셋을 다 사면 글자가 완성된다
+--     MEDIAL   중성 ├ **각자 다른 글자**를 무작위로 가리킨다. 합치지 않는다
 --     FINAL    종성 ┘
 --     CLASS    반
+--
+--     초성  ○ㅎ○
+--     중성  ○○ㅣ      ← 셋이 서로 다른 자리를 가리킨다
+--     종성  ㅁ○○
 --
 --   FULL_NAME  이름 공개 · 100하트 · **기본 5종 중 3개 이상**을 연 뒤에만
 --
@@ -37,12 +41,12 @@ WITH (security_invoker = false) AS
 WITH bought AS (
     SELECT h.vote_received_id,
            bool_or(h.hint_type = 'GENDER')    AS has_gender,
-           bool_or(h.hint_type = 'INITIAL')   AS has_lead,
-           bool_or(h.hint_type = 'MEDIAL')    AS has_vowel,
-           bool_or(h.hint_type = 'FINAL')     AS has_tail,
            bool_or(h.hint_type = 'CLASS')     AS has_class,
            bool_or(h.hint_type = 'FULL_NAME') AS has_name,
-           count(*) FILTER (WHERE h.hint_type <> 'FULL_NAME') AS basic_count
+           max(h.char_index) FILTER (WHERE h.hint_type = 'INITIAL') AS lead_idx,
+           max(h.char_index) FILTER (WHERE h.hint_type = 'MEDIAL')  AS vowel_idx,
+           max(h.char_index) FILTER (WHERE h.hint_type = 'FINAL')   AS tail_idx,
+           count(*) FILTER (WHERE h.hint_type <> 'FULL_NAME')       AS basic_count
       FROM public.hint_purchase h
      GROUP BY h.vote_received_id
 )
@@ -56,27 +60,28 @@ SELECT
     r.created_at,
 
     coalesce(b.has_gender, false)             AS has_gender,
-    coalesce(b.has_lead,   false)             AS has_lead,
-    coalesce(b.has_vowel,  false)             AS has_vowel,
-    coalesce(b.has_tail,   false)             AS has_tail,
+    (b.lead_idx  IS NOT NULL)                 AS has_lead,
+    (b.vowel_idx IS NOT NULL)                 AS has_vowel,
+    (b.tail_idx  IS NOT NULL)                 AS has_tail,
     coalesce(b.has_class,  false)             AS has_class,
     coalesce(b.has_name,   false)             AS has_name,
     coalesce(b.basic_count, 0)::int           AS basic_count,
     (coalesce(b.basic_count, 0) >= public.hint_unlock_min()) AS can_unlock_name,
+    char_length(v.nickname)                   AS name_length,
 
     -- 산 것만 값이 나간다. 안 산 것은 NULL 이다.
-    CASE WHEN b.has_gender THEN v.gender END  AS voter_gender,
-    CASE WHEN b.has_class  THEN g.grade    END AS voter_grade,
+    CASE WHEN b.has_gender THEN v.gender END   AS voter_gender,
+    CASE WHEN b.has_class  THEN g.grade     END AS voter_grade,
     CASE WHEN b.has_class  THEN g.class_num END AS voter_class_num,
-    CASE WHEN b.has_name   THEN v.nickname END AS voter_nickname,
+    CASE WHEN b.has_name   THEN v.nickname  END AS voter_nickname,
 
-    -- 이름 마스킹. 이름을 샀으면 그대로, 아니면 산 자모만 드러난다.
-    CASE WHEN b.has_name THEN v.nickname
-         ELSE public.mask_nickname(v.nickname, r.hint_char_index,
-                                   coalesce(b.has_lead, false),
-                                   coalesce(b.has_vowel, false),
-                                   coalesce(b.has_tail, false))
-    END                                       AS voter_name_masked,
+    -- 자모 힌트 셋. 서로 다른 자리를 가리키므로 각각 따로 그린다.
+    CASE WHEN b.lead_idx  IS NOT NULL
+         THEN public.mask_jamo(v.nickname, b.lead_idx,  'lead')  END AS lead_hint,
+    CASE WHEN b.vowel_idx IS NOT NULL
+         THEN public.mask_jamo(v.nickname, b.vowel_idx, 'vowel') END AS vowel_hint,
+    CASE WHEN b.tail_idx  IS NOT NULL
+         THEN public.mask_jamo(v.nickname, b.tail_idx,  'tail')  END AS tail_hint,
 
     -- ⚠️ voter_id 는 이름을 산 뒤에만 나간다. 이게 유료 정보의 핵심이다.
     CASE WHEN b.has_name THEN r.voter_id END  AS voter_id
@@ -110,6 +115,7 @@ DECLARE
     v_order   int;
     v_after   bigint;
     v_hint    bigint;
+    v_char    smallint;
 BEGIN
     IF v_me IS NULL THEN
         RAISE EXCEPTION '먼저 프로필을 만들어 주세요' USING ERRCODE = '28000';
@@ -164,21 +170,23 @@ BEGIN
         END IF;
     END IF;
 
-    -- 자모 힌트를 처음 살 때 어느 글자를 가리킬지 정한다. 한 번 정하면
-    -- 바꾸지 않는다 — 닉네임이 바뀌어도 이미 산 힌트가 흔들리면 안 된다.
+    -- 자모 힌트는 **살 때마다 글자를 따로 뽑는다.** 초성·중성·종성이 같은
+    -- 글자를 가리키면 세 번을 사도 한 글자짜리 정보가 된다.
+    -- 뽑은 자리는 이 구매 행에 남는다 — 닉네임이 바뀌어도(W11) 흔들리지 않게.
     IF p_hint_type IN ('INITIAL', 'MEDIAL', 'FINAL') THEN
-        UPDATE public.vote_received
-           SET hint_char_index = floor(random() * greatest(char_length(v_nick), 1))::smallint
-         WHERE id = p_received_id AND hint_char_index IS NULL;
+        v_char := public.pick_hint_char(v_nick, CASE p_hint_type
+            WHEN 'INITIAL' THEN 'lead' WHEN 'MEDIAL' THEN 'vowel' ELSE 'tail' END);
     END IF;
 
     SELECT count(*) + 1 INTO v_order FROM public.hint_purchase
      WHERE vote_received_id = p_received_id;
 
     INSERT INTO public.hint_purchase
-        (vote_received_id, user_id, hint_type, step, heart_cost, ad_impression_id)
+        (vote_received_id, user_id, hint_type, step, heart_cost,
+         ad_impression_id, char_index)
     VALUES
-        (p_received_id, v_me, p_hint_type, v_order, v_cost, p_ad_impression_id)
+        (p_received_id, v_me, p_hint_type, v_order, v_cost,
+         p_ad_impression_id, v_char)
     RETURNING id INTO v_hint;
 
     -- 하트를 쓴 경우에만 잔액과 원장을 건드린다.

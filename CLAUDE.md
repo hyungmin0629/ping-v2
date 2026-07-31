@@ -95,7 +95,7 @@ A 갈래(로컬 합성 데이터)와 계정이 필요한 B 갈래를 나눠 적�
 | W12 계정 삭제·뒤로가기 | 탈퇴(사유 기록·행 보존) + 휴대폰 뒤로가기 |
 | W13 하트 충전 | **결제 없는 스텁.** 하루 한 번 제한 |
 | W14 선택형 힌트 (DB) | 순차 4단계 → **골라 사는 5+1**. 각 20하트, 이름 100하트.
-  초·중·종성은 같은 글자를 가리킨다(○ㅎ○ → ○혀○ → ○형○). **화면은 남음** |
+  초·중·종성은 **각자 다른 글자**를 연다(초성 ○ㅎ○ / 중성 ○○ㅣ / 종성 ㅁ○○). **화면은 남음** |
 
 ## 스크립트
 
@@ -104,7 +104,7 @@ A 갈래(로컬 합성 데이터)와 계정이 필요한 B 갈래를 나눠 적�
 | `python db/apply.py --target supabase` | DDL + 마이그레이션 적용. **확인 절차가 있다**(`--yes` 로 생략) |
 | `python db/run_sql.py <파일>` | SQL 파일 하나를 Supabase 에 적용 |
 | `python db/erd.py` | 살아 있는 스키마에서 ERD 를 뽑아 `docs/erd.md`·`erd.json` 갱신 |
-| `python db/rls/verify.py` | **침투·동작 시험 160항목. 배포 전 반드시 통과** |
+| `python db/rls/verify.py` | **침투·동작 시험 162항목. 배포 전 반드시 통과** |
 | `python db/neis_schools.py --schools` | 전국 중·고 목록 |
 | `python db/neis_schools.py --classes <코드> [--into <조직>]` | 학급 |
 | `python db/neis_meals.py --school <코드>` | 급식 |

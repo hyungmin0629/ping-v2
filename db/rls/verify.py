@@ -843,7 +843,9 @@ def main() -> int:
                 hcheck("아무것도 안 샀으면 전부 가려짐",
                        (view("voter_gender"), view("voter_id"), view("voter_grade")) ==
                        (None, None, None), "성별·id·반 모두 NULL")
-                hcheck("이름은 ○ 로만 보임", view("voter_name_masked") == "○○○", "○○○")
+                hcheck("안 산 자모는 아예 안 나감",
+                       (view("lead_hint"), view("vowel_hint"), view("tail_hint")) ==
+                       (None, None, None), "셋 다 NULL")
 
                 # 순서 없이 아무거나
                 hcheck("성별부터 살 수 있음",
@@ -865,14 +867,18 @@ def main() -> int:
 
                 hcheck("초성을 사면 한 글자가 드러남",
                        rpc(cur, B_AUTH, "SELECT buy_hint(%s,'INITIAL')", (recv,)) == "OK", "OK")
-                masked = view("voter_name_masked")
-                hcheck("초성만 산 상태의 표시", masked != "○○○" and len(masked) == 3, masked)
+                lead = view("lead_hint")
+                hcheck("초성 힌트가 한 자리만 연다",
+                       lead is not None and len(lead) == 3 and lead.count("○") == 2, lead)
+                hcheck("초성을 샀어도 중성·종성은 닫혀 있음",
+                       (view("vowel_hint"), view("tail_hint")) == (None, None),
+                       "자모는 따로 산다")
 
                 hcheck("3개가 되면 이름이 열림", view("can_unlock_name") is True, "can_unlock_name")
                 hcheck("이름을 살 수 있음",
                        rpc(cur, B_AUTH, "SELECT buy_hint(%s,'FULL_NAME')", (recv,)) == "OK", "OK")
                 hcheck("이름과 id 가 나옴",
-                       view("voter_name_masked") == "김형민" and view("voter_id") == A,
+                       view("voter_nickname") == "김형민" and view("voter_id") == A,
                        "김형민")
 
                 cur.execute("SELECT heart_balance FROM app_user WHERE id=%s", (B,))
