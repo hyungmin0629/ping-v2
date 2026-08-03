@@ -55,7 +55,7 @@ API 스펙 등 바깥에서 온 문서.
 
 _아직 없다._
 
-## 결정 <sub>`docs/decisions` · 62</sub>
+## 결정 <sub>`docs/decisions` · 63</sub>
 
 왜 그렇게 했는지. 하나가 한 노드다.
 
@@ -63,6 +63,7 @@ _아직 없다._
 - [[ads-payments-stub|MVP에서 광고와 결제를 스텁으로 처리]] — 스키마(ad_impression, heart_purchase)는 이미 준비돼 있으므로 나중에
 - [[airflow-two-services|Airflow 는 공식 컴포즈 대신 2개 서비스로 줄인다]] — 경험이 없어서 서비스가 8개면 어디가 죽었는지 판단할 수가 없다.
 - [[anonymous-auth-no-pii|개인정보를 일절 받지 않는 익명 인증]] — Supabase Anonymous Sign-in으로 접속 즉시 계정이 생기고, 유저가 입력하는 것은
+- [[app-follows-generator|앱을 생성기에 맞춘다 — 다만 생성 시험이 끝난 뒤 한 번에]] — 생성기를 되돌리지 않는다. 단 지금은 고치지 않는다 — 생성 파라미터가 아직
 - [[appearance-questions-for-report-rate|외모·신체 질문을 연다 — 민감 질문이 없으면 신고율을 못 잰다]] — (migration 012). 합성 데이터에서 전체 질문의 6% 를 외모·스타일 질문으로 만든다.
 - [[backfill-updated-at|대량 적재 후 `updated_at` 을 각 행의 원래 시각으로 되돌린다]] — 두고, 대량 적재 직후 함께 돌린다.
 - [[bigquery-direct-no-gcs|BigQuery 에 GCS 를 경유하지 않고 직접 올린다]] — . GCS_BUCKET 은 비워 둔다.
@@ -122,7 +123,7 @@ _아직 없다._
 - [[withdraw-keeps-rows|계정 삭제는 행을 지우지 않는다]] — 없어 누가 탈퇴했는지 특정할 수 없었다. 사유의 57%가 "기타"였고, 탈퇴 사유를
 - [[withdrawal-user-id|탈퇴 기록에 유저 식별자를 넣는다]] — 누가 탈퇴했는지 특정할 수 없었다. 탈퇴 사유를 유저 속성과 교차분석하는 게 원천 봉쇄됐다.
 
-## 운영 참조 <sub>`docs/ops` · 5</sub>
+## 운영 참조 <sub>`docs/ops` · 6</sub>
 
 실제로 그 작업을 할 때 필요한 값과 절차.
 
@@ -130,6 +131,7 @@ _아직 없다._
 - [[ops-local-testing|혼자 시험하기 (더미 친구)]] — 투표는 친구가 5명이어야 열리고 문항마다 후보가 4명 필요하다. 창을 다섯 개 띄울 수
 - [[ops-rebuild|DB 를 처음부터 다시 만들기]] — python db/apply.py --target supabase          # DDL + migrations
 - [[ops-school-data|조직·학교 데이터]] — 이름은 테스트 조직이지만 급식·시간표·학사일정은 서울고등학교의 공개 데이터를 쓴다.
+- [[ops-synthetic-data|합성 데이터 만들기]] — python generator/generate.py --config synthetic-v2.yaml ...
 - [[ops-webapp|웹앱 (web/)]] — 프로덕션 빌드는 정상이지만 로컬에서 확인이 불가능하므로, 동적 라우트 대신
 
 ## 테이블 <sub>`docs/tables` · 40</sub>
@@ -179,4 +181,4 @@ _아직 없다._
 
 ---
 
-문서 125개 · `python db/wiki_index.py` 로 갱신
+문서 127개 · `python db/wiki_index.py` 로 갱신

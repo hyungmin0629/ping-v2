@@ -173,12 +173,16 @@ docker compose -f airflow/docker-compose.yml up -d    # http://localhost:8080
 BigQuery 에서 지우는 범위가 `WHERE _source = 'local'` 로 걸려 있다.
 
 ```bash
-python generator/generate.py                                    # CSV 생성
-python generator/load.py --truncate                             # 로컬 DB 재적재
+python generator/generate.py --config synthetic-v2.yaml   --users 500 --months 1 --schools 6 --out data/sample-1m       # CSV 생성
+python generator/load.py --in data/sample-1m --truncate         # 로컬 DB 재적재
                                                                 #  (95·96 은 자동 실행)
 python pipeline/extract_load.py --source local --full-refresh   # BigQuery 재적재
 python pipeline/verify_load.py  --source local                  # 행 수 대조
 ```
+
+⚠️ **`--config synthetic-v2.yaml` 을 빼면 옛 분포가 돈다** — 26표만 만들어지고
+힌트 요금이 v1 구조로 들어간다. 오류가 안 나서 더 위험하다.
+절차와 확인할 지표는 [[ops-synthetic-data]].
 
 `--full-refresh` 는 워터마크를 무시하고 `_source='local'` 행을 지운 뒤 새로 넣는다.
 행 수가 줄어도, 컬럼이 늘어도 따라간다 — 원천에 새 컬럼이 생기면 BigQuery
@@ -192,6 +196,28 @@ python pipeline/verify_load.py  --source local                  # 행 수 대조
 ---
 
 ## 진행 상태
+
+### 지금 하고 있는 것 — 합성 데이터 v2 (2026-08-03)
+
+40표 342컬럼을 전부 채우는 합성 데이터를 만드는 중이다. 절차는
+[[ops-synthetic-data]], 팀이 정한 값은 [[synthetic-v2-decisions]].
+
+| | 상태 |
+|---|---|
+| 생성기 | **40표 전부 생성** · 342컬럼 중 338개 채움 · 정합성 17종 통과 |
+| 유저 모델 | **페르소나 6유형** — 다만 유형이 또렷하게 갈리지 않게 흐렸다 |
+| 규모 단계 | 1단계(500명·1개월) 통과 → **2단계(2,000명·3개월) 차례** |
+| 판본 기록 | `docs/EDA-sample-1m-v{1,2,3}.pdf` — 같은 항목으로 세 번 뽑아 비교 |
+
+**남은 것**
+
+- 3국면 성장 곡선 — 1개월 샘플로는 확인 불가. 12개월 생성 때 검증
+- 세션 중도 이탈 — 완료율 98.6%로 목표(78%)에 못 미친다
+- ⚠️ **앱과 어긋난 곳 2개** — 투표 보상, 일일 적립 상한.
+  **앱을 생성기에 맞추기로 했으나 생성 시험이 끝난 뒤 한 번에 한다.**
+  목록은 [[app-follows-generator]]
+
+---
 
 두 트랙으로 나뉘어 있고, **웹앱이 우선**이다. 파이프라인은 실유저 데이터가 생긴 뒤 잇는다.
 왜 이 순서인지는 [DECISIONS.md](DECISIONS.md)의 "웹앱을 최우선 트랙으로 재편" 참조.
@@ -226,8 +252,9 @@ python pipeline/verify_load.py  --source local                  # 행 수 대조
 | 단계 | 내용 | 상태 |
 |---|---|---|
 | P0 | 스키마·DDL | **완료** |
-| P1 | 합성 데이터 생성 | 786만 행으로 제약 검증 완료. ⚠️ **스키마가 바뀌어 전부 폐기** — 재생성 대기 |
-| P2 | Postgres 적재 | 절차 검증 완료(89초). ⚠️ **적재할 합성 데이터가 지금 없다** |
+| P1 | 합성 데이터 생성 | **v2 진행 중** — 40표 전부 생성 · 342컬럼 중 338개 채움 · 페르소나 도입.
+  1단계(500명·1개월) 통과. **2·3단계 남음.** [[ops-synthetic-data]] |
+| P2 | Postgres 적재 | **완료** — 순서 정의 40표. 95·96 자동 실행 |
 | P3 | NEIS 수집 | 학교·학급·급식·**학사일정 완료** · DAG 화는 남음 |
 | P4 | BigQuery 적재 DAG | **완료** — 40테이블 · 행 수 대조 통과.
   한때 789만 행이 흘렀으나 **합성을 지워 지금은 실유저 35,951행** |

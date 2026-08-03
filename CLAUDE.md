@@ -370,6 +370,10 @@ docker run -d --name pgtest -e POSTGRES_PASSWORD=test -e POSTGRES_DB=pingv2 -p 5
 | 진행 방식 | **500명 → 2,000명 → 최종**의 3단계. 전체는 한 번에 1~2시간이라 |
 | 정답지 | `data/personas.json` — 페르소나 라벨. **분석자에게 주지 않는다** |
 
+절차와 확인할 지표는 [[ops-synthetic-data]].
+⚠️ **앱과 어긋난 곳이 2개 있다**(투표 보상 · 일일 적립 상한). 앱을 생성기에
+맞추기로 했으나 **생성 시험이 끝난 뒤 한 번에** 한다 — [[app-follows-generator]].
+
 주요 결정은 [[user-personas]] · [[heart-economy-rebalance]] ·
 [[activity-by-retention-tier]] · [[no-schema-change-for-synthetic]] ·
 [[row-guardrail-measured]] 에 있다. 판본별 실측은 `docs/EDA-sample-1m-v{1,2,3}.pdf`.
