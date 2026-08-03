@@ -235,6 +235,40 @@ def main() -> int:
     if len(problems) == before:
         print("  깨끗함")
 
+    # ── 8. 결정 없이 코드만 쌓이지 않았는가 ─────────────────────
+    # 규약은 "설계 결정이 내려지면 docs/decisions/ 에 노드를 만든다"인데,
+    # 지키는지 보는 장치가 없었다. 실제로 2026-08-03 합성 데이터 작업에서
+    # **아홉 번 연속으로 건너뛰었다** — 근거가 커밋 메시지와 설정 주석에만
+    # 흩어져 DECISIONS 색인으로는 찾을 수 없었다. query 연산이 그 폴더를
+    # grep 하므로 사실상 없는 것과 같다.
+    #
+    # ⚠️ 실패(★)로 두지 않는다. "결정이 정말 없었다"와 "적기를 잊었다"는
+    #    기계가 구별하지 못한다. 실패로 두면 늘 빨간불이 되고, 그러면 검사
+    #    자체를 안 보게 된다. 숫자·이름 검사와 같은 이유다.
+    print("8. 결정 없이 코드만 쌓이지 않았는가")
+    LIMIT = 8
+    WATCH = ["db/", "generator/", "pipeline/", "web/"]
+    try:
+        last = subprocess.run(
+            ["git", "log", "-1", "--diff-filter=A", "--format=%H", "--", "docs/decisions/"],
+            cwd=ROOT, capture_output=True, text=True, encoding="utf-8").stdout.strip()
+        rng = f"{last}..HEAD" if last else "HEAD"
+        out = subprocess.run(
+            ["git", "log", rng, "--format=%h %s", "--"] + WATCH,
+            cwd=ROOT, capture_output=True, text=True, encoding="utf-8").stdout.strip()
+        commits = [l for l in out.splitlines() if l.strip()]
+        if len(commits) > LIMIT:
+            note(f"마지막 결정 노드 이후 코드 커밋 {len(commits)}개 "
+                 f"(기준 {LIMIT}) — 적어야 할 결정이 있었는지 본다")
+            for c in commits[:5]:
+                print(f"      {c}")
+            if len(commits) > 5:
+                print(f"      … 외 {len(commits) - 5}개")
+        else:
+            print(f"  깨끗함 (마지막 결정 이후 코드 커밋 {len(commits)}개)")
+    except Exception as e:                      # git 이 없거나 저장소가 아닐 때
+        print(f"  건너뜀 — git 을 읽지 못함 ({e})")
+
     print()
     print("=" * 60)
     if notes:
