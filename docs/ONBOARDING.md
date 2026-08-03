@@ -13,7 +13,7 @@
 | | A. 로컬만 | B. 전체 |
 |---|---|---|
 | 필요한 계정 | **없음** | Supabase + Google Cloud (본인 것) |
-| 할 수 있는 것 | 스키마 · 합성 786만 행 · 정합성 검사 | 위 + 웹앱 + BigQuery 적재 + Airflow |
+| 할 수 있는 것 | 스키마 · 합성 데이터 40표 · 정합성 검사 | 위 + 웹앱 + BigQuery 적재 + Airflow |
 | 걸리는 시간 | 20분 | 1~2시간 |
 
 **처음이면 A 만 하세요.** 이 프로젝트의 핵심(스키마 설계와 데이터 품질)은
@@ -66,7 +66,7 @@ docker run -d --name pgtest -e POSTGRES_PASSWORD=test -e POSTGRES_DB=pingv2 -p 5
 ```
 
 > `--shm-size=1g` 를 빠뜨리지 마세요. 도커 기본값은 64MB 인데, 그 상태로
-> 786만 행에 정합성 검사를 돌리면 `No space left on device` 로 죽습니다.
+> 큰 데이터(수백만 행)에 정합성 검사를 돌리면 `No space left on device` 로 죽습니다.
 > 디스크가 아니라 **공유메모리** 부족입니다. 실제로 겪은 문제입니다.
 
 **확인**
@@ -105,33 +105,35 @@ python db/apply.py --target local
 
 ## A-5. 합성 데이터 만들기 + 넣기
 
-> ⚠️ **먼저 알아둘 것 — 생성기가 지금 스키마를 따라오지 못했습니다.**
+> ⚠️ **설정 파일이 두 개입니다. 새로 만들 때는 `synthetic-v2.yaml` 을 쓰세요.**
 >
-> 돌아가긴 합니다. 그런데 **오류 없이 옛 서비스를 그립니다.** 힌트 요금이
-> 대표적입니다 — 생성기는 누진 200→300→500→1000 으로 만드는데, 지금 서비스는
-> 골라 사는 20 × 5종 + 이름 100 입니다. **10배 차이인데 스키마가 맞아서 그냥
-> 들어갑니다.** 이 데이터로 하트 경제를 분석하면 답이 전부 틀립니다.
+> | | `distribution.yaml` (옛것) | **`synthetic-v2.yaml`** (지금) |
+> |---|---|---|
+> | 만드는 표 | 26개 | **40개 전부** |
+> | 힌트 요금 | 누진 200→300→500→1000 (v1 구조) | **20 × 5종 + 이름 100** (W14) |
+> | 유저 성향 | 없음 — 행동이 전부 독립 추첨 | **페르소나 6유형** |
+> | 활동 강도 | 기간과 무관 | **잔존 구간별** |
 >
-> 그리고 40개 표 중 **14개는 생성기가 아예 안 만듭니다**(게시판 4 · 신고제재차단 3 ·
-> 추천거절 1 · 학교정보 6).
->
-> **스키마가 실제로 어떻게 생겼는지 보는 용도로는 충분합니다.** 분석에 쓰려면
-> 생성기를 먼저 고쳐야 합니다. 저장소의 합성 데이터가 2026-07-31 에 전부 폐기된
-> 것도 같은 이유입니다([DECISIONS.md](../DECISIONS.md)).
+> 옛 파일을 그대로 쓰면 **오류 없이 옛 서비스를 그립니다.** 스키마가 맞아서
+> 그냥 들어가고, 그 데이터로 하트 경제를 분석하면 답이 전부 틀립니다.
+> 근거는 [[user-personas]] · [[heart-economy-rebalance]] 참조.
 
 ```bash
-python generator/generate.py
+python generator/generate.py --config synthetic-v2.yaml --users 500 --months 1 --schools 6
 ```
 
-유저 5,000명 / 3개월치를 만듭니다. **25초쯤** 걸리고 `data/synthetic/` 에
-CSV 가 쌓입니다. 작게 시험하려면 `--users 500 --months 1` 을 붙이세요.
+작게 시험하는 명령입니다. **10초쯤** 걸리고 `data/synthetic/` 에 CSV 가 쌓입니다
+(약 117만 행). `--out data/sample-1m` 으로 다른 폴더에 낼 수 있습니다.
+
+전체 규모는 `--users 20000 --months 12 --schools 50` 이고 **1~2시간** 걸립니다
+(생성 12분 + 적재). 처음에는 작게 돌려 보세요.
 
 규모와 분포는 두 군데서 정해집니다.
 
 | 무엇 | 어디 |
 |---|---|
-| 규모 (인원·기간·학교 수·시드) | `.env` 의 `SYNTHETIC_*`, 또는 명령행 옵션 |
-| 분포 (하트 금액, 투표 빈도 등) | `generator/config/distribution.yaml` |
+| 규모 (인원·기간·학교 수·시드) | 명령행 옵션, 또는 설정 파일의 `scale`·`period` |
+| 분포 (하트·투표 빈도·페르소나 등) | **`generator/config/synthetic-v2.yaml`** |
 
 **시드가 같으면 같은 데이터가 나옵니다**(`SYNTHETIC_SEED`). 재현이 되므로
 "내 쪽에서만 이상하다" 를 가릴 수 있습니다. 분포 값은 구 서비스 실측치에서
@@ -371,7 +373,7 @@ python pipeline/verify_load.py  --source supabase             # 행 수 대조
 ```
 
 합성 데이터도 올리려면 `--source local` 로 한 번 더 돌립니다
-(786만 행이라 **30분쯤** 걸립니다).
+(규모에 따라 다릅니다 — 전체 규모면 **20~40분**).
 
 **확인** — `빠진 행 없음` 이 나오면 성공입니다.
 
@@ -453,7 +455,7 @@ python db/seed_test_friends.py --clean  # 더미 친구만 삭제
 | `docs/tables/` | **표 하나당 한 장** 40개. 컬럼·결정·검사·정책이 모여 있습니다 |
 | `docs/ops/` | 실제 작업할 때 필요한 값과 절차 |
 | `db/rls/` | 보안 정책과 RPC 함수. **`verify.py` 가 침투 시험 201항목** |
-| `generator/` | 합성 데이터 생성. `config/distribution.yaml` 이 분포 파라미터 |
+| `generator/` | 합성 데이터 생성. **`config/synthetic-v2.yaml`** 이 분포 파라미터 |
 | `pipeline/` | Postgres → BigQuery 적재. `tables.yaml` 이 테이블별 적재 방식 |
 | `qa/checks/integrity.sql` | 정합성 17종 |
 | `web/src/` | Next.js 화면. `lib/` 이 Supabase 호출, `components/` 가 화면 |

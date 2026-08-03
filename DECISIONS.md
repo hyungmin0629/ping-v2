@@ -73,6 +73,12 @@ DDL과 스크립트가 진실이다.
 - `2026-07-30` [[board-school-scope|게시판 범위는 학교, 카테고리는 하나]]
 - `2026-07-30` [[report-first-block-later|신고는 게시판과 함께, 차단은 뒤로]]
 
+## 웹앱
+
+- `2026-07-30` [[invite-link-after-deploy|초대 링크는 배포(W7) 이후로 미룬다]]
+- `2026-07-30` [[invite-link-querystring|초대 링크는 동적 라우트 대신 쿼리스트링으로 만든다]]
+- `2026-07-31` [[history-based-navigation|화면 이동을 브라우저 이력에 싣는다]]
+
 ## 학교 정보
 
 - `2026-07-29` [[testers-pick-real-school|NEIS 연동 후 테스터는 실제 학교 중 하나를 고른다]]

@@ -93,10 +93,10 @@ NULL 로 남는다. 2026-07-30 에 `vote_item.padded_count` 가 합성 데이터
 ### 4.1 사전 준비 (팀원 각자, 약 20분)
 
 저장소를 클론하고 [[ONBOARDING]] **A 갈래**를 완료한다. 클라우드 계정 없이
-로컬에 40테이블과 합성 786만 행을 구성하고 정합성 검사 17종을 실행한다.
-⚠️ 2026-07-31 기준 **합성 데이터는 존재하지 않는다.** 스키마 점검에서 표 이름과
-구성이 바뀌어 옛 데이터가 낡았기 때문에 전부 지웠다. 생성기는 그대로이므로
-이 단계가 곧 **첫 생성**이 된다 — 팀이 정한 스키마 위에서 처음부터 만든다.
+로컬에 40테이블을 구성하고 합성 데이터를 만들어 정합성 검사 17종을 실행한다.
+⚠️ **`--config synthetic-v2.yaml` 을 반드시 붙인다.** 빼면 옛 분포가 돌아
+26표만 만들어지고 힌트 요금이 v1 구조(누진 200~1000)로 들어간다.
+처음에는 `--users 500 --months 1 --schools 6` 으로 작게 돌린다(약 10초).
 
 완료하지 못한 인원이 있으면 다음 단계로 진행하지 않는다.
 
@@ -147,7 +147,7 @@ NULL 로 남는다. 2026-07-30 에 `vote_item.padded_count` 가 합성 데이터
 | 테이블 추가 | `pipeline/tables.yaml` 및 `db/erd.py` 의 DOMAINS 동시 갱신 |
 
 **원칙** — 합성 데이터 품질 개선을 위해 운영 스키마를 변경하지 않는다. 분포의
-비현실성은 대부분 `generator/config/distribution.yaml` 의 문제이며 스키마 문제가
+비현실성은 대부분 `generator/config/synthetic-v2.yaml` 의 문제이며 스키마 문제가
 아니다.
 
 스키마 변경을 확정한 경우 [[DECISIONS]] 에 결정·이유·대안·영향을 기록한다.
@@ -155,8 +155,8 @@ NULL 로 남는다. 2026-07-30 에 `vote_item.padded_count` 가 합성 데이터
 ### 4.5 데이터 생성 및 로컬 검증
 
 ```bash
-python generator/generate.py
-python generator/load.py --truncate          # 95·96 자동 실행
+python generator/generate.py --config synthetic-v2.yaml --users 500 --months 1 --schools 6
+python generator/load.py --in data/synthetic --truncate   # 95·96 자동 실행
 docker exec -i pgtest psql -U postgres -d pingv2 \
   -c "SET max_parallel_workers_per_gather = 0;" -f - < qa/checks/integrity.sql
 ```
@@ -180,7 +180,7 @@ raw 계층을 직접 조회할 경우 다음 세 조건이 항상 필요하다. 
 잘못된 결과가 산출된다.
 
 ```sql
-WHERE _source = 'supabase'      -- 누락 시 합성 데이터 5,000명이 혼입
+WHERE _source = 'supabase'      -- 누락 시 합성 데이터 2만 명이 혼입
   AND _deleted_at IS NULL       -- 누락 시 삭제된 계정이 혼입
 -- 조인 시에도 _source 조건 필요 (두 원천의 id 가 중복된다)
 ```

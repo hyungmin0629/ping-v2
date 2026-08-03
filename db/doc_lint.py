@@ -269,6 +269,34 @@ def main() -> int:
     except Exception as e:                      # git 이 없거나 저장소가 아닐 때
         print(f"  건너뜀 — git 을 읽지 못함 ({e})")
 
+    # ── 9. 결정 노드가 색인에서 빠지지 않았는가 ──────────────────
+    # 노드 파일이 있어도 DECISIONS.md 에 줄이 없으면 **사실상 없는 노드**다.
+    # query 연산이 색인을 거쳐 찾기 때문이다. 실제로 `group: 웹앱` 인 노드 3개가
+    # **색인에 그 절 자체가 없어서** 통째로 빠져 있었다(2026-08-03 에 발견).
+    print("9. 결정 노드가 색인에서 빠지지 않았는가")
+    before = len(problems)
+    idx_path = ROOT / "DECISIONS.md"
+    dec_dir = ROOT / "docs" / "decisions"
+    if idx_path.exists() and dec_dir.exists():
+        idx = idx_path.read_text(encoding="utf-8")
+        sections = set(re.findall(r"^## (.+)$", idx, re.M))
+        missing, groups = [], set()
+        for f in sorted(dec_dir.glob("*.md")):
+            body = f.read_text(encoding="utf-8")
+            if f"[[{f.stem}" not in idx:
+                missing.append(f.stem)
+            m = re.search(r"^group:\s*(.+?)\s*$", body, re.M)
+            if m:
+                groups.add(m.group(1))
+        for name in missing:
+            bad(f"{name} 이 DECISIONS.md 색인에 없음 — 노드가 있어도 못 찾는다")
+        # 절이 없는 그룹은 노드가 통째로 빠지는 원인이 된다
+        for g in sorted(groups - sections):
+            if not any(g in s for s in sections):
+                bad(f"group '{g}' 에 해당하는 절이 DECISIONS.md 에 없음")
+    if len(problems) == before:
+        print("  깨끗함")
+
     print()
     print("=" * 60)
     if notes:
