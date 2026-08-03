@@ -51,6 +51,23 @@ LOAD_ORDER = [
     "hint_purchase",
     "heart_purchase",
     "heart_transaction",
+    # 게시판 — post 가 있어야 댓글·좋아요·신고가 걸린다
+    "post",
+    "post_comment",
+    "post_like",
+    "comment_like",
+    # 신고·제재·차단 — report 는 post·comment 를 가리키므로 그 뒤다
+    "report",
+    "sanction",
+    "block_record",
+    "rejected_friend_recommendations",
+    # 학교 정보 — meal_menu_item 은 meal_plan 을, notice_read 는 notice 를 가리킨다
+    "meal_plan",
+    "meal_menu_item",
+    "school_event",
+    "school_notice",
+    "school_notice_read",
+    "timetable",
 ]
 
 
