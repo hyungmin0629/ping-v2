@@ -240,6 +240,16 @@ QUESTION_TEMPLATES = {
         "반려동물과 가장 잘 지낼 것 같은 사람은?", "여행을 제일 좋아할 것 같은 사람은?",
         "카페 투어를 즐길 것 같은 사람은?",
     ],
+    # ⚠️ 민감 카테고리(is_sensitive = true). 2026-08-03 에 켰다 —
+    #    **신고율을 재기 위해서다.** 민감 질문이 하나도 없으면 is_sensitive
+    #    플래그가 아무것도 구분하지 못하고 신고 파이프라인도 검증되지 않는다.
+    #    비하로 읽힐 문장은 넣지 않는다. 칭찬 방향의 외모·스타일 질문만 쓴다.
+    "APPEARANCE": [
+        "스타일이 제일 좋은 사람은?", "패션 감각이 뛰어난 사람은?",
+        "웃는 모습이 제일 예쁜 사람은?", "분위기가 제일 좋은 사람은?",
+        "헤어스타일이 제일 잘 어울리는 사람은?", "목소리가 제일 좋은 사람은?",
+        "교복이 제일 잘 어울리는 사람은?", "첫인상이 제일 좋았던 사람은?",
+    ],
 }
 
 WITHDRAW_TEXTS = [
@@ -742,13 +752,23 @@ class Generator:
         self.admin_ids = [u.id for u in self.users[:5]]
         self.reviewer_ids = self.admin_ids[1:3]
         self.moderator_ids = self.admin_ids[3:5]
-        # 90_seed_master.sql 이 넣는 카테고리 id 순서와 맞춘다
+        # 90_seed_master.sql 이 넣는 카테고리 id 순서와 맞춘다.
+        # APPEARANCE 는 여덟 번째다 — 시드에서도 마지막 줄이다.
         codes = ["PERSONALITY", "RELATIONSHIP", "TALENT", "HUMOR", "SCHOOL_LIFE", "FUTURE", "TASTE"]
         for i, code in enumerate(codes, start=1):
             self.categories[code] = i
+        self.categories["APPEARANCE"] = len(codes) + 1
+
+        # 민감 카테고리는 켤 때만 섞는다(012 에서 실서비스 카테고리를 열었다).
+        # 비율만큼만 넣는다 — 전체에 고루 뿌리면 서비스 성격이 달라진다.
+        pool = [(c, t) for c in codes for t in QUESTION_TEMPLATES[c]]
+        if qc.get("include_appearance"):
+            n_app = max(1, round(len(pool) * qc.get("appearance_ratio", 0.06)))
+            app = QUESTION_TEMPLATES["APPEARANCE"]
+            pool += [("APPEARANCE", app[i % len(app)]) for i in range(n_app)]
+            codes = codes + ["APPEARANCE"]
 
         qid = 0
-        pool = [(c, t) for c in codes for t in QUESTION_TEMPLATES[c]]
         self.rng.shuffle(pool)
         while qid < qc["count"]:
             for code, text in pool:

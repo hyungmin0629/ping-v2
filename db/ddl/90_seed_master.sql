@@ -52,7 +52,7 @@ INSERT INTO question_category (code, name, is_sensitive, sort_order, is_active) 
     ('SCHOOL_LIFE',  '학교생활',  false, 5, true),
     ('FUTURE',       '미래',      false, 6, true),
     ('TASTE',        '취향',      false, 7, true),
-    ('APPEARANCE',   '외모·신체', true,  9, false)
+    ('APPEARANCE',   '외모·신체', true,  9, true)
 ON CONFLICT (code) DO NOTHING;
 
 -- 신고 사유 -----------------------------------------------------------

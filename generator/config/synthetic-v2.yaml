@@ -169,10 +169,10 @@ questions:
   # [Q19 답] 외모·신체 질문도 포함한다 — 신고되는 비율을 보기 위해서다.
   # ⚠️ CLAUDE.md 의 "외모·신체 관련 질문 제외" 원칙을 바꾸는 결정이다.
   #    `question_category.is_sensitive` 로 표시하고 신고율을 따로 센다.
-  # ⚠️ 아직 **생성기가 읽지 않는다.** 값만 있고 동작하지 않는 설정이다.
-  #    켜기 전에 정해야 할 것: APPEARANCE 카테고리는 실서비스에서 is_active=false 다.
-  #    비활성 카테고리에 질문을 만들 것인가, 카테고리를 켤 것인가(= 실서비스 반영).
-  include_appearance: false
+  # ⚠️ 2026-08-03 에 켰다. 카테고리도 함께 열었다(migration 012) —
+  #    **실서비스에도 반영되는 변경이다.** 근거는 신고율 측정이다.
+  #    비하로 읽힐 문장은 넣지 않는다. 칭찬 방향의 외모·스타일 질문만 쓴다.
+  include_appearance: true
   appearance_ratio: 0.06
   sensitive_ratio: 0.18         # 외모 포함으로 12% → 18%
   user_submitted_ratio: 0.15
