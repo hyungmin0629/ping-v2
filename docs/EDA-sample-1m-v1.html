@@ -1,0 +1,238 @@
+<meta charset="utf-8">
+<title>합성 데이터 샘플 EDA — 500명 · 1개월</title>
+<style>
+  @page { size: A4; margin: 18mm 16mm; }
+  * { box-sizing: border-box; }
+  body {
+    font-family: "Malgun Gothic", "맑은 고딕", -apple-system, sans-serif;
+    font-size: 10.5pt; line-height: 1.65; color: #1a1a1a; margin: 0;
+  }
+  h1 { font-size: 20pt; margin: 0 0 4px; letter-spacing: -0.5px; }
+  h2 {
+    font-size: 13.5pt; margin: 26px 0 10px; padding-bottom: 5px;
+    border-bottom: 2px solid #1a1a1a; page-break-after: avoid;
+  }
+  h3 { font-size: 11.5pt; margin: 18px 0 7px; page-break-after: avoid; }
+  p { margin: 7px 0; }
+  .sub { color: #666; font-size: 9.5pt; margin: 0 0 14px; }
+
+  .meta {
+    border: 1px solid #ddd; background: #fafafa; padding: 10px 14px;
+    font-size: 9pt; color: #444; margin-bottom: 22px;
+  }
+  .meta b { color: #1a1a1a; }
+  .meta div { margin: 2px 0; }
+
+  table { border-collapse: collapse; width: 100%; margin: 10px 0 16px; font-size: 9.5pt; }
+  th, td { border: 1px solid #d8d8d8; padding: 5px 9px; text-align: left; vertical-align: top; }
+  th { background: #f2f2f2; font-weight: 600; }
+  td.n, th.n { text-align: right; font-variant-numeric: tabular-nums; }
+  tr { page-break-inside: avoid; }
+
+  .bad  { color: #b3261e; font-weight: 600; }
+  .good { color: #1b6b3a; font-weight: 600; }
+  .dim  { color: #777; }
+
+  .box {
+    border-left: 4px solid #b3261e; background: #fdf3f2;
+    padding: 10px 14px; margin: 12px 0; page-break-inside: avoid;
+  }
+  .box.ok { border-left-color: #1b6b3a; background: #f1f8f3; }
+  .box.note { border-left-color: #8a6d1f; background: #fdfaef; }
+  .box h4 { margin: 0 0 5px; font-size: 10.5pt; }
+  .box p { margin: 5px 0; }
+
+  ol, ul { margin: 7px 0 7px 20px; padding: 0; }
+  li { margin: 4px 0; }
+  code {
+    font-family: Consolas, monospace; font-size: 9pt;
+    background: #f0f0f0; padding: 1px 4px; border-radius: 2px;
+  }
+  .pb { page-break-before: always; }
+  footer { margin-top: 28px; padding-top: 8px; border-top: 1px solid #ddd; font-size: 8.5pt; color: #777; }
+</style>
+
+<h1>합성 데이터 샘플 EDA</h1>
+<p class="sub">유저 500명 · 1개월 · 학교 6곳 — 생성기 검증용 샘플</p>
+
+<div class="meta">
+  <div><b>생성 명령</b> <code>python generator/generate.py --config synthetic-v2.yaml --users 500 --months 1 --schools 6</code></div>
+  <div><b>적재</b> 로컬 Postgres <code>pgtest</code> (포트 5433) · 총 757,699 행</div>
+  <div><b>설정</b> <code>generator/config/synthetic-v2.yaml</code> — 팀 결정 Q1~Q30 반영본</div>
+  <div><b>날짜</b> 2026-08-03</div>
+</div>
+
+<div class="box ok">
+  <h4>한 줄 결론</h4>
+  <p><b>구조는 맞고, 볼륨과 분포가 틀렸다.</b> 40개 표가 서로 제대로 연결돼 있고
+  정합성 검사 17종이 전부 통과한다. 문제는 전부 <i>“몇 번 일어나는가”</i> 쪽에 몰려 있다.</p>
+</div>
+
+<h2>1. 규모</h2>
+
+<table>
+  <tr><th style="width:38%">항목</th><th>값</th><th class="dim">비고</th></tr>
+  <tr><td>유저</td><td class="n">500명</td><td class="dim">여 58.0% / 남 42.0% (목표 58.6%)</td></tr>
+  <tr><td>학교 / 학급</td><td class="n">6개교 / 81학급</td><td class="dim">샘플 축소 규모</td></tr>
+  <tr><td>지역</td><td class="n">40개 시군구</td><td class="dim">10개 시·도</td></tr>
+  <tr><td>기간</td><td>2025-07-28 ~ 2025-08-26</td><td class="dim">29일. Q3 규칙(웹앱 로그 1년 전) 시작점</td></tr>
+  <tr><td>학교당 평균 유저</td><td class="n">166.7명</td><td class="dim"></td></tr>
+  <tr><td>학급당 평균 유저</td><td class="n">17.9명</td><td class="good">목표 14~22 안에 들어옴</td></tr>
+  <tr><td>총 행수</td><td class="n">757,699</td><td class="dim">40개 표 전부 1행 이상</td></tr>
+</table>
+
+<h2>2. 전환 퍼널</h2>
+
+<table>
+  <tr><th style="width:34%">단계</th><th class="n">인원</th><th class="n">전체 대비</th><th>판정</th></tr>
+  <tr><td>1. 가입</td><td class="n">500</td><td class="n">100.0%</td><td class="dim">—</td></tr>
+  <tr><td>2. 세션 1회 이상</td><td class="n">346</td><td class="n">69.2%</td><td class="dim">리텐션 설정과 부합</td></tr>
+  <tr><td>3. 친구 5명 해금</td><td class="n">500</td><td class="n bad">100.0%</td><td class="bad">문제 ①</td></tr>
+  <tr><td>4. 투표 1회 이상</td><td class="n">334</td><td class="n">66.8%</td><td class="dim">—</td></tr>
+  <tr><td>5. 힌트 구매</td><td class="n">499</td><td class="n bad">99.8%</td><td class="bad">문제 ②의 결과</td></tr>
+  <tr><td>6. 결제</td><td class="n">75</td><td class="n">15.0%</td><td class="note">목표 18%. 다만 문제 ③ 참조</td></tr>
+</table>
+
+<p>3단계와 5단계가 100%에 붙어 있다. <b>퍼널이 퍼널 모양이 아니다</b> — 걸러지는 곳이 없다는 뜻이다.</p>
+
+<h2 class="pb">3. 깨진 것 네 가지</h2>
+
+<h3>① 고립 유저가 0명 — 친구 게이트 퍼널이 통째로 없다</h3>
+
+<table>
+  <tr><th style="width:38%">친구 수</th><th class="n">값</th></tr>
+  <tr><td>최소</td><td class="n bad">11명</td></tr>
+  <tr><td>중앙값</td><td class="n">36명</td></tr>
+  <tr><td>평균</td><td class="n">35.9명</td></tr>
+  <tr><td>최대</td><td class="n">65명</td></tr>
+  <tr><td>5명 미만 (게이트 미달)</td><td class="n bad">0명</td></tr>
+</table>
+
+<p>설정에 <code>locked_user_ratio: 0.08</code>이 있고 코드도 그 값을 읽는다.
+그런데 <b>친구 관계가 양방향</b>이라 “친구를 2명만 만들 사람”으로 정해도
+<b>남들이 그를 골라</b> 친구가 계속 붙는다. 목표치는 본인이 먼저 거는 횟수만 제한한다.</p>
+
+<div class="box">
+  <h4>왜 중요한가</h4>
+  <p>Q31에서 정한 핵심 분석 질문 다섯 중 하나가
+  <b>“친구 수가 몇 명일 때 서비스가 살아나는가”</b>다.
+  게이트를 못 넘은 사람이 0명이면 <b>그 질문에 답할 데이터가 아예 없다.</b></p>
+</div>
+
+<h3>② 활동량이 약 12배 과다 — 세션 수가 기간과 무관하다</h3>
+
+<table>
+  <tr><th style="width:38%">유저 1인당 (29일간)</th><th class="n">실제</th><th class="n">환산</th></tr>
+  <tr><td>투표 문항</td><td class="n bad">224.6개</td><td class="n">하루 7.5개</td></tr>
+  <tr><td>받은 투표</td><td class="n bad">144.5개</td><td class="n">하루 5.0개</td></tr>
+  <tr><td>투표 세션</td><td class="n">22.5회</td><td class="n">이틀에 1.5회</td></tr>
+  <tr><td>하트 거래</td><td class="n bad">342.5건</td><td class="n">하루 11.8건</td></tr>
+</table>
+
+<p><code>sessions_per_active_user: [1, 40]</code>이 <b>전체 기간에 대해</b> 적용된다.
+12개월이든 1개월이든 똑같이 최대 40세션이다. 그래서 1개월 샘플이
+<b>12개월치 활동을 압축해 담고 있다.</b></p>
+
+<p>이 때문에 <b>힌트 구매자가 99.8%</b>로 나온다 — 받은 투표가 145개나 되니
+그중 하나라도 힌트를 살 확률이 사실상 1이 된다.</p>
+
+<h3>③ 하트가 남아돈다 — 결제할 이유가 데이터에 없다</h3>
+
+<table>
+  <tr><th style="width:38%">구분</th><th class="n">하트</th><th class="dim">비고</th></tr>
+  <tr><td>적립 총합</td><td class="n">2,243,809</td><td class="dim">VOTE_REWARD 가 144만</td></tr>
+  <tr><td>소비 총합</td><td class="n">287,420</td><td class="bad">적립의 12.8%</td></tr>
+  <tr><td>기말 잔액 합</td><td class="n">1,956,389</td><td class="dim"></td></tr>
+  <tr><td>잔액 중앙값</td><td class="n bad">2,377</td><td class="dim">힌트 118개를 살 수 있는 액수</td></tr>
+  <tr><td>잔액 100 미만 유저</td><td class="n bad">0명</td><td class="bad">Q25 목표 60%</td></tr>
+</table>
+
+<p>투표 보상이 144만 하트를 뿌리는데(문제 ②의 직접 결과) 힌트값은 20하트라 소비가 못 따라간다.
+이 상태에서는 <b>결제 전환 15%가 데이터로 설명되지 않는다</b> — 하트가 넘치는데 왜 사는지 근거가 없다.</p>
+
+<h3>④ 인기도 멱법칙이 없다</h3>
+
+<p>받은 투표 기준 <b>상위 10%가 전체 지목의 18.4%</b>를 가져간다.
+Q21 목표는 <b>45%</b>다. 사실상 균등 분포에 가깝다.</p>
+
+<p>후보를 무작위로 뽑기만 하고 인기도 가중치를 넣지 않았다 — 아직 미구현 항목이며,
+이 EDA가 그것을 수치로 확인한 셈이다.</p>
+
+<h2 class="pb">4. 정상인 것</h2>
+
+<table>
+  <tr><th style="width:34%">항목</th><th class="n">실측</th><th class="n">목표</th><th>판정</th></tr>
+  <tr><td>스코프 배분 (CLASS/SCHOOL/GLOBAL)</td><td class="n">33.8 / 34.8 / 31.4</td><td class="n">35 / 35 / 30</td><td class="good">일치</td></tr>
+  <tr><td>받은 투표 열람률</td><td class="n">44.8%</td><td class="n">55.5%</td><td class="note">근접</td></tr>
+  <tr><td>셔플 발생률</td><td class="n">16.4%</td><td class="n">18%</td><td class="good">일치</td></tr>
+  <tr><td>padded 문항 비율</td><td class="n">12.4%</td><td class="n">18%</td><td class="note">근접</td></tr>
+  <tr><td>답장률 (열람 대비)</td><td class="n">5.6%</td><td class="n">4~20%</td><td class="good">범위 내</td></tr>
+  <tr><td>세션 완료율</td><td class="n">99.4%</td><td class="n">96.3%</td><td class="note">중도 이탈 미구현</td></tr>
+  <tr><td>플랫폼 WEB 비중</td><td class="n">81.6%</td><td class="n">82%</td><td class="good">일치</td></tr>
+  <tr><td>성비 (여)</td><td class="n">58.0%</td><td class="n">58.6%</td><td class="good">일치</td></tr>
+  <tr><td>탈퇴율</td><td class="n">12.0%</td><td class="n">10.5%</td><td class="good">일치</td></tr>
+  <tr><td>무댓글 게시글 비율</td><td class="n">30.5%</td><td class="n">30%</td><td class="good">일치</td></tr>
+  <tr><td>최다 좋아요 게시글</td><td class="n">159</td><td class="n">떡상 글 존재</td><td class="good">존재</td></tr>
+  <tr><td>매출</td><td class="n">733,200원</td><td class="n">—</td><td class="dim">결제 75명</td></tr>
+</table>
+
+<h3>분모 주의 — 게시판 참여율</h3>
+
+<p>게시글 작성자는 <b>전체 500명 기준 22%</b>지만
+<b>활성 334명 기준으로는 33%</b>다(목표 40%). 댓글은 전체 46% / 활성 69%(목표 70%).
+생성기는 “가입 당일만 쓴 유저”(28%)를 비활성으로 치기 때문에 분모가 달라진다.
+<b>지표를 볼 때 분모를 먼저 확인해야 한다</b>는 사례다.</p>
+
+<h3>신고 PENDING 74.7%</h3>
+
+<p>Q15 목표는 30%다. 원인은 1개월 창이다 — 기간 끝 무렵 신고는 검토 시각이
+창을 넘어가 PENDING으로 되돌아간다. “최근 신고는 아직 처리 안 됨”이라는 현실적 효과이며,
+12개월로 돌리면 검토 지연(최대 10일)이 전체 기간의 3%라 30%대로 수렴할 것으로 본다.
+<b>전체 규모 생성 후 재확인 항목.</b></p>
+
+<h2>5. 검증 통과 항목</h2>
+
+<table>
+  <tr><th style="width:50%">검사</th><th>결과</th></tr>
+  <tr><td>정합성 검사 (<code>qa/checks/integrity.sql</code>)</td><td class="good">17종 전부 위반 0</td></tr>
+  <tr><td>표 커버리지</td><td class="good">40 / 40 — 빈 표 없음</td></tr>
+  <tr><td>컬럼 커버리지</td><td class="good">338 / 342 가 1% 이상 채워짐</td></tr>
+  <tr><td>하트 원장 정합성</td><td class="good">누적합 ≠ 잔액 0건 · 음수 잔액 0건</td></tr>
+  <tr><td>힌트 자격 규칙 (W14)</td><td class="good">기본 3개 미만 이름 구매 0건</td></tr>
+</table>
+
+<p>채우지 못한 컬럼 4개는 사유가 각각 다르다.</p>
+<ul>
+  <li><code>app_user.auth_user_id</code> — <b>채우면 안 된다.</b> 합성 유저는 Supabase 계정이 없고,
+      이 NULL 자체가 실유저와 합성을 가르는 신호다.</li>
+  <li><code>heart_transaction.purchase_id</code>(228건) · <code>admin_id</code>(13건) —
+      값은 있으나 17만 거래 대비 비율이 1% 미만일 뿐이다.</li>
+  <li><code>heart_purchase.failure_reason</code> — 실측 결제 실패율 0.17% × 결제 228건 = 기대값 0.4건.
+      <b>규모 문제</b>이며 2만 명 규모에서는 약 24건이 나온다.</li>
+</ul>
+
+<h2>6. 정리와 다음 단계</h2>
+
+<div class="box note">
+  <h4>문제 ①과 ②는 뿌리가 같다</h4>
+  <p>생성기가 <b>시간과 개인차를 모른다.</b> 모든 유저를 같은 확률 분포로 찍어내고,
+  활동량을 기간과 무관하게 배분한다. Q4(3국면 성장 곡선)와 Q36(유저 페르소나)이
+  아직 미구현이라는 사실을 이 EDA가 수치로 드러낸 것이다.</p>
+</div>
+
+<p><b>수정 순서</b> — 뒤로 갈수록 앞의 결과에 의존한다.</p>
+
+<table>
+  <tr><th style="width:8%">순서</th><th style="width:34%">작업</th><th>고쳐지는 문제</th></tr>
+  <tr><td class="n">1</td><td>시간 엔진 교체 (기간에 비례한 세션 배분 + 3국면 곡선)</td><td>② 볼륨 과다 · ⑤ 세션 완료율</td></tr>
+  <tr><td class="n">2</td><td>친구 그래프 — 양방향 유입에도 고립이 유지되도록</td><td>① 게이트 퍼널</td></tr>
+  <tr><td class="n">3</td><td>후보 선정에 인기도 가중치</td><td>④ 멱법칙</td></tr>
+  <tr><td class="n">4</td><td>하트 보상·소비 재조정</td><td>③ 하트 과잉 (①②를 고친 뒤에 값을 다시 잡는다)</td></tr>
+</table>
+
+<p>수정 후 같은 EDA를 다시 돌려 비교하면, 이 문서가 그대로 <b>기준선</b>이 된다.</p>
+
+<footer>
+  ping-v2 · 합성 데이터 샘플 EDA · 2026-08-03 ·
+  데이터 <code>data/sample-1m/</code> · 설정 <code>generator/config/synthetic-v2.yaml</code>
+</footer>

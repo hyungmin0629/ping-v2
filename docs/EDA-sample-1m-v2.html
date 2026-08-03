@@ -1,0 +1,271 @@
+<meta charset="utf-8">
+<title>합성 데이터 샘플 EDA v2 — 500명 · 1개월</title>
+<style>
+  @page { size: A4; margin: 18mm 16mm; }
+  * { box-sizing: border-box; }
+  body {
+    font-family: "Malgun Gothic", "맑은 고딕", -apple-system, sans-serif;
+    font-size: 10.5pt; line-height: 1.65; color: #1a1a1a; margin: 0;
+  }
+  h1 { font-size: 20pt; margin: 0 0 4px; letter-spacing: -0.5px; }
+  h2 {
+    font-size: 13.5pt; margin: 26px 0 10px; padding-bottom: 5px;
+    border-bottom: 2px solid #1a1a1a; page-break-after: avoid;
+  }
+  h3 { font-size: 11.5pt; margin: 18px 0 7px; page-break-after: avoid; }
+  p { margin: 7px 0; }
+  .sub { color: #666; font-size: 9.5pt; margin: 0 0 14px; }
+
+  .meta {
+    border: 1px solid #ddd; background: #fafafa; padding: 10px 14px;
+    font-size: 9pt; color: #444; margin-bottom: 22px;
+  }
+  .meta b { color: #1a1a1a; }
+  .meta div { margin: 2px 0; }
+
+  table { border-collapse: collapse; width: 100%; margin: 10px 0 16px; font-size: 9.5pt; }
+  th, td { border: 1px solid #d8d8d8; padding: 5px 9px; text-align: left; vertical-align: top; }
+  th { background: #f2f2f2; font-weight: 600; }
+  td.n, th.n { text-align: right; font-variant-numeric: tabular-nums; }
+  tr { page-break-inside: avoid; }
+
+  .bad  { color: #b3261e; font-weight: 600; }
+  .good { color: #1b6b3a; font-weight: 600; }
+  .warn { color: #8a6d1f; font-weight: 600; }
+  .dim  { color: #777; }
+  .old  { color: #999; text-decoration: line-through; }
+
+  .box {
+    border-left: 4px solid #b3261e; background: #fdf3f2;
+    padding: 10px 14px; margin: 12px 0; page-break-inside: avoid;
+  }
+  .box.ok { border-left-color: #1b6b3a; background: #f1f8f3; }
+  .box.note { border-left-color: #8a6d1f; background: #fdfaef; }
+  .box h4 { margin: 0 0 5px; font-size: 10.5pt; }
+  .box p { margin: 5px 0; }
+
+  ol, ul { margin: 7px 0 7px 20px; padding: 0; }
+  li { margin: 4px 0; }
+  code {
+    font-family: Consolas, monospace; font-size: 9pt;
+    background: #f0f0f0; padding: 1px 4px; border-radius: 2px;
+  }
+  .pb { page-break-before: always; }
+  footer { margin-top: 28px; padding-top: 8px; border-top: 1px solid #ddd; font-size: 8.5pt; color: #777; }
+</style>
+
+<h1>합성 데이터 샘플 EDA <span style="color:#1b6b3a">v2</span></h1>
+<p class="sub">유저 500명 · 1개월 · 학교 6곳 — v1에서 지적된 결함을 고친 뒤 재생성</p>
+
+<div class="meta">
+  <div><b>생성 명령</b> <code>python generator/generate.py --config synthetic-v2.yaml --users 500 --months 1 --schools 6</code></div>
+  <div><b>적재</b> 로컬 Postgres <code>pgtest</code> (포트 5433) · 총 <b>127,495 행</b> (v1: 757,699)</div>
+  <div><b>비교 대상</b> <code>docs/EDA-sample-1m-v1.pdf</code></div>
+  <div><b>날짜</b> 2026-08-03</div>
+</div>
+
+<div class="box ok">
+  <h4>한 줄 결론</h4>
+  <p><b>v1에서 지적한 문제 다섯 가지가 모두 목표 범위에 들어왔다.</b>
+  퍼널이 퍼널 모양을 갖췄고, 활동량이 현실적인 수준으로 내려왔으며, 인기도 멱법칙이 생겼다.
+  <b>남은 것은 하트 경제 하나</b>이고, 그 성격도 v1과는 정반대로 바뀌었다.</p>
+</div>
+
+<h2>1. v1 대비 — 지적 사항 처리 결과</h2>
+
+<table>
+  <tr>
+    <th style="width:30%">항목</th>
+    <th class="n" style="width:16%">v1</th>
+    <th class="n" style="width:16%">v2</th>
+    <th class="n" style="width:16%">목표</th>
+    <th>판정</th>
+  </tr>
+  <tr><td>친구 5명 해금</td><td class="n old">100%</td><td class="n good">92.4%</td><td class="n">90~95%</td><td class="good">해결</td></tr>
+  <tr><td>힌트 구매 유저</td><td class="n old">99.8%</td><td class="n good">70.8%</td><td class="n">70~80%</td><td class="good">해결</td></tr>
+  <tr><td>받은 투표 0건 유저</td><td class="n old">0명</td><td class="n good">43명 (8.6%)</td><td class="n">소수 존재</td><td class="good">해결</td></tr>
+  <tr><td>상위 10% 지목 점유율</td><td class="n old">18.4%</td><td class="n good">45.8%</td><td class="n">45%</td><td class="good">해결</td></tr>
+  <tr><td>세션 1회 이상</td><td class="n old">69.2%</td><td class="n good">96.6%</td><td class="n">~96%</td><td class="good">해결</td></tr>
+  <tr><td>유저당 투표 문항 / 월</td><td class="n old">224.6</td><td class="n good">15.3</td><td class="n">하루 0.5개</td><td class="good">해결</td></tr>
+  <tr><td>친구 수 최대</td><td class="n old">65</td><td class="n warn">445</td><td class="n">500+</td><td class="warn">규모 제약</td></tr>
+  <tr><td>하트 소비 / 적립</td><td class="n old">12.8%</td><td class="n bad">7.5%</td><td class="n">—</td><td class="bad">남음</td></tr>
+</table>
+
+<div class="box note">
+  <h4>친구 수 최대 445 — 결함이 아니라 샘플 규모의 천장</h4>
+  <p>유저가 500명뿐이라 물리적 상한이 499명이다. 설정은
+  <code>hub_per_user: [200, 700]</code>이므로 <b>2만 명 규모에서는 700까지 나온다.</b>
+  지금도 친구 150명 이상인 허브 유저가 17명 있다.</p>
+</div>
+
+<h2>2. 규모</h2>
+
+<table>
+  <tr><th style="width:38%">항목</th><th class="n">값</th><th class="dim">비고</th></tr>
+  <tr><td>유저</td><td class="n">500명</td><td class="dim">여 58.0% (목표 58.6%)</td></tr>
+  <tr><td>학교 / 학급</td><td class="n">6개교 / 81학급</td><td class="dim">학급당 17.9명 — 목표 14~22 안</td></tr>
+  <tr><td>기간</td><td>2025-07-28 ~ 2025-08-26</td><td class="dim">29일</td></tr>
+  <tr><td>총 행수</td><td class="n">127,495</td><td class="dim">v1 대비 <b>83% 감소</b></td></tr>
+  <tr><td>테이블 / 컬럼</td><td class="n">40 / 342</td><td class="dim">빈 표 0개</td></tr>
+</table>
+
+<h2>3. 전환 퍼널</h2>
+
+<table>
+  <tr><th style="width:34%">단계</th><th class="n">인원</th><th class="n">전체 대비</th><th>비고</th></tr>
+  <tr><td>1. 가입</td><td class="n">500</td><td class="n">100.0%</td><td class="dim">—</td></tr>
+  <tr><td>2. 세션 1회 이상</td><td class="n">483</td><td class="n">96.6%</td><td class="dim">미접속 4.1%만 제외 — 설정과 일치</td></tr>
+  <tr><td>3. 친구 5명 해금</td><td class="n">462</td><td class="n good">92.4%</td><td class="good">게이트가 실제로 작동</td></tr>
+  <tr><td>4. 받은 투표 1건 이상</td><td class="n">457</td><td class="n">91.4%</td><td class="dim">43명은 한 번도 못 받음</td></tr>
+  <tr><td>5. 힌트 구매</td><td class="n">354</td><td class="n good">70.8%</td><td class="good">—</td></tr>
+  <tr><td>6. 결제</td><td class="n">90</td><td class="n">18.0%</td><td class="good">목표 18% 정확히 일치</td></tr>
+</table>
+
+<p><b>단계마다 사람이 걸러진다.</b> v1에서는 3·5단계가 100%에 붙어 있어 퍼널이라 부를 수 없었다.</p>
+
+<h2 class="pb">4. 하트 경제 — 문제의 성격이 뒤집혔다</h2>
+
+<table>
+  <tr><th style="width:26%">유형</th><th class="n">건수</th><th class="n">1인당 건수</th><th class="n">하트 합</th><th class="n">1인당</th></tr>
+  <tr><td>TOPUP (결제)</td><td class="n">357</td><td class="n">0.7</td><td class="n">515,714</td><td class="n">+1,031</td></tr>
+  <tr><td>SIGNUP_GRANT</td><td class="n">500</td><td class="n">1.0</td><td class="n">150,000</td><td class="n">+300</td></tr>
+  <tr><td>VOTE_REWARD</td><td class="n">14,402</td><td class="n">28.8</td><td class="n">44,390</td><td class="n">+89</td></tr>
+  <tr><td>HINT_PURCHASE</td><td class="n">2,347</td><td class="n">4.7</td><td class="n">−48,860</td><td class="n">−98</td></tr>
+  <tr><td>VOTE_REPLY</td><td class="n">251</td><td class="n">0.5</td><td class="n">−5,020</td><td class="n">−10</td></tr>
+  <tr><td>EVENT_GRANT / ADMIN_ADJUST</td><td class="n">37</td><td class="n">0.1</td><td class="n">3,750</td><td class="n">+8</td></tr>
+</table>
+
+<h3>보상 확률표가 정확히 재현됐다</h3>
+
+<table>
+  <tr><th>보상 하트</th><th class="n">2</th><th class="n">3</th><th class="n">4</th><th class="n">5</th><th class="n">6</th><th class="n">7</th><th class="n">8</th><th class="n">9</th><th class="n">10</th></tr>
+  <tr><td>설정</td><td class="n">40%</td><td class="n">30%</td><td class="n">20%</td><td class="n">5%</td><td class="n">3%</td><td class="n">1%</td><td class="n">0.5%</td><td class="n">0.3%</td><td class="n">0.2%</td></tr>
+  <tr><td>실측</td><td class="n good">39.8%</td><td class="n good">30.5%</td><td class="n good">19.7%</td><td class="n good">5.0%</td><td class="n good">3.0%</td><td class="n good">1.0%</td><td class="n good">0.4%</td><td class="n good">0.4%</td><td class="n good">0.2%</td></tr>
+</table>
+
+<p class="dim">※ 1하트 지급이 12건 있다. 하루 적립 상한 100하트에 걸려 잘린 건이며, 상한이 실제로 작동한다는 증거다.</p>
+
+<h3>남은 문제 — 소비 비율이 오히려 나빠졌다</h3>
+
+<table>
+  <tr><th style="width:38%">항목</th><th class="n">v1</th><th class="n">v2</th></tr>
+  <tr><td>적립 총합</td><td class="n">2,243,809</td><td class="n">713,854</td></tr>
+  <tr><td>소비 총합</td><td class="n">287,420</td><td class="n">53,880</td></tr>
+  <tr><td>소비 / 적립</td><td class="n">12.8%</td><td class="n bad">7.5%</td></tr>
+  <tr><td>잔액 중앙값</td><td class="n">2,377</td><td class="n">325</td></tr>
+  <tr><td>잔액 100 미만 유저</td><td class="n">0%</td><td class="n">6.4%</td></tr>
+  <tr><td><b>잔액 부족으로 무산된 힌트</b></td><td class="n">336건</td><td class="n bad">1,490건</td></tr>
+</table>
+
+<div class="box">
+  <h4>같은 숫자가 v1과 정반대를 뜻한다</h4>
+  <p>v1의 낮은 소비 비율은 <b>하트가 남아돌아서</b>였다(잔액 중앙값 2,377).
+  v2의 낮은 소비 비율은 <b>하트가 모자라서</b>다 — 힌트 구매 시도의
+  <b>37%가 잔액 부족으로 무산</b>됐다(성사 2,580 / 무산 1,490).</p>
+  <p>적립 단가를 낮춘 것은 먹혔다(적립 총액 68% 감소). 그런데 <b>받은 투표가 144→14.8로
+  줄면서 소비 기회가 그보다 더 많이 줄었다.</b> 두 조정이 같은 방향으로 겹쳤다.</p>
+</div>
+
+<div class="box">
+  <h4>⚠️ 정정 (2026-08-03) — 아래 진단은 틀렸다</h4>
+  <p>이 절은 “가입 지급 300하트를 낮추자”로 끝나는데, <b>가입 지급은 순수 공급이라
+  줄이면 하트 부족이 악화된다.</b> 그 제안은 “소비/적립 비율을 올리자”는 생각에서 나왔고,
+  그건 <b>분모를 깎아 지표를 좋게 보이게 하는 것</b>이지 문제 해결이 아니었다.</p>
+  <p>v3에서 받은 투표 수로 구간을 갈라 보니 <b>유저의 72%는 하트가 남아돌고
+  상위 18%만 쪼들리며, 결제율도 그 구간에서만 올라간다.</b> 애초에 고칠 문제가 아니었다.
+  자세한 것은 <code>EDA-sample-1m-v3.pdf</code> 4장.</p>
+  <p>아래 내용은 <b>당시 판단의 기록으로 남겨둔다.</b></p>
+</div>
+
+<h3>진단 — 가입 지급 300하트가 이제 과하다 <span class="bad">(틀린 진단)</span></h3>
+
+<p>적립의 구성이 완전히 바뀌었다.</p>
+
+<table>
+  <tr><th style="width:38%">유입원</th><th class="n">비중</th><th class="dim">v1에서는</th></tr>
+  <tr><td>결제 (TOPUP)</td><td class="n">72.2%</td><td class="dim">12.2%</td></tr>
+  <tr><td>가입 지급</td><td class="n">21.0%</td><td class="dim">6.7%</td></tr>
+  <tr><td>투표 보상</td><td class="n">6.2%</td><td class="dim">64.4%</td></tr>
+  <tr><td>광고 보상</td><td class="n">0%</td><td class="dim">16.4%</td></tr>
+</table>
+
+<p>잔액 중앙값 325는 사실상 <b>가입 지급 300 그 자체</b>다. 중앙값 유저는 벌지도 쓰지도 않고,
+헤비 유저는 사고 싶은데 하트가 없다. 가입 지급 300하트는 힌트 15개 값이라
+<b>초반 소비를 통째로 흡수한 뒤 그대로 잠긴다.</b></p>
+
+<p>다음 조정 후보는 <b>가입 지급을 100 안팎으로 낮추는 것</b>이다.
+다만 이는 v1 실측(point 최빈값 300)을 버리는 결정이므로 팀 판단이 필요하다.</p>
+
+<h2 class="pb">5. 그 밖의 지표</h2>
+
+<table>
+  <tr><th style="width:36%">항목</th><th class="n">v2 실측</th><th class="n">목표</th><th>판정</th></tr>
+  <tr><td>세션 완료율</td><td class="n">98.9%</td><td class="n">78%</td><td class="warn">중도이탈 199세션 생성됨. 비율은 미달</td></tr>
+  <tr><td>받은 투표 열람률</td><td class="n">46.5%</td><td class="n">55.5%</td><td class="dim">근접</td></tr>
+  <tr><td>셔플 발생률</td><td class="n">16.6%</td><td class="n">18%</td><td class="good">일치</td></tr>
+  <tr><td>padded 문항 비율</td><td class="n">11.8%</td><td class="n">18%</td><td class="dim">근접</td></tr>
+  <tr><td>답장률 (열람 대비)</td><td class="n">11.0%</td><td class="n">4~20%</td><td class="good">범위 내</td></tr>
+  <tr><td>WEB 세션 비중</td><td class="n">81.2%</td><td class="n">82%</td><td class="good">일치</td></tr>
+  <tr><td>탈퇴율</td><td class="n">10.6%</td><td class="n">10.5%</td><td class="good">일치</td></tr>
+  <tr><td>글 쓴 유저 (활성 대비)</td><td class="n">39.1%</td><td class="n">40%</td><td class="good">일치</td></tr>
+  <tr><td>댓글 단 유저 (활성 대비)</td><td class="n">67.7%</td><td class="n">70%</td><td class="good">일치</td></tr>
+  <tr><td>무댓글 게시글</td><td class="n">31.7%</td><td class="n">30%</td><td class="good">일치</td></tr>
+  <tr><td>최다 좋아요 게시글</td><td class="n">219</td><td class="n">떡상 글</td><td class="good">존재</td></tr>
+  <tr><td>신고 PENDING</td><td class="n">66.7%</td><td class="n">30%</td><td class="warn">1개월 창 artifact (신고 30건)</td></tr>
+</table>
+
+<p><b>게시판 참여율이 목표에 맞았다.</b> v1에서 어긋나 보였던 것은 “활성”의 정의가
+잘못돼 있었기 때문이다 — 가입 당일만 쓴 유저 28%가 비활성으로 분류돼 분모가 틀어졌다.
+그 정의를 고치자 39.1% / 67.7%로 목표(40% / 70%)에 들어왔다.</p>
+
+<h3>힌트 유형 분포</h3>
+
+<table>
+  <tr><th>유형</th><th class="n">GENDER</th><th class="n">INITIAL</th><th class="n">CLASS</th><th class="n">FINAL</th><th class="n">MEDIAL</th><th class="n">FULL_NAME</th></tr>
+  <tr><td>건수</td><td class="n">585</td><td class="n">500</td><td class="n">496</td><td class="n">491</td><td class="n">484</td><td class="n">24</td></tr>
+  <tr><td>비중</td><td class="n">22.7%</td><td class="n">19.4%</td><td class="n">19.2%</td><td class="n">19.0%</td><td class="n">18.8%</td><td class="n">0.9%</td></tr>
+</table>
+
+<p>GENDER가 조금 많은 것은 <b>광고로 여는 경로(233건)</b>가 따로 있기 때문이다.
+FULL_NAME이 0.9%로 적은 것은 100하트인 데다 기본 3개 이상을 먼저 열어야 하는 제약 때문이며,
+설계 의도대로다.</p>
+
+<h2>6. 검증 통과 항목</h2>
+
+<table>
+  <tr><th style="width:50%">검사</th><th>결과</th></tr>
+  <tr><td>정합성 검사 (<code>qa/checks/integrity.sql</code>)</td><td class="good">17종 전부 위반 0</td></tr>
+  <tr><td>표 커버리지</td><td class="good">40 / 40 — 빈 표 없음</td></tr>
+  <tr><td>컬럼 커버리지</td><td class="good">338 / 342 가 1% 이상</td></tr>
+  <tr><td>하트 원장 정합성</td><td class="good">누적합 ≠ 잔액 0건 · 음수 잔액 0건</td></tr>
+  <tr><td>친구 끊기 이력</td><td class="good">458건 — 행을 지우지 않고 <code>ended_at</code> 기록</td></tr>
+  <tr><td>대댓글</td><td class="good">175건</td></tr>
+</table>
+
+<div class="box note">
+  <h4>커버리지에 새 구멍 하나</h4>
+  <p><code>heart_transaction.ad_impression_id</code>가 <b>전부 NULL</b>이 됐다.
+  광고 보상을 0으로 만들면서 <code>AD_REWARD</code> 거래 자체가 사라졌기 때문이다.
+  <b>의도한 변경의 부작용</b>이며, 광고 시청 기록은 <code>ad_impression</code> 표(1,595건)에
+  그대로 남아 있다. 화이트리스트에 추가할지 판단이 필요하다.</p>
+</div>
+
+<h2>7. 다음 단계</h2>
+
+<ol>
+  <li><s>하트 경제 재조정 — 가입 지급 300 → 100 검토</s>
+      <b class="bad">→ 철회.</b> 위 정정 참조. 공급을 줄이면 부족이 악화된다</li>
+  <li><b>세션 중도 이탈 비율</b> — 199세션이 생성되긴 했으나 완료율 98.9%로 목표(78%)에 못 미친다</li>
+  <li><b>3국면 성장 곡선 (Q4)</b> — 1개월 샘플에서는 확인 불가. 12개월 생성 시 검증</li>
+  <li><b>유저 페르소나 (Q36)</b> — 미구현. 지금은 <code>is_power</code> 하나로만 갈린다</li>
+  <li><b>전체 규모 생성</b> — 2만 명 × 12개월. Q6 가드레일(4,000만 행) 초과 여부 확인</li>
+</ol>
+
+<p>이 문서는 <b>v1과 같은 항목·같은 순서</b>로 작성했다. 다음 수정 뒤에도 같은 형식으로 뽑으면
+세 판본을 나란히 비교할 수 있다.</p>
+
+<footer>
+  ping-v2 · 합성 데이터 샘플 EDA v2 · 2026-08-03 ·
+  데이터 <code>data/sample-1m/</code> · 설정 <code>generator/config/synthetic-v2.yaml</code> ·
+  이전 판본 <code>docs/EDA-sample-1m-v1.pdf</code>
+</footer>

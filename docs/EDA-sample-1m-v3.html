@@ -1,0 +1,269 @@
+<meta charset="utf-8">
+<title>합성 데이터 샘플 EDA v3 — 페르소나 도입</title>
+<style>
+  @page { size: A4; margin: 18mm 16mm; }
+  * { box-sizing: border-box; }
+  body { font-family: "Malgun Gothic", "맑은 고딕", -apple-system, sans-serif;
+         font-size: 10.5pt; line-height: 1.65; color: #1a1a1a; margin: 0; }
+  h1 { font-size: 20pt; margin: 0 0 4px; letter-spacing: -0.5px; }
+  h2 { font-size: 13.5pt; margin: 26px 0 10px; padding-bottom: 5px;
+       border-bottom: 2px solid #1a1a1a; page-break-after: avoid; }
+  h3 { font-size: 11.5pt; margin: 18px 0 7px; page-break-after: avoid; }
+  p { margin: 7px 0; }
+  .sub { color: #666; font-size: 9.5pt; margin: 0 0 14px; }
+  .meta { border: 1px solid #ddd; background: #fafafa; padding: 10px 14px;
+          font-size: 9pt; color: #444; margin-bottom: 22px; }
+  .meta b { color: #1a1a1a; } .meta div { margin: 2px 0; }
+  table { border-collapse: collapse; width: 100%; margin: 10px 0 16px; font-size: 9.5pt; }
+  th, td { border: 1px solid #d8d8d8; padding: 5px 9px; text-align: left; vertical-align: top; }
+  th { background: #f2f2f2; font-weight: 600; }
+  td.n, th.n { text-align: right; font-variant-numeric: tabular-nums; }
+  tr { page-break-inside: avoid; }
+  .bad { color: #b3261e; font-weight: 600; }
+  .good { color: #1b6b3a; font-weight: 600; }
+  .warn { color: #8a6d1f; font-weight: 600; }
+  .dim { color: #777; } .old { color: #999; }
+  .box { border-left: 4px solid #b3261e; background: #fdf3f2;
+         padding: 10px 14px; margin: 12px 0; page-break-inside: avoid; }
+  .box.ok { border-left-color: #1b6b3a; background: #f1f8f3; }
+  .box.note { border-left-color: #8a6d1f; background: #fdfaef; }
+  .box h4 { margin: 0 0 5px; font-size: 10.5pt; } .box p { margin: 5px 0; }
+  ol, ul { margin: 7px 0 7px 20px; padding: 0; } li { margin: 4px 0; }
+  code { font-family: Consolas, monospace; font-size: 9pt;
+         background: #f0f0f0; padding: 1px 4px; border-radius: 2px; }
+  .pb { page-break-before: always; }
+  footer { margin-top: 28px; padding-top: 8px; border-top: 1px solid #ddd;
+           font-size: 8.5pt; color: #777; }
+</style>
+
+<h1>합성 데이터 샘플 EDA <span style="color:#1b6b3a">v3</span></h1>
+<p class="sub">유저 500명 · 1개월 · 학교 6곳 — 활동 강도 재설계 + 페르소나 도입</p>
+
+<div class="meta">
+  <div><b>생성 명령</b> <code>python generator/generate.py --config synthetic-v2.yaml --users 500 --months 1 --schools 6</code></div>
+  <div><b>적재</b> 로컬 Postgres <code>pgtest</code> · 총 <b>1,149,566 행</b></div>
+  <div><b>이전 판본</b> <code>EDA-sample-1m-v1.pdf</code>(757,699행) · <code>EDA-sample-1m-v2.pdf</code>(127,495행)</div>
+  <div><b>날짜</b> 2026-08-03</div>
+</div>
+
+<div class="box ok">
+  <h4>한 줄 결론</h4>
+  <p><b>행동 트레잇이 서로 묶였다.</b> 이전까지는 글쓰기·투표·힌트·결제가 전부 독립 추첨이라
+  “글도 쓰고 투표도 많이 하는 사람”이 우연으로만 생겼다. 이제 유저마다 성향이 있고,
+  <b>그 성향을 벗어나는 사람도 함께 있다.</b> 검증 6개 지표 전부 통과.</p>
+</div>
+
+<h2>1. 세 판본 비교</h2>
+
+<table>
+  <tr><th style="width:28%">항목</th><th class="n">v1</th><th class="n">v2</th><th class="n">v3</th><th>목표</th></tr>
+  <tr><td>총 행수</td><td class="n old">757,699</td><td class="n old">127,495</td><td class="n">1,149,566</td><td class="dim">—</td></tr>
+  <tr><td>유저당 투표세션 / 월</td><td class="n old">22.5</td><td class="n old">2.1</td><td class="n">32.4</td><td class="dim">활성 100~200</td></tr>
+  <tr><td>유저당 받은 투표</td><td class="n old">144.5</td><td class="n old">14.8</td><td class="n">251.3</td><td class="dim">—</td></tr>
+  <tr><td>친구 5명 해금</td><td class="n old">100%</td><td class="n">92.4%</td><td class="n good">93.6%</td><td>90~95%</td></tr>
+  <tr><td>힌트 구매 유저</td><td class="n old">99.8%</td><td class="n">70.8%</td><td class="n good">73.4%</td><td>70~80%</td></tr>
+  <tr><td>상위 10% 지목 점유율</td><td class="n old">18.4%</td><td class="n">45.8%</td><td class="n good">47.9%</td><td>45%</td></tr>
+  <tr><td>글 쓴 유저 (활성)</td><td class="n old">33%</td><td class="n">39.1%</td><td class="n good">40.6%</td><td>40%</td></tr>
+  <tr><td>댓글 유저 (활성)</td><td class="n old">—</td><td class="n">67.7%</td><td class="n good">69.8%</td><td>70%</td></tr>
+  <tr><td>하트 소비 / 적립</td><td class="n old bad">12.8%</td><td class="n bad">25.1%</td><td class="n good">33.8%</td><td class="dim">높을수록 건강</td></tr>
+  <tr><td>잔액 100 미만</td><td class="n old">0%</td><td class="n">18.6%</td><td class="n">22.6%</td><td class="dim">—</td></tr>
+  <tr><td>정합성 17종</td><td class="n">0</td><td class="n">0</td><td class="n good">0</td><td>위반 0</td></tr>
+</table>
+
+<p>v2에서 활동량을 지나치게 눌렀던 것을 <b>잔존 구간별 강도</b>로 다시 잡았다.
+활성 유저(30일+ 잔존)는 월 100~200세션, 당일 이탈자는 1~4세션이다.
+1개월 샘플에서는 “30일+ 잔존”이 물리적으로 나올 수 없어 최상위 구간이 월 100회 안팎에 걸린다.</p>
+
+<h2>2. 페르소나 — 분류가 아니라 생성 편의</h2>
+
+<p>6개 유형을 두되 <b>결과 데이터에 6덩어리가 또렷하게 남으면 실패</b>로 본다.
+분석자가 클러스터링해서 우리가 넣은 유형을 그대로 되찾는 데이터에는 발견할 것이 없다.</p>
+
+<h3>배정을 흐리는 세 장치</h3>
+
+<table>
+  <tr><th style="width:22%">장치</th><th class="n">인원</th><th>내용</th></tr>
+  <tr><td>단일 유형</td><td class="n">359</td><td class="dim">한 유형을 그대로</td></tr>
+  <tr><td><b>혼합</b></td><td class="n">86</td><td>두 유형을 6:4로 섞는다 — 경계가 사라진다</td></tr>
+  <tr><td><b>트레잇 교차</b></td><td class="n">37</td><td><b>트레잇 하나를 다른 유형에서 가져온다</b> — “관망형인데 댓글만 게시판형”</td></tr>
+  <tr><td>무배정</td><td class="n">18</td><td>유형 없이 전 트레잇 독립 무작위</td></tr>
+</table>
+
+<p>여기에 더해 <b>트레잇마다 따로</b> 개인 편차(로그정규)를 곱한다.
+한 배수로 전부 흔들면 유형 내부 순서가 그대로라 클러스터가 살아남는다.</p>
+
+<h3>유형별 평균 행동 — 경향은 있되 절대적이지 않다</h3>
+
+<table>
+  <tr><th style="width:18%">유형</th><th class="n">명</th><th class="n">세션</th><th class="n">글</th><th class="n">댓글</th><th class="n">힌트</th><th class="n">피신고</th><th class="n">결제</th></tr>
+  <tr><td>관망형</td><td class="n">148</td><td class="n">1.9</td><td class="n">0.4</td><td class="n">2.3</td><td class="n">14.0</td><td class="n">0.2</td><td class="n">0.2</td></tr>
+  <tr><td>투표형</td><td class="n">131</td><td class="n">20.8</td><td class="n">0.6</td><td class="n">3.2</td><td class="n">21.3</td><td class="n">0.4</td><td class="n">0.8</td></tr>
+  <tr><td>소셜형</td><td class="n">74</td><td class="n">12.6</td><td class="n">1.4</td><td class="n">3.5</td><td class="n">22.7</td><td class="n">0.2</td><td class="n">0.8</td></tr>
+  <tr><td>고관여형</td><td class="n">71</td><td class="n bad">114.8</td><td class="n">3.6</td><td class="n">4.1</td><td class="n">37.9</td><td class="n">0.6</td><td class="n bad">1.8</td></tr>
+  <tr><td>게시판형</td><td class="n">47</td><td class="n">8.1</td><td class="n bad">9.4</td><td class="n">4.0</td><td class="n">25.1</td><td class="n">0.6</td><td class="n">0.2</td></tr>
+  <tr><td>악성형</td><td class="n">11</td><td class="n">9.7</td><td class="n">3.1</td><td class="n">3.6</td><td class="n">38.8</td><td class="n bad">2.2</td><td class="n">0.6</td></tr>
+</table>
+
+<h3 class="pb">검증 — “깔끔하지 않음”을 직접 쟀다</h3>
+
+<p>핵심 검사는 <b>각 행동 지표의 상위 10%에 여러 유형이 섞여 있는가</b>다.
+한 유형이 독점하면 그 유형이 곧 그 행동이라는 뜻이라 발견할 것이 없다.</p>
+
+<table>
+  <tr><th style="width:14%">지표</th><th>상위 10%의 유형 구성</th><th class="n">유형 수</th></tr>
+  <tr><td>세션</td><td>고관여 24 · 투표 17 · 소셜 4 · 게시판 2 · 무배정 2 · 악성 1</td><td class="n good">6</td></tr>
+  <tr><td>글</td><td>게시판 20 · 고관여 17 · 소셜 5 · 투표 4 · 무배정 2 · <b>관망 1</b> · 악성 1</td><td class="n good">7</td></tr>
+  <tr><td>댓글</td><td>투표 20 · 고관여 9 · 소셜 7 · <b>관망 10</b> · 게시판 3 · 무배정 1</td><td class="n good">6</td></tr>
+  <tr><td>힌트</td><td>고관여 13 · 투표 13 · <b>관망 8</b> · 게시판 6 · 소셜 5 · 무배정 4 · 악성 1</td><td class="n good">7</td></tr>
+  <tr><td>피신고</td><td>투표 13 · <b>관망 9</b> · 게시판 9 · 고관여 9 · 악성 7 · 소셜 3</td><td class="n good">6</td></tr>
+  <tr><td>결제</td><td>투표 19 · 고관여 14 · 소셜 7 · <b>관망 4</b> · 무배정 3 · 게시판 2 · 악성 1</td><td class="n good">7</td></tr>
+</table>
+
+<div class="box ok">
+  <h4>규칙을 벗어난 유저가 실제로 있다</h4>
+  <p><b>댓글 상위 10%의 4분의 1이 관망형</b>이다. 반대로 게시판형 2명이 세션 상위 10%에 있다.
+  힌트를 가장 많이 사는 사람 중에도 관망형이 8명 있다.
+  <b>유형을 알아도 그 사람의 행동을 단정할 수 없다</b>는 뜻이며, 이것이 설계 목표였다.</p>
+</div>
+
+<table>
+  <tr><th style="width:34%">검증 항목</th><th class="n">기준</th><th class="n">결과</th></tr>
+  <tr><td>트레잇 모집단 평균</td><td class="n">1.000</td><td class="n good">10개 전부 1.0000</td></tr>
+  <tr><td>규칙 이탈자 존재</td><td class="n">지표당 5개 유형+</td><td class="n good">6/6 통과</td></tr>
+  <tr><td>유형 내 분산 / 유형 간 분산</td><td class="n">0.7 이상</td><td class="n good">1.74 ~ 5.28</td></tr>
+  <tr><td>정합성 검사</td><td class="n">위반 0</td><td class="n good">17종 통과</td></tr>
+  <tr><td>표 커버리지</td><td class="n">40 / 40</td><td class="n good">빈 표 0</td></tr>
+  <tr><td>컬럼 커버리지</td><td class="n">342</td><td class="n good">338 채워짐</td></tr>
+</table>
+
+<h2>3. 이번에 고친 구조적 결함 두 가지</h2>
+
+<h3>① 확률에 배수를 걸면 모집단 평균이 샌다</h3>
+
+<p>트레잇 평균이 정확히 1.0이어도, 확률에 곱해 1을 넘지 않게 오즈비로 변환하면
+<b>변환이 볼록해서 평균이 아래로 당겨진다.</b> 실제로 열람률이 55.5% → 39.2%로 샜고,
+글쓰기·댓글·결제도 함께 내려갔다.</p>
+
+<p>설정값을 손으로 올려 맞추는 것은 답이 아니다 — 트레잇 분포가 바뀔 때마다 다시 틀어진다.
+<b>보정 계수를 이분법으로 풀어 캐시</b>하도록 고쳤다(<code>Generator.pchance</code>).
+그 결과 글쓰기 40.6%(목표 40%) · 댓글 69.8%(70%)로 정확히 복귀했다.</p>
+
+<h3>② 열람률 41.8%는 모델 오류가 아니라 우측 절단이다</h3>
+
+<table>
+  <tr><th style="width:34%">구간</th><th class="n">받은 투표</th><th class="n">열람률</th></tr>
+  <tr><td>2025-07-28 주</td><td class="n">2,506</td><td class="n">56.8%</td></tr>
+  <tr><td>2025-08-04 주</td><td class="n">8,939</td><td class="n">54.8%</td></tr>
+  <tr><td>2025-08-11 주</td><td class="n">17,956</td><td class="n">54.8%</td></tr>
+  <tr><td>2025-08-18 주</td><td class="n">52,299</td><td class="n">52.9%</td></tr>
+  <tr><td><b>2025-08-25 주 (마지막)</b></td><td class="n">43,970</td><td class="n bad">19.7%</td></tr>
+  <tr><td><b>마지막 3일 제외</b></td><td class="n">77,546</td><td class="n good">53.9%</td></tr>
+</table>
+
+<div class="box note">
+  <h4>이건 결함이 아니라 실데이터에도 있는 현상이다</h4>
+  <p>받은 투표는 1~72시간 뒤에 열람된다. 기간 끝 3일치는 열람 시각이 관측 창을 넘어가
+  <b>미열람으로 기록된다.</b> 실서비스 데이터에서도 똑같이 생긴다.</p>
+  <p><b>분석 시 주의</b> — 열람률·답장률처럼 “나중에 일어나는 행동”의 비율을 낼 때는
+  <b>관측 창 끝 3일을 제외</b>해야 한다. 안 그러면 지표가 실제보다 낮게 나온다.
+  이 데이터에서는 마지막 주에 전체 받은 투표의 35%가 몰려 있어 왜곡이 특히 크다.</p>
+</div>
+
+<h2 class="pb">4. 하트 경제</h2>
+
+<table>
+  <tr><th style="width:34%">항목</th><th class="n">v1</th><th class="n">v2</th><th class="n">v3</th></tr>
+  <tr><td>적립 총합</td><td class="n old">2,243,809</td><td class="n old">713,854</td><td class="n">795,019</td></tr>
+  <tr><td>소비 총합</td><td class="n old">287,420</td><td class="n old">53,880</td><td class="n">268,800</td></tr>
+  <tr><td><b>소비 / 적립</b></td><td class="n old bad">12.8%</td><td class="n old bad">7.5%</td><td class="n good">33.8%</td></tr>
+  <tr><td>잔액 중앙값</td><td class="n old">2,377</td><td class="n old">325</td><td class="n">385</td></tr>
+  <tr><td>잔액 100 미만</td><td class="n old">0%</td><td class="n old">6.4%</td><td class="n">22.6%</td></tr>
+  <tr><td>유저당 힌트</td><td class="n old">25.3</td><td class="n old">17.3</td><td class="n">25.7</td></tr>
+  <tr><td>결제자</td><td class="n old">18.6%</td><td class="n old">18.0%</td><td class="n">15.4%</td></tr>
+  <tr><td>매출</td><td class="n old">1,419,900원</td><td class="n old">—</td><td class="n">871,200원</td></tr>
+</table>
+
+<p>v1은 하트가 <b>남아돌아</b> 소비 비율이 낮았고(잔액 중앙값 2,377),
+v2는 <b>모자라서</b> 낮았다. v3은 33.8%다.</p>
+
+<h3>⚠️ 소비/적립은 하나의 값으로 볼 지표가 아니다</h3>
+
+<p>33.8%는 <b>안 쓰는 다수와 다 쓰는 소수를 평균 낸 값</b>이라 그 자체로는 아무것도 말해주지 않는다.
+받은 투표 수로 갈라 보면 완전히 다른 그림이 나온다.</p>
+
+<table>
+  <tr>
+    <th style="width:20%">받은 투표</th><th class="n">명</th>
+    <th class="n">평균 적립</th><th class="n">평균 소비</th><th class="n">평균 잔액</th>
+    <th class="n">소비율</th><th class="n">결제율</th>
+  </tr>
+  <tr><td>20건 미만</td><td class="n">76</td><td class="n">647</td><td class="n">24</td>
+      <td class="n">623</td><td class="n">6%</td><td class="n">14.5%</td></tr>
+  <tr><td>20–99</td><td class="n">154</td><td class="n">847</td><td class="n">214</td>
+      <td class="n">633</td><td class="n">32%</td><td class="n">14.3%</td></tr>
+  <tr><td>100–399</td><td class="n">179</td><td class="n">2,372</td><td class="n">526</td>
+      <td class="n">1,845</td><td class="n">46%</td><td class="n">14.0%</td></tr>
+  <tr><td><b>400건+</b></td><td class="n">91</td><td class="n">2,098</td><td class="n">1,537</td>
+      <td class="n">561</td><td class="n bad">75%</td><td class="n bad">20.9%</td></tr>
+</table>
+
+<div class="box ok">
+  <h4>하트 부족은 전체 문제가 아니라 상위 18%의 이야기이고, 그것이 결제를 만든다</h4>
+  <p><b>유저의 72%는 하트가 남아돈다</b>(잔액 623~1,845). 쪼들리는 것은 받은 투표 400건 이상인
+  <b>91명(18%)뿐</b>이고, 무산 20,552건도 대부분 이들에게 몰려 있다.</p>
+  <p>그리고 <b>결제율이 이 구간에서만 올라간다(14% → 20.9%).</b>
+  하트가 모자란 사람이 결제한다는 구조가 데이터로 설명되는 상태다.
+  프리미엄 경제가 원래 이렇게 생겼다 — 대다수는 재화를 모으기만 하고 소수만 다 쓴다.</p>
+  <p><b>따라서 하트 파라미터는 손대지 않는다.</b> 무산율 61%는 고칠 결함이 아니라
+  헤비 유저의 미충족 수요이고, 그것이 결제 동기다.</p>
+</div>
+
+<div class="box note">
+  <h4>정정 — v2 문서의 “가입 지급 300을 낮추자”는 제안은 틀렸다</h4>
+  <p>가입 지급은 <b>순수 공급</b>이다. 줄이면 하트 부족이 완화되는 것이 아니라 <b>악화된다.</b></p>
+  <p>그 제안은 “소비/적립 비율을 올리자”는 생각에서 나왔는데, 그건 <b>분모를 깎아 지표를
+  좋게 보이게 하는 것</b>이지 문제 해결이 아니었다. 위 구간별 표가 보여주듯 애초에
+  고칠 문제가 아니었다.</p>
+</div>
+
+<h2>5. 그 밖의 지표</h2>
+
+<table>
+  <tr><th style="width:36%">항목</th><th class="n">v3</th><th class="n">목표</th><th>판정</th></tr>
+  <tr><td>친구 수 최대</td><td class="n">457</td><td class="n">500+</td><td class="warn">샘플 500명이라 상한 499</td></tr>
+  <tr><td>받은 투표 0건 유저</td><td class="n">29명</td><td class="n">소수</td><td class="good">존재</td></tr>
+  <tr><td>셔플 발생률</td><td class="n">20.5%</td><td class="n">18%</td><td class="good">근접</td></tr>
+  <tr><td>padded 문항</td><td class="n">12.2%</td><td class="n">18%</td><td class="dim">근접</td></tr>
+  <tr><td>답장률 (열람 대비)</td><td class="n">8.2%</td><td class="n">4~20%</td><td class="good">범위 내</td></tr>
+  <tr><td>탈퇴율</td><td class="n">10.2%</td><td class="n">10.5%</td><td class="good">일치</td></tr>
+  <tr><td>무댓글 게시글</td><td class="n">29.4%</td><td class="n">30%</td><td class="good">일치</td></tr>
+  <tr><td>세션 완료율</td><td class="n">98.6%</td><td class="n">78%</td><td class="warn">중도이탈 비율 미달</td></tr>
+  <tr><td>신고 PENDING</td><td class="n">74.9%</td><td class="n">30%</td><td class="warn">1개월 창 artifact</td></tr>
+</table>
+
+<p>채우지 못한 컬럼은 4개다. <code>app_user.auth_user_id</code>(설계상 NULL) ·
+<code>heart_purchase.failure_reason</code>(실패율 0.17%라 규모 문제) ·
+<code>sanction.ends_at</code>(SUSPEND 미발생) ·
+<code>heart_transaction.ad_impression_id</code>(광고 보상 0으로 바꾸며 거래 자체가 사라짐).</p>
+
+<h2>6. 다음 단계</h2>
+
+<ol>
+  <li><b>⚠️ 전체 규모</b> — 지금 500명·1개월이 115만 행이다. 단순 환산 시 2만 명·12개월은
+      <b>Q6 가드레일(4,000만 행)을 크게 넘는다.</b> 유저 수를 먼저 줄이는 판단이 필요하다</li>
+  <li><b>세션 중도 이탈</b> — 완료율 98.6%로 목표(78%)에 못 미친다</li>
+  <li><b>3국면 성장 곡선 (Q4)</b> — 1개월 샘플에서는 확인 불가. 12개월 생성 시 검증</li>
+  <li><b>무산된 힌트가 데이터에 안 남는다</b> — “사고 싶었는데 하트가 없었다”는 결제 전환
+      분석의 핵심 신호인데 지금은 볼 수 없다. 남기려면 표가 하나 필요하고,
+      <b>스키마 변경을 안 하기로 확정</b>했으므로 지금은 못 남긴다
+      (Q35 실험 테이블 · Q43 event_log 와 같은 종류의 제약)</li>
+</ol>
+
+<p class="dim">※ 하트 파라미터 조정은 목록에서 뺐다. 4장의 구간별 분석대로
+고칠 문제가 아닌 것으로 판단했다.</p>
+
+<footer>
+  ping-v2 · 합성 데이터 샘플 EDA v3 · 2026-08-03 ·
+  데이터 <code>data/sample-1m/</code> · 설정 <code>generator/config/synthetic-v2.yaml</code> ·
+  페르소나 정답지 <code>data/personas.json</code> (분석자에게 주지 않는다)
+</footer>
