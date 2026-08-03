@@ -2,7 +2,7 @@
 title: heart_transaction
 domain: 하트
 kind: activity
-rows: 1322
+rows: 1393
 tags: [테이블, 하트]
 ---
 
@@ -11,7 +11,7 @@ tags: [테이블, 하트]
 > 생성물이다. `python db/wiki_tables.py` 가 DDL·결정·검사·정책에서 모아 만든다.
 > **손으로 고치지 않는다** — 고칠 것이 있으면 원본을 고친다.
 
-**하트** · 활동 — 사람이 쓰면 쌓인다 · 실데이터 **1,322행**
+**하트** · 활동 — 사람이 쓰면 쌓인다 · 실데이터 **1,393행**
 
 ## 왜 이렇게 생겼나
 
@@ -37,11 +37,12 @@ tags: [테이블, 하트]
 
 **UNIQUE** — `hint_purchase_id · 단, (hint_purchase_id IS NOT NULL)` · `purchase_id · 단, (purchase_id IS NOT NULL)` · `ad_impression_id · 단, (ad_impression_id IS NOT NULL)`
 
-## 얽힌 결정 6개
+## 얽힌 결정 7개
 
 - [[client-write-minimal|클라이언트에 쓰기 권한을 거의 주지 않는다]]
 - [[drop-admin-user|admin_user 를 없애고 app_user.is_admin 하나로 접는다]]
 - [[heart-balance-after|모든 하트 증감에 `balance_after`를 기록]]
+- [[heart-economy-rebalance|하트 경제를 다시 잡는다 — v1 실측을 버린다]]
 - [[heart-unify-point|하트와 포인트를 하나로 통합]]
 - [[remove-circular-fk|순환 FK를 제거하는 방향으로 스키마 정리]]
 - [[signup-single-rpc|가입은 RPC 하나로만 한다]]

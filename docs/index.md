@@ -138,9 +138,9 @@ _아직 없다._
 
 - [[ad_impression|ad_impression]] — 생성기가 만든다.
 - [[app_user|app_user]] — "user" 는 Postgres 예약어라 app_user 로 명명한다. ★ 개인정보를 받지 않는다. 이메일·전화번호·실명·비밀번호 컬럼이 없
-- [[block_record|block_record]] — ⚠️ 생성기가 아직 만들지 않는다. 합성 데이터를 채우려면 새로 써야 한다.
+- [[block_record|block_record]] — 생성기가 만든다.
 - [[board_category|board_category]] — 생성기가 만든다.
-- [[comment_like|comment_like]] — ⚠️ 생성기가 아직 만들지 않는다. 합성 데이터를 채우려면 새로 써야 한다.
+- [[comment_like|comment_like]] — 생성기가 만든다.
 - [[friend_request|friend_request]] — 생성기가 만든다.
 - [[friendship|friendship]] — user_low_id < user_high_id 를 강제해 와 가 중복 저장되는 것을 막는다.
 - [[grade_class|grade_class]] — label: 화면에 보여줄 이름을 직접 지정하고 싶을 때만 채운다. 비어 있으면 앱이 "N학년 M반"으로 조립한다. 일반 학교는 비워두고, 
@@ -151,9 +151,9 @@ _아직 없다._
 - [[hint_purchase|hint_purchase]] — 구 데이터에서 확인된 누진 요금(200 → 300 → 500 → 1000)을 step 으로 명시화한다. 하트 차감은 heart_transac
 - [[meal_menu_item|meal_menu_item]] — 메뉴를 한 덩어리 텍스트가 아니라 요리 단위로 분리한다. "인기 급식 메뉴" 분석과 알레르기 필터가 가능해진다.
 - [[meal_plan|meal_plan]] — 학교·날짜·끼니에 UNIQUE. 같은 날 중복 급식이 들어오는 것을 DB가 막는다.
-- [[post|post]] — ⚠️ 생성기가 아직 만들지 않는다. 합성 데이터를 채우려면 새로 써야 한다.
+- [[post|post]] — 생성기가 만든다.
 - [[post_comment|post_comment]] — anonymous_seq: 글 안에서만 유효한 익명 번호(익명1, 익명2 ...). 같은 사람은 같은 글에서 같은 번호를 유지해 대화 맥락이
-- [[post_like|post_like]] — ⚠️ 생성기가 아직 만들지 않는다. 합성 데이터를 채우려면 새로 써야 한다.
+- [[post_like|post_like]] — 생성기가 만든다.
 - [[question|question]] — scope: CLASS / SCHOOL / GLOBAL. 세 스코프 모두 "친구" 안에서의 범위이며, GLOBAL 도 전체 가입자가 아니라 
 - [[question_category|question_category]] — 구 스키마에는 카테고리가 없어 "외모/신체 질문이 신고 상위 5개를 독점"한다는 사실을 사후 수동 분류로만 확인할 수 있었다. is_sens
 - [[question_request|question_request]] — 생성기가 만든다.
@@ -165,7 +165,7 @@ _아직 없다._
 - [[sanction_policy|sanction_policy]] — 임계값을 코드가 아니라 데이터로 정의한다. 구 시스템은 피신고 10회 이상 116명 중 제재된 사람이 0명이었고, 253회 신고받은 유저도 
 - [[school|school]] — 구 스키마에는 학교 이름 컬럼이 아예 없었다. 마스킹된 이름을 저장한다. neis_school_code 는 NEIS 공개 API 연동 키.
 - [[school_event|school_event]] — 시작·종료일을 분리해 기간 일정을 지원한다. grade_scope 가 NULL 이면 전교 대상, 값이 있으면 해당 학년만 해당한다.
-- [[school_notice|school_notice]] — ⚠️ 생성기가 아직 만들지 않는다. 합성 데이터를 채우려면 새로 써야 한다.
+- [[school_notice|school_notice]] — 생성기가 만든다.
 - [[school_notice_read|school_notice_read]] — 어떤 공지가 실제로 읽히는지 측정해 알림 정책을 조정한다.
 - [[timetable|timetable]] — 학급·학기·요일·교시에 UNIQUE → 한 칸에 두 과목이 들어갈 수 없다. 교사명은 마스킹해서 저장한다.
 - [[user_session|user_session]] — 리텐션을 추정이 아니라 실측하기 위한 테이블.

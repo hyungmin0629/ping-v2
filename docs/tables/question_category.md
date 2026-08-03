@@ -32,6 +32,10 @@ tags: [테이블, 질문과 투표]
 
 **이 표를 참조하는 표** — [[question]] · [[question_request]]
 
+## 얽힌 결정 1개
+
+- [[appearance-questions-for-report-rate|외모·신체 질문을 연다 — 민감 질문이 없으면 신고율을 못 잰다]]
+
 ## 이 표를 다루는 정책·RPC
 
 `db/rls/policies.sql`
