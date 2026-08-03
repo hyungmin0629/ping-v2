@@ -55,13 +55,15 @@ API 스펙 등 바깥에서 온 문서.
 
 _아직 없다._
 
-## 결정 <sub>`docs/decisions` · 56</sub>
+## 결정 <sub>`docs/decisions` · 62</sub>
 
 왜 그렇게 했는지. 하나가 한 노드다.
 
+- [[activity-by-retention-tier|활동 강도는 잔존 구간마다 다르다]] — 100~200회, 1달 이내 25~70회, 1주 이내 4~20회, 당일만 1~4회, 미접속 0회.
 - [[ads-payments-stub|MVP에서 광고와 결제를 스텁으로 처리]] — 스키마(ad_impression, heart_purchase)는 이미 준비돼 있으므로 나중에
 - [[airflow-two-services|Airflow 는 공식 컴포즈 대신 2개 서비스로 줄인다]] — 경험이 없어서 서비스가 8개면 어디가 죽었는지 판단할 수가 없다.
 - [[anonymous-auth-no-pii|개인정보를 일절 받지 않는 익명 인증]] — Supabase Anonymous Sign-in으로 접속 즉시 계정이 생기고, 유저가 입력하는 것은
+- [[appearance-questions-for-report-rate|외모·신체 질문을 연다 — 민감 질문이 없으면 신고율을 못 잰다]] — (migration 012). 합성 데이터에서 전체 질문의 6% 를 외모·스타일 질문으로 만든다.
 - [[backfill-updated-at|대량 적재 후 `updated_at` 을 각 행의 원래 시각으로 되돌린다]] — 두고, 대량 적재 직후 함께 돌린다.
 - [[bigquery-direct-no-gcs|BigQuery 에 GCS 를 경유하지 않고 직접 올린다]] — . GCS_BUCKET 은 비워 둔다.
 - [[bigquery-source-column|실유저와 합성 데이터를 같은 BigQuery 테이블에 `_source` 로 섞는다]] — 테이블 하나다. 적재할 때 _source 컬럼을 붙이고, 키를 (_source, id) 로 쓴다.
@@ -77,6 +79,7 @@ _아직 없다._
 - [[gender-at-onboarding|성별을 온보딩에서 받는다]] — 성별은 온보딩 필수 항목이며, 서버가 비어 있으면 거부한다.
 - [[global-scope-is-friends|`GLOBAL` 스코프는 "내 친구 전체"]] — 그리고 차단 사유 1위가 "모르는 사람임"이었다. 전체 가입자를 후보로 넣으면
 - [[heart-balance-after|모든 하트 증감에 `balance_after`를 기록]] — 원장에 남지 않아서다(heart.777이 57,873건 팔렸는데 원장의 +777 행은 21건뿐). 잔액을 원장으로
+- [[heart-economy-rebalance|하트 경제를 다시 잡는다 — v1 실측을 버린다]] — 3하트 30% · 4하트 20% · 5~10하트 10%) 로 바꾼다. 광고 보상은 0 으로 한다
 - [[heart-unify-point|하트와 포인트를 하나로 통합]] — UI는 "하트"라 부르고 DB 컬럼명은 point여서 분석할 때마다 혼선이 있었다.
 - [[history-based-navigation|화면 이동을 브라우저 이력에 싣는다]] — 홈으로 되돌린다. 화면 안의 닫기 버튼도 history.back() 을 거친다.
 - [[integrity-checks-aged|정합성 검사 3종이 낡아 있었다]] — 셋 다 데이터가 아니라 검사가 틀린 경우였다.
@@ -89,6 +92,7 @@ _아직 없다._
 - [[neis-merge-spans|NEIS 가 하루씩 주는 것을 기간으로 묶는다]] — 하나로 합쳐 start_date~end_date 로 저장한다. 사이에 낀 주말은 이어진
 - [[no-anonymous-board|익명 게시판을 v1에서 제외]] — 전례가 있고, 1인 프로젝트로는 신고 검토를 감당할 수 없다. 사고가 났을 때 책임을 질 수 없는 기능은 열지 않는다.
 - [[no-delete-propagation|원천의 삭제는 BigQuery 로 전파하지 않는다]] — BigQuery raw 에는 남는다.
+- [[no-schema-change-for-synthetic|합성 데이터를 위해 스키마를 바꾸지 않는다]] — (TEAM-PLAN 1장). 분포의 비현실성은 거의 전부 파라미터 문제였고, 실제로
 - [[one-time-reply|1회성 답장을 연다 — 차단 화면 없이]] — 20하트, 30자. 힌트를 열었든 안 열었든 보낼 수 있다.
 - [[open-named-board|자유게시판을 연다 — 글도 댓글도 닉네임으로]] — 쓰지 않고 nullable 로 바꿨다(마이그레이션 005).
 - [[org-borrows-school-info|테스트 조직은 이름을 유지하고 실제 학교의 정보를 빌려 쓴다]] — 급식·시간표·학사일정은 서울고등학교(표준학교코드 7010083)의 공개 데이터를 쓴다.
@@ -98,6 +102,7 @@ _아직 없다._
 - [[remove-circular-fk|순환 FK를 제거하는 방향으로 스키마 정리]] — 알 수 없다. 원장이 원인을 가리키는 단방향이 자연스럽다.
 - [[report-first-block-later|신고는 게시판과 함께, 차단은 뒤로]] — 다르다. 게시판은 공개 공간이라 "안 보이게"보다 "내려가게"가 먼저 필요하다.
 - [[report-sanction-fk|신고와 제재를 FK로 연결하고 정책을 데이터로 정의]] — 자동 제재 임계값을 저장한다.
+- [[row-guardrail-measured|행수 가드레일을 실측으로 다시 잡는다 — 위험은 행수가 아니라 쿼리량이다]] — 단다 — Looker 를 raw 에 직접 붙이지 않는다(P6 stg/mart 선행),
 - [[school-boundary-self-reported|학교 경계는 기술로 막지만, 소속은 자기신고다]] — "그 학교 사람인가"는 검증하지 않는다. 이 한계를 문서에 명시하고 그대로 간다.
 - [[school-info-write-revoked|학사일정·공지의 쓰기 권한이 열려 있었다]] — INSERT·UPDATE·DELETE 권한이 남아 있었다. 급식은 W8 에서
 - [[selectable-hints|힌트를 골라 사게 바꾼다 — 순차 4단계 폐기]] — 값이 커서(합계 2,000하트) 실제로 끝까지 사는 사람이 없었고, 순서가 고정이라
@@ -109,6 +114,7 @@ _아직 없다._
 - [[synthetic-real-separation|합성 데이터와 실유저 데이터를 분리]] — BigQuery 적재 시 is_synthetic 플래그로 구분한다. 합성 규모는 유저 5,000명 / 3개월치.
 - [[testers-pick-real-school|NEIS 연동 후 테스터는 실제 학교 중 하나를 고른다]] — 성인 테스터는 다니지 않는 실제 학교를 골라 쓴다. 이는 문제되지 않는다.
 - [[topup-stub-daily-limit|하트 충전은 결제 없는 스텁 — 대신 하루 한 번]] — 하트가 들어온다. 대신 어떤 상품을 골랐든 하루에 한 번만 받을 수 있다.
+- [[user-personas|페르소나는 분류가 아니라 생성 편의다]] — 혼합 · 트레잇 교차 · 무배정. 트레잇마다 따로 개인 편차를 곱한다.
 - [[voter-identity-view-only|투표자 신원은 뷰로만 노출한다]] — 대신 my_vote_received 뷰로만 접근하며, 이 뷰가 reveal_status 에 따라
 - [[watermark-lag-5min|워터마크를 스냅샷보다 5분 뒤로 물려 저장한다]] — 매 실행이 최근 5분치를 다시 읽는다.
 - [[watermark-updated-at|증분 워터마크를 `updated_at` 하나로 통일한다]] — . 적재 조건은 테이블과 무관하게
@@ -173,4 +179,4 @@ _아직 없다._
 
 ---
 
-문서 119개 · `python db/wiki_index.py` 로 갱신
+문서 125개 · `python db/wiki_index.py` 로 갱신

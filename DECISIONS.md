@@ -7,7 +7,7 @@ DDL과 스크립트가 진실이다.
 **이 문서는 색인이다.** 결정 하나하나는 `docs/decisions/` 의 파일이고,
 각각이 옵시디언 노드다. 하나를 보려고 전체를 읽지 않는다.
 
-결정 56개 · 유효 54 · 대체됨 2
+결정 62개 · 유효 60 · 대체됨 2
 
 ## 새 결정을 적을 때
 
@@ -22,6 +22,7 @@ DDL과 스크립트가 진실이다.
 - `2026-07-29` [[webapp-first-track|웹앱을 최우선 트랙으로 재편]]
 - `2026-07-29` [[ads-payments-stub|MVP에서 광고와 결제를 스텁으로 처리]]
 - `2026-07-29` [[student-mvp-adult-testers|학생용 MVP를 만들고, 검증은 성인이 한다]]
+- `2026-08-03` [[no-schema-change-for-synthetic|합성 데이터를 위해 스키마를 바꾸지 않는다]]
 
 ## 보안
 
@@ -48,6 +49,7 @@ DDL과 스크립트가 진실이다.
 - `2026-07-29` [[heart-balance-after|모든 하트 증감에 `balance_after`를 기록]]
 - `2026-07-30` [[topup-stub-daily-limit|하트 충전은 결제 없는 스텁 — 대신 하루 한 번]]
 - `2026-07-30` [[selectable-hints|힌트를 골라 사게 바꾼다 — 순차 4단계 폐기]]
+- `2026-08-03` [[heart-economy-rebalance|하트 경제를 다시 잡는다 — v1 실측을 버린다]]
 
 ## 투표
 
@@ -57,6 +59,7 @@ DDL과 스크립트가 진실이다.
 - `2026-07-30` [[pad-candidates-keep-scope|후보가 모자라면 스코프를 낮추지 않고 다른 친구로 채운다]]
 - `2026-07-29` ~~[[lower-scope-when-short|후보가 4명이 안 되면 스코프를 낮추고, 그래도 안 되면 질문을 내지 않는다]]~~ ⛔ → [[pad-candidates-keep-scope]]
 - `2026-07-30` [[one-time-reply|1회성 답장을 연다 — 차단 화면 없이]]
+- `2026-08-03` [[appearance-questions-for-report-rate|외모·신체 질문을 연다 — 민감 질문이 없으면 신고율을 못 잰다]]
 
 ## 친구
 
@@ -93,6 +96,7 @@ DDL과 스크립트가 진실이다.
 - `2026-07-30` [[join-requires-source|두 원천의 id 가 겹친다 — 조인에 `_source` 를 강제한다]]
 - `2026-07-30` [[soft-delete-marking|삭제를 전파하지는 않되, 표시는 한다 (앞 항목 보완)]]
 - `2026-07-31` [[purge-synthetic-data|합성 데이터를 전부 지운다 — 낡아서]]
+- `2026-08-03` [[row-guardrail-measured|행수 가드레일을 실측으로 다시 잡는다]]
 
 ## 인프라
 
@@ -103,3 +107,5 @@ DDL과 스크립트가 진실이다.
 ## 검증
 
 - `2026-07-31` [[integrity-checks-aged|정합성 검사 3종이 낡아 있었다]]
+- `2026-08-03` [[user-personas|페르소나는 분류가 아니라 생성 편의다]]
+- `2026-08-03` [[activity-by-retention-tier|활동 강도는 잔존 구간마다 다르다]]
