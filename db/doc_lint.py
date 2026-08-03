@@ -210,6 +210,31 @@ def main() -> int:
     if len(problems) == before:
         print("  깨끗함")
 
+    # ── 7. 없는 질문 번호를 가리키는가 ─────────────────────────
+    # 질문 번호(Q12 같은)는 **위치 기반 식별자**라 문서에서 질문을 지우면
+    # 그걸 인용한 곳이 전부 조용히 깨진다. 오류가 안 나서 더 위험하다.
+    # 실제로 Q31~Q47 을 지운 뒤 다른 문서 4개가 그 번호를 계속 가리키고 있었다.
+    print("7. 없는 질문 번호를 가리키는가")
+    before = len(problems)
+    qdoc = ROOT / "docs" / "synthetic-v2-decisions.md"
+    if qdoc.exists():
+        live = {int(m) for m in re.findall(r"^### (?:⚠️ )?(?:추가질문 )?Q(\d+)\.",
+                                           qdoc.read_text(encoding="utf-8"), re.M)}
+        if live:
+            for p in md_files() + sorted((ROOT / "docs").glob("*.html")):
+                if p.name == qdoc.name:
+                    text = qdoc.read_text(encoding="utf-8")
+                    # 자기 문서에서는 제목 줄을 빼고 본다
+                    text = re.sub(r"^### .*$", "", text, flags=re.M)
+                else:
+                    text = p.read_text(encoding="utf-8")
+                dead = {int(n) for n in re.findall(r"\bQ(\d+)\b", text)} - live
+                if dead:
+                    bad(f"{p.relative_to(ROOT)} 가 없는 질문 "
+                        f"{', '.join('Q'+str(n) for n in sorted(dead))} 를 가리킴")
+    if len(problems) == before:
+        print("  깨끗함")
+
     print()
     print("=" * 60)
     if notes:
