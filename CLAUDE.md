@@ -319,6 +319,13 @@ docker run -d --name pgtest -e POSTGRES_PASSWORD=test -e POSTGRES_DB=pingv2 -p 5
 | 옛 설정 | `distribution.yaml` 은 **26표만 만들고 힌트 요금이 v1 구조다.** 쓰지 말 것 |
 | 정답지 | `data/personas.json` — 페르소나 라벨. **분석자에게 주지 않는다** |
 
+**2026-08-05 현재 v4 가 확정 후보다** — 20,000명 · 12개월 · **1억 8,922만 행**.
+정합성 17종 · 이상치 9종 위반 0, 목표 지표 전부 달성
+([검수 리포트](EDA-final-12m-v4.pdf)).
+
+⚠️ **시각은 UTC 로 저장된다.** 시간대를 집계할 때 KST 로 바꾸지 않으면
+봉우리가 **9시간 밀린다**(밤 22시가 낮 13시로 보인다).
+
 절차와 확인할 지표는 [[ops-synthetic-data]].
 **판본마다 무엇이 깨졌고 왜 그렇게 정했는지**는
 [결정 이력](synthetic-data-decision-history.pdf) 에 전부 있다 — 30문답 ·
