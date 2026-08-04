@@ -1,0 +1,369 @@
+<meta charset="utf-8">
+<title>데이터가 어디서 와서 어디로 가는가 — 파이프라인 전체 그림</title>
+<style>
+  @page { size: A4; margin: 18mm 16mm; }
+  * { box-sizing: border-box; }
+  body { font-family: "Malgun Gothic", "맑은 고딕", -apple-system, sans-serif;
+         font-size: 10.5pt; line-height: 1.65; color: #1a1a1a; margin: 0; }
+  h1 { font-size: 20pt; margin: 0 0 4px; letter-spacing: -0.5px; }
+  h2 { font-size: 13.5pt; margin: 26px 0 10px; padding-bottom: 5px;
+       border-bottom: 2px solid #1a1a1a; page-break-after: avoid; }
+  h3 { font-size: 11.5pt; margin: 18px 0 7px; page-break-after: avoid; }
+  p { margin: 7px 0; }
+  .sub { color: #666; font-size: 9.5pt; margin: 0 0 14px; }
+  .meta { border: 1px solid #ddd; background: #fafafa; padding: 10px 14px;
+          font-size: 9pt; color: #444; margin-bottom: 22px; }
+  .meta b { color: #1a1a1a; } .meta div { margin: 2px 0; }
+  table { border-collapse: collapse; width: 100%; margin: 10px 0 16px; font-size: 9.5pt; }
+  th, td { border: 1px solid #d8d8d8; padding: 5px 9px; text-align: left; vertical-align: top; }
+  th { background: #f2f2f2; font-weight: 600; }
+  td.n, th.n { text-align: right; font-variant-numeric: tabular-nums; }
+  tr { page-break-inside: avoid; }
+  .bad { color: #b3261e; font-weight: 600; }
+  .good { color: #1b6b3a; font-weight: 600; }
+  .warn { color: #8a6d1f; font-weight: 600; }
+  .dim { color: #777; }
+  .box { border-left: 4px solid #b3261e; background: #fdf3f2;
+         padding: 10px 14px; margin: 12px 0; page-break-inside: avoid; }
+  .box.ok { border-left-color: #1b6b3a; background: #f1f8f3; }
+  .box.note { border-left-color: #8a6d1f; background: #fdfaef; }
+  .box h4 { margin: 0 0 5px; font-size: 10.5pt; } .box p { margin: 5px 0; }
+  ol, ul { margin: 7px 0 7px 20px; padding: 0; } li { margin: 4px 0; }
+  code { font-family: Consolas, monospace; font-size: 9pt;
+         background: #f0f0f0; padding: 1px 4px; border-radius: 2px; }
+  .pb { page-break-before: always; }
+  footer { margin-top: 28px; padding-top: 8px; border-top: 1px solid #ddd;
+           font-size: 8.5pt; color: #777; }
+
+  /* 흐름도 */
+  .flow { border: 1px solid #ddd; background: #fcfcfc; padding: 16px 14px;
+          margin: 14px 0; page-break-inside: avoid; }
+  .store { border: 2px solid #1a1a1a; padding: 8px 12px; margin: 0;
+           background: #fff; display: block; }
+  .store .nm { font-weight: 700; font-size: 10.5pt; }
+  .store .dt { font-size: 9pt; color: #555; margin-top: 2px; }
+  .arrow { text-align: center; font-size: 9pt; color: #555; margin: 6px 0; }
+  .lane { display: flex; gap: 12px; }
+  .lane > div { flex: 1; }
+  .tag { display: inline-block; font-size: 8.5pt; padding: 1px 6px;
+         border-radius: 3px; background: #eee; color: #444; margin-left: 4px; }
+  .tag.real { background: #e6f0ff; color: #1a4a8a; }
+  .tag.syn  { background: #fff0e6; color: #8a4a1a; }
+</style>
+
+<h1>데이터가 어디서 와서 어디로 가는가</h1>
+<p class="sub">ping-v2 파이프라인 전체 그림 — 실유저 데이터와 합성 데이터는 어디서 갈라지고 어디서 만나는가</p>
+
+<div class="meta">
+  <div><b>작성</b> 2026-08-04 · 이 문서는 <code>docs/</code> 위키(2층) 소속이다</div>
+  <div><b>확인 방법</b> 추정이 아니라 <b>실제 DB에 질의해서</b> 쓴 수치다. 확인 시점은 2026-08-04</div>
+  <div><b>읽는 사람</b> 코드를 직접 쓰지 않고 기획·데이터 판단을 하는 작업자</div>
+</div>
+
+<h2>1. 한 장 요약</h2>
+
+<p><b>저장소가 셋 있고, 데이터 갈래는 둘이다.</b> 갈래 둘은 <b>운영 단계에서 절대 섞이지
+않고</b>, BigQuery 에서 처음이자 마지막으로 만난다.</p>
+
+<div class="flow">
+  <div class="lane">
+    <div>
+      <div class="arrow"><b>갈래 A — 실유저</b> <span class="tag real">진짜 사람</span></div>
+      <div class="store">
+        <div class="nm">웹앱 (Vercel)</div>
+        <div class="dt">ping-v2-lac.vercel.app · 지인이 실제로 투표하는 화면</div>
+      </div>
+      <div class="arrow">↕ 읽고 쓴다</div>
+      <div class="store">
+        <div class="nm">Supabase (PostgreSQL)</div>
+        <div class="dt">실유저 <b>23명</b> · 질문 <b>24개</b> · 투표 <b>700건</b></div>
+      </div>
+    </div>
+    <div>
+      <div class="arrow"><b>갈래 B — 합성</b> <span class="tag syn">지어낸 데이터</span></div>
+      <div class="store">
+        <div class="nm">생성기 (generate.py)</div>
+        <div class="dt">CSV 40개 · 7.4GB 를 만든다</div>
+      </div>
+      <div class="arrow">↓ 붓는다 (load.py)</div>
+      <div class="store">
+        <div class="nm">로컬 Docker <code>pgtest</code></div>
+        <div class="dt">합성유저 <b>20,000명</b> · 질문 <b>240개</b> · <b>1억 4,126만 행</b></div>
+      </div>
+    </div>
+  </div>
+  <div class="arrow" style="margin-top:12px">↘ 둘 다 올라간다 (extract_load.py) ↙</div>
+  <div class="store" style="border-color:#1a4a8a">
+    <div class="nm">BigQuery <code>raw</code> — 둘이 만나는 유일한 곳</div>
+    <div class="dt">같은 표에 섞여 들어가되 <code>_source</code> 컬럼으로 갈린다
+      (<code>'supabase'</code> / <code>'local'</code>)</div>
+  </div>
+  <div class="arrow">↓ 아직 안 만든 단계</div>
+  <div class="store" style="border-style:dashed;border-color:#999">
+    <div class="nm dim">P6 stg / mart → P7 대시보드</div>
+    <div class="dt">분석용으로 정리된 층. <b>여기가 없어서 지금은 raw 를 직접 봐야 한다</b></div>
+  </div>
+</div>
+
+<div class="box ok">
+  <h4>핵심 한 줄</h4>
+  <p><b>웹앱은 Supabase 만 본다.</b> 합성 데이터는 웹앱에 <b>구조적으로 들어갈 수 없다</b> —
+  다른 서버, 다른 데이터베이스이기 때문이다. 코드로 확인되는 사실이다
+  (<code>web/src/lib/supabase/client.ts</code> 가 <code>NEXT_PUBLIC_SUPABASE_URL</code> 하나만 읽는다).</p>
+</div>
+
+<h2>2. 저장소 셋 — 각각 무엇이 들었나</h2>
+
+<table>
+  <tr>
+    <th style="width:19%">저장소</th><th style="width:15%">어디에</th>
+    <th>무엇이 들었나</th><th style="width:20%">누가 쓰나</th>
+  </tr>
+  <tr>
+    <td><b>Supabase</b><br><span class="tag real">실유저</span></td>
+    <td>클라우드<br>(무료 티어)</td>
+    <td>지인들이 실제로 만든 데이터. 계정·투표·하트·게시글.
+        NEIS 에서 받은 <b>전국 학교 5,725개</b> 마스터도 여기 있다.</td>
+    <td><b>웹앱</b>이 직접 읽고 쓴다</td>
+  </tr>
+  <tr>
+    <td><b>로컬 <code>pgtest</code></b><br><span class="tag syn">합성</span></td>
+    <td>내 PC 의<br>Docker 컨테이너</td>
+    <td>생성기가 지어낸 20,000명의 12개월치 활동.
+        <b>Supabase 와 표 구조(40표)가 완전히 같다.</b></td>
+    <td>아무도. <b>BigQuery 로 올리기 위한 중간 기착지</b></td>
+  </tr>
+  <tr>
+    <td><b>BigQuery <code>raw</code></b><br><span class="tag real">실</span><span class="tag syn">합성</span></td>
+    <td>클라우드<br>(서울 리전)</td>
+    <td>위 둘을 <b>같은 표에 섞어</b> 쌓는다. 대신 모든 행에
+        <code>_source</code> 가 붙어 어느 쪽에서 왔는지 알 수 있다.</td>
+    <td>분석. 앞으로 P6·P7 이 여기서 출발</td>
+  </tr>
+</table>
+
+<div class="box note">
+  <h4>왜 로컬 Postgres 를 한 번 거치나 — CSV 에서 바로 BigQuery 로 가면 안 되나</h4>
+  <p>두 가지 때문이다. 첫째, <b>정합성 검사 17종</b>이 SQL 이라 관계형 DB 가 있어야 돈다.
+  "하트를 쓴 기록 없이 힌트를 샀다" 같은 모순은 CSV 를 눈으로 봐서는 못 잡는다.</p>
+  <p>둘째, <b>실서비스와 똑같은 제약(FK·UNIQUE·CHECK)을 통과하는지</b>를 확인해야 한다.
+  통과하지 못하는 데이터는 "실제로는 일어날 수 없는 일"이 섞여 있다는 뜻이다.
+  BigQuery 는 제약이 없어서 무엇이든 그냥 받아준다 — <b>틀린 것도 받아준다.</b></p>
+</div>
+
+<h2 class="pb">3. 질문 24개 vs 240개 — 물어보신 사례</h2>
+
+<p>같은 <code>question</code> 이라는 표가 <b>두 데이터베이스에 각각 따로</b> 있다.
+같은 표에 264개가 들어 있는 것이 <b>아니다.</b></p>
+
+<table>
+  <tr><th style="width:22%"></th><th>Supabase <span class="tag real">실서비스</span></th>
+      <th>로컬 <code>pgtest</code> <span class="tag syn">합성</span></th></tr>
+  <tr><td><b>질문 수</b></td><td class="n">24개</td><td class="n">240개</td></tr>
+  <tr><td><b>누가 넣었나</b></td>
+      <td>W5 에서 <b>사람이 손으로 고른 24개</b>.
+          실제 이용자에게 출제된다</td>
+      <td>생성기가 템플릿에서 뽑아 <b>자동으로 만든 240개</b></td></tr>
+  <tr><td><b>카테고리</b></td><td class="n">8개</td><td class="n">8개 (같은 마스터)</td></tr>
+  <tr><td><b>외모·신체</b></td>
+      <td>카테고리는 <b>켜져 있다</b>(<code>is_active=true</code>).
+          다만 실제 질문 문장은 아직 안 넣었다</td>
+      <td><b>16개</b> 들어 있다 (240개의 6.7%)</td></tr>
+  <tr><td><b>id 범위</b></td><td class="n">8 ~ 46</td><td class="n">1 ~ 240</td></tr>
+</table>
+
+<h3>그럼 BigQuery 에서 합쳐지면 어떻게 되나</h3>
+
+<p><b>한 표 안에 나란히 공존한다.</b> 덮어쓰지 않는다.</p>
+
+<table>
+  <tr><th style="width:30%">시점</th><th><code>raw.question</code> 의 내용</th></tr>
+  <tr><td>지금 (실유저만)</td>
+      <td><b>24행</b> — 전부 <code>_source='supabase'</code>, id 8~46</td></tr>
+  <tr><td>합성을 올린 뒤</td>
+      <td><b>264행</b> — <code>'supabase'</code> 24행(id 8~46)
+          + <code>'local'</code> 240행(id 1~240)</td></tr>
+</table>
+
+<p>덮어쓰지 않는 이유는 적재가 <code>_source</code> 까지 맞춰야 "같은 행"으로 보기 때문이다
+(<code>MERGE ... ON T._source = S._source AND T.id = S.id</code>).
+즉 <b>BigQuery 에서 실질적인 기본키는 <code>id</code> 가 아니라 <code>(_source, id)</code></b> 다.</p>
+
+<div class="box">
+  <h4>실유저 질문 24개가 <b>전부</b> 합성 질문과 id 가 겹친다</h4>
+  <p>실유저 질문 id 가 8~46 이고 합성이 1~240 이므로, <b>24개 중 하나도 빠짐없이</b>
+  같은 번호의 합성 질문이 존재한다.</p>
+  <p><code>JOIN ... USING (id)</code> 로 조인하면 실유저의 투표에 <b>합성 질문 문장이 붙고</b>
+  행 수도 늘어난다(1:2 매칭). 그리고 오류가 나지 않는다 — 숫자가 다 맞아떨어지기 때문이다.</p>
+  <p>올바른 조인은 이렇다:<br>
+  <code>JOIN question q ON q.id = v.question_id AND q._source = v._source</code></p>
+</div>
+
+<div class="box">
+  <h4>여기서 조용한 함정이 생긴다</h4>
+  <p>두 DB 의 질문 <b>id 가 둘 다 1부터 시작한다.</b> 그래서 BigQuery 에 섞이면
+  <b>실서비스의 3번 질문과 합성의 3번 질문이 같은 값</b>을 갖는다. 서로 다른 문장인데도.</p>
+  <p>id 로 조인하면 실유저의 투표에 합성 질문이 붙는다. <b>그리고 오류가 나지 않는다.</b>
+  숫자가 맞아떨어지기 때문이다. 실제로 <code>app_user</code> 16개, <code>vote_item</code> 26개의
+  id 가 겹치는 것이 확인됐다.</p>
+  <p>그래서 BigQuery 에서는 <b>반드시 <code>_source</code> 를 조인 조건에 넣어야</b> 한다.
+  P6 에서 <code>_source || '-' || id</code> 형태의 키를 만들어 이 실수를 구조적으로 막을 계획이다.</p>
+</div>
+
+<h3>같은 구조, 다른 내용 — 이게 설계 의도다</h3>
+
+<p>합성 데이터는 <b>실서비스 스키마를 그대로 따른다.</b> 표 40개, 컬럼 이름, 제약까지
+같다. 그래서 합성 데이터로 짠 분석 쿼리를 <b>실데이터에 그대로 쓸 수 있다.</b>
+스키마를 합성 데이터 편의를 위해 바꾸지 않는다는 것이 결정 사항이다.</p>
+
+<h2>4. 지금 적재하고 있는 것은 어디로 가나</h2>
+
+<p>오늘 만든 1억 4,126만 행은 <b>내 PC 의 <code>pgtest</code> 컨테이너</b>로 들어가는 중이다.
+Supabase 에는 <b>한 줄도 안 간다.</b> 웹앱에도 영향이 없다.</p>
+
+<table>
+  <tr><th style="width:6%">순서</th><th style="width:34%">단계</th><th>무슨 일</th></tr>
+  <tr><td class="n">1</td><td>생성 <code>generate.py</code></td>
+      <td>CSV 40개 (7.4GB) 를 만든다. <b>완료</b> — 10분 16초</td></tr>
+  <tr><td class="n">2</td><td>적재 <code>load.py</code></td>
+      <td><code>COPY</code> 로 로컬 Postgres 에 붓는다. <b>완료</b></td></tr>
+  <tr><td class="n">3</td><td><code>95_resync_sequences.sql</code></td>
+      <td>id 를 직접 지정해 넣으면 자동 번호표가 안 움직인다. 되돌리지 않으면
+          <b>다음 가입이 id=1 을 발급하려다 충돌</b>한다</td></tr>
+  <tr><td class="n">4</td><td><code>96_backfill_updated_at.sql</code></td>
+      <td><b>진행 중.</b> 아래 설명</td></tr>
+  <tr><td class="n">5</td><td>정합성 17종</td><td>모순이 없는지. 위반 0 이어야 한다</td></tr>
+  <tr><td class="n">6</td><td>BigQuery 적재</td><td><code>_source='local'</code> 로 올린다</td></tr>
+</table>
+
+<div class="box note">
+  <h4>4번이 왜 이렇게 오래 걸리나 (1시간 가까이)</h4>
+  <p><code>updated_at</code> 은 "이 행이 마지막으로 바뀐 시각"이고, BigQuery 증분 적재가
+  <b>이 값 하나만 보고</b> 무엇을 새로 올릴지 정한다.</p>
+  <p>그런데 이 컬럼의 기본값이 "지금"이라, <code>COPY</code> 로 부으면 <b>1억 4천만 행이
+  전부 오늘 오후로 찍힌다.</b> 12개월치가 하루에 뭉쳐서 시간 분석이 전부 무의미해진다.</p>
+  <p>그래서 각 행의 <b>원래 시각</b>(투표한 시각, 가입한 시각…)으로 되돌린다.
+  1억 4천만 행을 하나씩 다시 쓰는 작업이라 오래 걸린다.</p>
+</div>
+
+<h2 class="pb">5. 실유저와 합성을 어떻게 구분하나 — 표식이 둘 있다</h2>
+
+<table>
+  <tr><th style="width:20%">표식</th><th style="width:22%">어디에 있나</th><th>쓰임</th></tr>
+  <tr><td><code>_source</code></td>
+      <td><b>데이터 표 40개 전부</b><br>(적재할 때 붙인다. <code>NOT NULL</code>)</td>
+      <td><b>이게 진짜 구분자다.</b> <code>'supabase'</code> 또는 <code>'local'</code>.
+          실유저만 보려면 <code>WHERE _source = 'supabase'</code></td></tr>
+  <tr><td><code>is_synthetic</code></td>
+      <td><code>app_user</code> <b>한 표에만</b></td>
+      <td>원래 이걸 쓰려 했으나 <b>39개 표에는 없어서</b> 못 쓴다.
+          id 충돌도 못 푼다. 지금 Supabase 에서 이 값이 true 인 사람은 <b>0명</b></td></tr>
+</table>
+
+<p>여기에 적재 시각 <code>_loaded_at</code> 도 함께 붙는다. 즉 BigQuery 의 모든 표는
+<b>원래 컬럼 + <code>_source</code> + <code>_loaded_at</code></b> 구조다.</p>
+
+<div class="box ok">
+  <h4>실제로 확인한 것 (2026-08-04)</h4>
+  <p>BigQuery <code>raw</code> 의 표 41개 중 <b>40개에 <code>_source</code> 가 있다.</b>
+  없는 하나는 <code>_load_state</code> 인데, 이건 데이터가 아니라 <b>"어느 표를 어디까지
+  올렸나"를 적어두는 파이프라인 장부</b>라 예외다. 즉 <b>데이터 표는 빠짐없이 전부</b> 붙어 있다.</p>
+</div>
+
+<h3>왜 아예 다른 데이터셋으로 나누지 않았나</h3>
+<p>나누면 "실유저와 합성을 같은 쿼리로 비교"하는 것이 불가능해진다. 합성 데이터의
+목적이 <b>실데이터가 적어서 못 보는 것을 대신 보는 것</b>이므로, 둘을 나란히 놓고
+"합성에서 보이는 패턴이 실데이터에도 있나"를 물을 수 있어야 한다.</p>
+
+<h2>6. 증분 적재 — 왜 매번 전부 올리지 않나</h2>
+
+<p>BigQuery 는 <b>바뀐 것만</b> 올린다. 방식은 이렇다.</p>
+
+<ol>
+  <li><code>_load_state</code> 라는 표에 "이 표는 여기까지 올렸다"는 시각(워터마크)을 적어 둔다</li>
+  <li>다음 적재 때 <code>updated_at &gt; 워터마크</code> 인 행만 가져온다</li>
+  <li>올린 뒤 워터마크를 갱신한다</li>
+</ol>
+
+<div class="box">
+  <h4>증분은 조용히 틀린다 — 에러가 안 난다</h4>
+  <p>실제로 걸린 함정 넷이 있다. <b>전부 오류 메시지 없이 잘못된 결과</b>를 냈다.</p>
+  <ul>
+    <li><b>지운 워터마크를 안 지움</b> — 행만 지우고 워터마크를 남기면, 다음 적재가
+        "이미 최신"으로 판단하고 <b>아무것도 안 올린 채 조용히 끝난다</b></li>
+    <li><b>컬럼 추가 후 워터마크 정지</b></li>
+    <li><b>지운 행의 유령</b> — 원천에서 지워도 BigQuery 에는 남는다(의도된 설계다)</li>
+    <li><b>과거 시각 백필</b> — 워터마크보다 과거로 시각을 되돌리면 영원히 안 올라간다</li>
+  </ul>
+</div>
+
+<h2>7. 왜 합성 데이터를 만드나 — 실유저가 있는데</h2>
+
+<p>실유저가 <b>23명</b>이기 때문이다. 이 규모로는 답할 수 없는 질문이 대부분이다.</p>
+
+<table>
+  <tr><th style="width:44%">묻고 싶은 것</th><th>실유저 23명으로 가능한가</th></tr>
+  <tr><td>가입 후 1년간 얼마나 남는가 (잔존)</td>
+      <td class="bad">불가능 — 서비스가 시작된 지 며칠이다</td></tr>
+  <tr><td>방학·시험기간에 활동이 어떻게 변하나</td>
+      <td class="bad">불가능 — 12개월을 관측해야 한다</td></tr>
+  <tr><td>하트를 사는 사람과 안 사는 사람이 어떻게 갈리나</td>
+      <td class="bad">불가능 — 표본이 너무 작다</td></tr>
+  <tr><td>민감한 질문이 실제로 더 신고되나</td>
+      <td class="bad">불가능 — 신고 자체가 거의 없다</td></tr>
+  <tr><td>파이프라인이 대량 데이터에서 도는가</td>
+      <td class="good">이건 합성으로만 확인 가능하다</td></tr>
+</table>
+
+<p><b>그러나 합성 데이터는 정답이 아니다.</b> 내가 정한 분포대로 나오게 만든 것이므로,
+"합성에서 이런 결과가 나왔다"는 <b>내가 그렇게 설정했다</b>는 뜻 이상이 아닐 수 있다.
+합성으로는 <b>분석 방법과 파이프라인을 검증</b>하고, <b>사실 판단은 실데이터로</b> 한다.</p>
+
+<h2 class="pb">8. 지금 어디까지 왔고 앞으로 무엇이 남았나</h2>
+
+<table>
+  <tr><th style="width:10%">단계</th><th style="width:32%">내용</th><th>상태</th></tr>
+  <tr><td>P0~P2</td><td>스키마 · 합성 생성 · 로컬 적재</td><td class="good">완료</td></tr>
+  <tr><td>P3</td><td>NEIS 학교·급식·학사일정 수집</td><td class="warn">데이터는 받았고 자동화(DAG)는 남음</td></tr>
+  <tr><td>P4</td><td>BigQuery 적재</td><td class="good">완료 — 지금은 실유저만 올라가 있다</td></tr>
+  <tr><td><b>P5</b></td><td><b>품질 검증</b></td><td>다음 차례</td></tr>
+  <tr><td><b>P6</b></td><td><b>stg / mart</b> — 분석용 정리 층</td>
+      <td>첫 작업은 <b>대리키</b>(id 충돌 방지)</td></tr>
+  <tr><td>P7</td><td>대시보드</td><td>P6 이후. <b>raw 에 직접 붙이면 안 된다</b></td></tr>
+</table>
+
+<div class="box note">
+  <h4>P6 을 건너뛰고 대시보드를 붙이면 안 되는 이유 — 돈이다</h4>
+  <p>BigQuery 는 저장이 아니라 <b>읽은 양</b>으로 과금한다. 무료 한도는 월 1 TiB 다.</p>
+  <p>합성 데이터의 가장 큰 표(<code>vote_candidate</code>)는 <b>4.9 GiB</b> 다. 대시보드가
+  이 표를 통째로 훑으면 한 번에 무료 한도의 0.5% 가 나간다. 차트 20개가 하루 30번씩
+  새로고침하면 <b>월 17 TiB</b> 가 되어 십수만원이 청구된다.</p>
+  <p>P6 은 미리 집계해 둔 작은 표를 만드는 단계다. 대시보드가 <b>작은 표만 보게</b> 하면
+  이 문제가 사라진다. 그때까지의 임시 방어책으로 <b>일일 쿼리 상한 30 GiB</b> 를 걸어 두었다.</p>
+</div>
+
+<h2>9. 자주 헷갈리는 것</h2>
+
+<table>
+  <tr><th style="width:42%">질문</th><th>답</th></tr>
+  <tr><td>합성 데이터가 실서비스에 섞일 수 있나?</td>
+      <td class="good">없다. 다른 서버·다른 DB 이고, 웹앱은 Supabase 만 본다</td></tr>
+  <tr><td>내 PC 의 <code>pgtest</code> 를 지우면 큰일 나나?</td>
+      <td>아니다. CSV 에서 다시 부으면 된다. <b>다만 BigQuery 에 이미 올렸다면
+          워터마크도 함께 지워야 한다</b></td></tr>
+  <tr><td>실유저 23명 데이터는 안전한가?</td>
+      <td>Supabase 에 있고 합성 작업이 건드리지 않는다.
+          BigQuery 재적재도 <code>_source='local'</code> 만 지운다</td></tr>
+  <tr><td>웹앱에 나오는 급식·학교는 어디 것인가?</td>
+      <td>NEIS 실제 데이터다(서울고 공개 데이터를 빌려 쓴다). 합성이 아니다</td></tr>
+  <tr><td>질문 240개가 실제 이용자에게 나가나?</td>
+      <td class="good">아니다. 실서비스는 Supabase 의 24개만 쓴다</td></tr>
+  <tr><td>합성 데이터에 진짜 사람 정보가 있나?</td>
+      <td class="good">없다. 닉네임까지 전부 조합해서 만든다.
+          애초에 이 서비스는 실명·이메일·전화번호를 받지 않는다</td></tr>
+</table>
+
+<footer>
+  ping-v2 · 이 문서는 실제 DB 질의로 확인한 2026-08-04 시점의 사실이다.
+  수치는 시간이 지나면 달라진다 — 구조와 이유는 유지된다.
+</footer>
