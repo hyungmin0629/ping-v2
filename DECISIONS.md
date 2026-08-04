@@ -90,6 +90,7 @@ DDL과 스크립트가 진실이다.
 ## 신고와 제재
 
 - `2026-07-29` [[report-sanction-fk|신고와 제재를 FK로 연결하고 정책을 데이터로 정의]]
+- `2026-08-04` [[sensitive-question-report-weight|민감 질문에 신고 성향을 심는다]]
 
 ## 파이프라인
 
@@ -105,6 +106,7 @@ DDL과 스크립트가 진실이다.
 - `2026-07-31` [[purge-synthetic-data|합성 데이터를 전부 지운다 — 낡아서]]
 - `2026-08-03` ~~[[row-guardrail-measured|행수 가드레일을 실측으로 다시 잡는다]]~~ → [[row-cap-to-query-cap]]
 - `2026-08-04` [[row-cap-to-query-cap|행수 상한을 버리고 쿼리 하드캡으로 바꾼다]]
+- `2026-08-04` [[generator-emits-updated-at|`updated_at` 을 생성기가 직접 싣는다]]
 
 ## 인프라
 
@@ -118,3 +120,10 @@ DDL과 스크립트가 진실이다.
 - `2026-08-03` [[user-personas|페르소나는 분류가 아니라 생성 편의다]]
 - `2026-08-03` [[activity-by-retention-tier|활동 강도는 잔존 구간마다 다르다]]
 - `2026-08-04` [[growth-curve-two-channels|성장 곡선은 가입과 활동 두 갈래로 건다]]
+- `2026-08-04` [[spring-spike-growth-curve|성장 곡선을 봄학기형으로 바꾼다]]
+- `2026-08-04` [[school-sequential-adoption|학교를 순차로 열고, 학급 수를 정원에서 유도한다]]
+- `2026-08-04` [[reactivation-cohort|휴면했다 돌아오는 유저를 만든다]]
+- `2026-08-04` [[retention-quarter-tier|잔존 구간에 30~89일을 새로 넣는다]]
+- `2026-08-04` [[popularity-floor-is-activity|인기도 45%는 도달할 수 없다]]
+- `2026-08-04` [[expired-session-status|중도 이탈 세션은 EXPIRED 로 적는다]]
+

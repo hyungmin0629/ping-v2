@@ -37,8 +37,9 @@ tags: [테이블, 학교 정보]
 
 **이 표를 참조하는 표** — [[meal_menu_item]]
 
-## 얽힌 결정 1개
+## 얽힌 결정 2개
 
+- [[generator-emits-updated-at|`updated_at` 을 생성기가 직접 싣는다 — 백필 UPDATE 가 3시간을 먹었다]]
 - [[school-info-write-revoked|학사일정·공지의 쓰기 권한이 열려 있었다]]
 
 ## 이 표를 다루는 정책·RPC

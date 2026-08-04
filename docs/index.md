@@ -55,7 +55,7 @@ API 스펙 등 바깥에서 온 문서.
 
 _아직 없다._
 
-## 결정 <sub>`docs/decisions` · 63</sub>
+## 결정 <sub>`docs/decisions` · 73</sub>
 
 왜 그렇게 했는지. 하나가 한 노드다.
 
@@ -74,11 +74,14 @@ _아직 없다._
 - [[closed-test-adults|성인 지인 대상 클로즈드 테스트로 한정]] — 필요하고, 외모 관련 투표와 익명 게시판을 미성년자에게 열면서 모니터링이 없으면 감당할 수 없다.
 - [[drop-admin-user|admin_user 를 없애고 app_user.is_admin 하나로 접는다]] — 유지할 근거가 "언젠가 운영 화면을 만들면"뿐이었다. 그 언젠가가 이 프로젝트의
 - [[events-on-meal-calendar|학사일정을 급식 달력에 얹는다 — 따로 만들지 않고]] — 날짜 칸 아래 점이 그날 일정이고, 달력 아래에 그 달 일정이 통째로 나온다.
+- [[expired-session-status|중도 이탈 세션은 EXPIRED 로 적는다 — 완료율이 98.6%로 보이던 이유]] — 이미 있는 값이라 스키마는 건드리지 않는다.
 - [[friend-invite-code-two-step|친구 맺기는 초대 코드로만, 요청·수락 2단계로]] — 맺어지는 절차는 요청 → 수락이며, friend_request 와 friendship 의 직접 쓰기는
 - [[friend-recommend-same-school|친구 추천 — "초대 코드로만"을 같은 학교 범위에서 연다]] — 했다. "안 볼래"로 목록에서 뺄 수도 있다.
 - [[friendship-ended-at|친구를 끊어도 행을 지우지 않는다]] — UNIQUE 는 살아 있는 관계에만 걸어(부분 유니크 인덱스) 끊었다 다시 맺기가
 - [[gender-at-onboarding|성별을 온보딩에서 받는다]] — 성별은 온보딩 필수 항목이며, 서버가 비어 있으면 거부한다.
+- [[generator-emits-updated-at|`updated_at` 을 생성기가 직접 싣는다 — 백필 UPDATE 가 3시간을 먹었다]] — 적재 후 96_backfill_updated_at.sql 이 고칠 것이 없어진다.
 - [[global-scope-is-friends|`GLOBAL` 스코프는 "내 친구 전체"]] — 그리고 차단 사유 1위가 "모르는 사람임"이었다. 전체 가입자를 후보로 넣으면
+- [[growth-curve-two-channels|성장 곡선은 가입과 활동 두 갈래로 건다 — 그리고 국면이 안 겹치면 끈다]] — 곡선은 두 갈래로 작용한다 — signup_share 가 가입 시점을 나누고,
 - [[heart-balance-after|모든 하트 증감에 `balance_after`를 기록]] — 원장에 남지 않아서다(heart.777이 57,873건 팔렸는데 원장의 +777 행은 21건뿐). 잔액을 원장으로
 - [[heart-economy-rebalance|하트 경제를 다시 잡는다 — v1 실측을 버린다]] — 3하트 30% · 4하트 20% · 5~10하트 10%) 로 바꾼다. 광고 보상은 0 으로 한다
 - [[heart-unify-point|하트와 포인트를 하나로 통합]] — UI는 "하트"라 부르고 DB 컬럼명은 point여서 분석할 때마다 혼선이 있었다.
@@ -98,18 +101,25 @@ _아직 없다._
 - [[open-named-board|자유게시판을 연다 — 글도 댓글도 닉네임으로]] — 쓰지 않고 nullable 로 바꿨다(마이그레이션 005).
 - [[org-borrows-school-info|테스트 조직은 이름을 유지하고 실제 학교의 정보를 빌려 쓴다]] — 급식·시간표·학사일정은 서울고등학교(표준학교코드 7010083)의 공개 데이터를 쓴다.
 - [[pad-candidates-keep-scope|후보가 모자라면 스코프를 낮추지 않고 다른 친구로 채운다]] — 다른 사람으로 빈 자리를 채운다. 채운 인원 수는 vote_item.padded_count 에
+- [[popularity-floor-is-activity|인기도 45%는 도달할 수 없다 — 바닥은 활동 불균형이다]] — 45%는 파라미터로 도달할 수 없다는 것이 실측으로 드러났다.
 - [[profile-edit-rpc|프로필 수정도 RPC 하나로 — 직접 UPDATE 권한 회수]] — 가입은 complete_onboarding() 이 닉네임 2~20자, 성별 필수, 학급 존재를
 - [[purge-synthetic-data|합성 데이터를 전부 지운다 — 낡아서]] — Supabase 는 손대지 않았다. 애초에 합성이 0행이었다 — 더미 친구는 진작에 정리됐다.
+- [[reactivation-cohort|휴면했다 돌아오는 유저를 만든다 — 3월에 몰리되 다른 달에도 있게]] — 복귀 시점은 봄학기에 가중치를 주되 다른 달에도 나오게 한다.
 - [[remove-circular-fk|순환 FK를 제거하는 방향으로 스키마 정리]] — 알 수 없다. 원장이 원인을 가리키는 단방향이 자연스럽다.
 - [[report-first-block-later|신고는 게시판과 함께, 차단은 뒤로]] — 다르다. 게시판은 공개 공간이라 "안 보이게"보다 "내려가게"가 먼저 필요하다.
 - [[report-sanction-fk|신고와 제재를 FK로 연결하고 정책을 데이터로 정의]] — 자동 제재 임계값을 저장한다.
+- [[retention-quarter-tier|잔존 구간에 30~89일을 새로 넣는다 — v1 실측에서 일부러 벗어난다]] — 나머지 비율을 조금씩 덜어 재배분한다. long_term 의 하한도 30일 → 90일로 올린다.
+- [[row-cap-to-query-cap|행수 상한을 버리고 쿼리 하드캡으로 바꾼다]] — 쓰지 않는다. 대신 BigQuery 커스텀 할당량(일일 쿼리 바이트 상한) 을 건다.
 - [[row-guardrail-measured|행수 가드레일을 실측으로 다시 잡는다 — 위험은 행수가 아니라 쿼리량이다]] — 단다 — Looker 를 raw 에 직접 붙이지 않는다(P6 stg/mart 선행),
 - [[school-boundary-self-reported|학교 경계는 기술로 막지만, 소속은 자기신고다]] — "그 학교 사람인가"는 검증하지 않는다. 이 한계를 문서에 명시하고 그대로 간다.
 - [[school-info-write-revoked|학사일정·공지의 쓰기 권한이 열려 있었다]] — INSERT·UPDATE·DELETE 권한이 남아 있었다. 급식은 W8 에서
+- [[school-sequential-adoption|학교를 순차로 열고, 학급 수를 정원에서 유도한다]] — 개교일을 정하고, 가입일 순서로 그 시점에 열려 있는 학교 중에서 고른다.
 - [[selectable-hints|힌트를 골라 사게 바꾼다 — 순차 4단계 폐기]] — 값이 커서(합계 2,000하트) 실제로 끝까지 사는 사람이 없었고, 순서가 고정이라
+- [[sensitive-question-report-weight|민감 질문에 신고 성향을 심는다 — 안 심으면 플래그가 아무 의미도 없다]] — 준다.
 - [[shuffle-once-constraint|셔플은 DB 제약으로 1회를 강제한다]] — 스키마로 막으면 코드에 버그가 있어도 데이터가 오염되지 않는다.
 - [[signup-single-rpc|가입은 RPC 하나로만 한다]] — RLS 는 행 단위라 이걸 막지 못한다.
 - [[soft-delete-marking|삭제를 전파하지는 않되, 표시는 한다 (앞 항목 보완)]] — 다만 _deleted_at 을 찍어 지워진 행임을 표시한다.
+- [[spring-spike-growth-curve|성장 곡선을 봄학기형으로 바꾼다 — 회복이 아니라 3월 스파이크 뒤 하강]] — 굴러가면서 관심이 식는 것이 학사 일정과 맞는다. 옛 곡선은 뒤로 갈수록
 - [[student-mvp-adult-testers|학생용 MVP를 만들고, 검증은 성인이 한다]] — 다만 실제 이용자는 여전히 성인 지인이며, 그들이 학생용 MVP가 작동하는지 확인한다.
 - [[supabase-session-pooler|Supabase 연결은 Session pooler 를 쓴다]] — 로 접속한다.
 - [[synthetic-real-separation|합성 데이터와 실유저 데이터를 분리]] — BigQuery 적재 시 is_synthetic 플래그로 구분한다. 합성 규모는 유저 5,000명 / 3개월치.
@@ -181,4 +191,4 @@ _아직 없다._
 
 ---
 
-문서 127개 · `python db/wiki_index.py` 로 갱신
+문서 137개 · `python db/wiki_index.py` 로 갱신

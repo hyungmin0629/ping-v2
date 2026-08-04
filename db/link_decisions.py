@@ -23,6 +23,30 @@ DEC = ROOT / "docs" / "decisions"
 
 # (a, b, 왜 이어지는가) — 양쪽에서 같은 문장으로 읽히게 쓴다
 PAIRS = [
+    # ── 합성 데이터 v3 (2026-08-04) ──────────────────────────────────
+    ("growth-curve-two-channels", "spring-spike-growth-curve",
+     "앞은 곡선을 **어떻게 거는가**(가입·활동 두 갈래), 뒤는 곡선의 **모양**을 정한다"),
+    ("spring-spike-growth-curve", "reactivation-cohort",
+     "둘 다 봄학기(3월)에 무게를 싣는다 — 신규 유입과 복귀가 같은 달에 겹친다"),
+    ("school-sequential-adoption", "spring-spike-growth-curve",
+     "가입일을 먼저 뽑고 학교를 나중에 고르는 순서가 **성장 곡선을 보존한다**"),
+    ("school-sequential-adoption", "popularity-floor-is-activity",
+     "학급 크기가 인기도 쏠림을 좌우한다 — 반이 커지면 학급 안 순위 스프레드가 커진다"),
+    ("popularity-floor-is-activity", "activity-by-retention-tier",
+     "지목 쏠림의 바닥은 **활동 불균형**이다. 활동 강도를 정한 결정이 인기도를 정한 셈"),
+    ("retention-quarter-tier", "activity-by-retention-tier",
+     "앞은 구간을 **늘리고**, 뒤는 구간마다 활동 강도를 **정한다**"),
+    ("retention-quarter-tier", "user-personas",
+     "둘 다 v1 실측을 그대로 쓰지 않는다 — 분석 가능성을 위해 의도적으로 흐리거나 늘렸다"),
+    ("sensitive-question-report-weight", "appearance-questions-for-report-rate",
+     "카테고리를 연 것만으로는 부족했다. **신고 성향을 심어야** 목적이 달성된다"),
+    ("expired-session-status", "integrity-checks-aged",
+     "둘 다 **측정이 틀린** 경우다 — 데이터가 아니라 재는 방법이 문제였다"),
+    ("generator-emits-updated-at", "backfill-updated-at",
+     "같은 문제의 두 해법 — 적재 뒤 고치기(옛것) vs 처음부터 맞게 넣기(새것)"),
+    ("generator-emits-updated-at", "row-cap-to-query-cap",
+     "둘 다 **규모가 커지자 드러난** 문제다. 작은 샘플에서는 보이지 않았다"),
+
     # 구 서비스의 분석 불가 지점을 닫는다
     ("heart-unify-point", "heart-balance-after",
      "하트 원장 설계 한 쌍 — 통화를 하나로 합치고, 거래마다 직후 잔액을 남긴다"),
@@ -192,9 +216,19 @@ def main() -> int:
         for other, why in sorted(links):
             lines.append(f"- [[{other}|{titles[other]}]]\n  — {why}\n")
         block = "".join(lines)
-        # 꼬리말(--- 로 시작하는 마지막 구분선) 앞에 넣는다
-        idx = text.rfind("\n---\n")
-        text = text[:idx] + block + text[idx:]
+        # 꼬리말(--- 구분선) 앞에 넣는다.
+        # ⚠️ **frontmatter 를 닫는 `---` 를 잡으면 안 된다.** 꼬리말 구분선이
+        #    없는 노드에서 rfind 가 frontmatter 의 닫는 줄을 찾아, 블록이
+        #    frontmatter **안으로** 들어가 YAML 이 깨진다(2026-08-04 에 9개 노드가
+        #    그렇게 깨졌다). frontmatter 가 끝나는 지점부터 찾는다.
+        fm_end = text.find("\n---\n", 3) if text.startswith("---\n") else -1
+        start = fm_end + 5 if fm_end >= 0 else 0
+        idx = text.rfind("\n---\n", start)
+        if idx < 0:
+            # 꼬리말 구분선이 없는 노드 — 끝에 붙인다
+            text = text.rstrip("\n") + "\n" + block
+        else:
+            text = text[:idx] + block + text[idx:]
         p.write_text(text, encoding="utf-8")
 
     isolated = sorted(nodes - set(rel))

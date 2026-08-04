@@ -30,6 +30,10 @@ tags: [테이블, 유저]
 | `ended_at` | timestamptz |  |  |
 | `updated_at` | timestamptz | NOT NULL |  |
 
+## 얽힌 결정 1개
+
+- [[generator-emits-updated-at|`updated_at` 을 생성기가 직접 싣는다 — 백필 UPDATE 가 3시간을 먹었다]]
+
 ## 이 표를 지키는 정합성 검사 1종
 
 `qa/checks/integrity.sql` · 위반 0이어야 한다.

@@ -37,9 +37,11 @@ tags: [테이블, 질문과 투표]
 
 **이 표를 참조하는 표** — [[heart_transaction]] · [[vote_candidate]] · [[vote_received]] · [[vote_shuffle]]
 
-## 얽힌 결정 7개
+## 얽힌 결정 9개
 
 - [[backfill-updated-at|대량 적재 후 `updated_at` 을 각 행의 원래 시각으로 되돌린다]]
+- [[expired-session-status|중도 이탈 세션은 EXPIRED 로 적는다 — 완료율이 98.6%로 보이던 이유]]
+- [[generator-emits-updated-at|`updated_at` 을 생성기가 직접 싣는다 — 백필 UPDATE 가 3시간을 먹었다]]
 - [[join-requires-source|두 원천의 id 가 겹친다 — 조인에 `_source` 를 강제한다]]
 - [[local-db-via-apply|로컬 DB 는 `apply.py` 로만 만든다]]
 - [[lower-scope-when-short|후보가 4명이 안 되면 스코프를 낮추고, 그래도 안 되면 질문을 내지 않는다]]

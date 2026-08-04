@@ -28,9 +28,10 @@ tags: [테이블, 학교 정보]
 | `sort_order` | smallint | NOT NULL |  |
 | `updated_at` | timestamptz | NOT NULL |  |
 
-## 얽힌 결정 2개
+## 얽힌 결정 3개
 
 - [[backfill-updated-at|대량 적재 후 `updated_at` 을 각 행의 원래 시각으로 되돌린다]]
+- [[generator-emits-updated-at|`updated_at` 을 생성기가 직접 싣는다 — 백필 UPDATE 가 3시간을 먹었다]]
 - [[watermark-updated-at|증분 워터마크를 `updated_at` 하나로 통일한다]]
 
 ## 이 표를 다루는 정책·RPC

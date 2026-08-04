@@ -31,6 +31,8 @@ BigQuery raw 테이블은 `updated_at` 으로 파티션을 나눈다. 전부 한
   건드리지 않는다. 그 값은 **진짜 수정 이력**이라 `created_at` 으로 덮으면 데이터를 잃는다.
 
 ## 이어지는 결정
+- [[generator-emits-updated-at|`updated_at` 을 생성기가 직접 싣는다 — 백필 UPDATE 가 3시간을 먹었다]]
+  — 같은 문제의 두 해법 — 적재 뒤 고치기(옛것) vs 처음부터 맞게 넣기(새것)
 - [[watermark-updated-at|증분 워터마크를 `updated_at` 하나로 통일한다]]
   — 증분 키를 통일하고, 대량 적재가 그것을 망가뜨리는 것을 되돌린다
 
