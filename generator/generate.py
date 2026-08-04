@@ -1046,6 +1046,16 @@ class Generator:
             return base
         wd, we = u.hour_w
         w = list(we if base.weekday() >= 5 else wd)
+        # ⚠️ **창을 벗어나는 시각은 아예 뽑지 않는다.** 뽑고 나서 버리고 균등으로
+        #    물러서면, 창이 좁은 경우(가입 당일은 가입 시각 이후만 유효하다)
+        #    상당수가 균등이 되어 리듬이 흐려진다.
+        day = base.replace(hour=0, minute=0, second=0, microsecond=0)
+        for h in range(24):
+            if not (lo <= day + timedelta(hours=h, minutes=59) and
+                    day + timedelta(hours=h) <= hi):
+                w[h] = 0.0
+        if sum(w) <= 0:
+            return base
         hour = self.rng.choices(range(24), weights=w, k=1)[0]
         cand = base.replace(hour=hour, minute=self.rng.randint(0, 59),
                             second=self.rng.randint(0, 59))
@@ -2037,11 +2047,33 @@ class Generator:
                 d = u.created_at + timedelta(days=day)
                 if d > self.end:
                     break
-                for _ in range(self.rng.randint(*ss["per_active_day"])):
-                    sess_id += 1
-                    st = d + timedelta(minutes=self.rng.randint(0, 1439))
+                # ⚠️ 접속 세션에도 **같은 리듬**을 건다. 예전에는 하루 중 아무
+                #    분이나 균등하게 뽑아서, 투표 세션에만 시간대가 걸리고
+                #    `user_session` 은 0~23시가 전부 4.2% 였다.
+                #    "언제 앱을 여는가"를 묻는 가장 자연스러운 표가 이쪽이라
+                #    여기가 균등하면 시간대 분석이 성립하지 않는다.
+                #
+                # ⚠️ 창을 **그 날 자정~자정**으로 잡아야 시간대 치환이 맞는다.
+                #    d 는 가입 시각 기준이라 그대로 쓰면 창이 이틀에 걸친다.
+                #    다만 가입 당일은 **가입 시각 이후**로 자른다 —
+                #    안 그러면 정합성 검사 "가입 이전 세션"에 걸린다.
+                d0 = d.replace(hour=0, minute=0, second=0, microsecond=0)
+                lo_d = max(d0, u.created_at)
+                hi_d = d0 + timedelta(hours=23, minutes=59)
+                keep_d = self.growth.keep_prob(d0) if self.growth.volume else 1.0
+                n_day = self.rng.randint(*ss["per_active_day"])
+                if self.growth.volume:
+                    n_day = max(1, round(n_day * self.growth.volume_boost()))
+                for _ in range(n_day):
+                    if hi_d <= lo_d:
+                        break
+                    st = self._pick_hour_dt(u, lo_d, hi_d)
                     if st > self.end:
                         continue
+                    # 계절(방학·시험기간·국면)이 접속 횟수에도 걸린다
+                    if self.rng.random() >= keep_d:
+                        continue
+                    sess_id += 1
                     dur = self.rng.randint(*ss["duration_minutes"])
                     self.w.write("user_session",
                                  ["id", "user_id", "platform", "app_version", "device_id",
