@@ -383,6 +383,163 @@ def iso(dt: datetime | None) -> str:
     return dt.isoformat() if dt else ""
 
 
+class GrowthCurve:
+    """
+    3국면 성장 곡선 — 언제 가입이 몰리고, 그때 얼마나 활동하는가. [Q4]
+
+    v1 은 첫 2주에 60%가 가입하고 그 뒤로 단조 우하향이었다. 실패도 저점도 회복도
+    없으니 **코호트를 갈라볼 것이 없다** — 어느 달에 들어와도 같은 곡선을 그린다.
+    `synthetic-v2.yaml` 의 `growth` 블록은 그래서 들어왔지만 **읽는 쪽이 없었다.**
+    첫 국면의 `signup_share` 만 옛 `signup_spike_ratio` 자리에 꽂히고 나머지는
+    버려졌다. 12개월을 돌려도 3국면이 안 나오던 이유다(2026-08-04 에 붙였다).
+
+    두 갈래로 작용한다 —
+
+    | 갈래 | 무엇으로 | 어디에 |
+    |---|---|---|
+    | 가입 | `signup_share` | 국면마다 몇 %가 들어오는지 |
+    | 활동 | `activity_multiplier` × 시즌 배수 | 세션이 **그 날짜에 놓일 확률** |
+
+    ⚠️ **활동은 가입과 따로 논다.** 9월에 가입한 사람도 1월 저점에는 덜 들어온다.
+       국면은 개인이 가입한 지 며칠째인가가 아니라 **달력**에 걸린 현상이라서다.
+       잔존 구간(`activity_days`)이 "얼마나 오래 남는가"를 이미 맡고 있고,
+       이쪽은 "그 기간 안에서 언제 몰리는가"를 맡는다. 둘은 곱해진다.
+
+    ⚠️ **국면이 하나도 안 겹치면 통째로 꺼진다**(`enabled == False`). 1개월 샘플이
+       그렇다 — 기간이 2025-07-29~08-28 인데 첫 국면은 9월에 시작한다. 이때는
+       옛 spike 방식으로 되돌아가고 **시즌 배수도 걸지 않는다.** 시즌 배수만 남으면
+       설정이 그린 적 없는 모양이 나오고, 1개월 샘플 v3 의 실측과도 어긋난다.
+    """
+
+    def __init__(self, cfg: dict, start: datetime, end: datetime):
+        g = cfg.get("growth") or {}
+        self.start, self.end = start, end
+        self.phases: list[tuple[datetime, datetime, float, float]] = []
+
+        for p in g.get("phases") or []:
+            span = self._clip(p["range"])
+            if span:
+                self.phases.append((span[0], span[1],
+                                    float(p.get("signup_share", 0.0)),
+                                    float(p.get("activity_multiplier", 1.0))))
+
+        # 가입 배분에 쓸 국면은 **기간 안에 살아남은 것만**이다. 그래서 비중을
+        # 다시 정규화한다 — 12개월 전체를 돌리면 5개가 다 살아 합이 1.0 이고,
+        # 잘린 기간을 돌리면 남은 것끼리 나눠 갖는다.
+        self.enabled = bool(self.phases)
+        shares = [p[2] for p in self.phases]
+        self._share_total = sum(shares)
+
+        seas = g.get("seasonality") or {}
+        self.seasons: list[tuple[datetime, datetime, float]] = []
+        for key in ("summer_break", "winter_break"):
+            w = seas.get(key)
+            if not w:
+                continue
+            span = self._clip(w["range"])
+            if span:
+                self.seasons.append((span[0], span[1], float(w["multiplier"])))
+
+        # 시험기간은 시작일만 주고 "각 2주"는 설정 주석에 있다. 날짜를 14개씩
+        # 늘어놓는 대신 여기서 편다.
+        exam = seas.get("exam_periods") or {}
+        for day in exam.get("weeks") or []:
+            lo = datetime.fromisoformat(day).replace(tzinfo=start.tzinfo)
+            span = self._clip([day, (lo + timedelta(days=13)).date().isoformat()])
+            if span:
+                self.seasons.append((span[0], span[1], float(exam["multiplier"])))
+
+        # 기각 표집의 상한. 시즌 배수는 전부 1 이하라 국면 배수의 최댓값이
+        # 곧 상한이지만, 설정이 1 을 넘는 값을 갖게 되어도 깨지지 않게 함께 본다.
+        self._w_max = (max((p[3] for p in self.phases), default=1.0)
+                       * max([1.0] + [s[2] for s in self.seasons]))
+
+    def _clip(self, rng_pair) -> tuple[datetime, datetime] | None:
+        """설정의 [시작일, 종료일] 을 생성 기간 안으로 자른다. 종료일은 그날 끝까지."""
+        lo = datetime.fromisoformat(rng_pair[0]).replace(tzinfo=self.start.tzinfo)
+        hi = (datetime.fromisoformat(rng_pair[1]).replace(tzinfo=self.start.tzinfo)
+              + timedelta(days=1) - timedelta(seconds=1))
+        lo, hi = max(lo, self.start), min(hi, self.end)
+        return (lo, hi) if hi > lo else None
+
+    def signup_dt(self, rng: random.Random) -> datetime:
+        """국면을 비중대로 고르고 그 안에서 균등하게 하루를 뽑는다."""
+        lo, hi, _, _ = rng.choices(self.phases,
+                                   weights=[p[2] for p in self.phases], k=1)[0]
+        return rand_dt(rng, lo, hi)
+
+    def weight(self, dt: datetime) -> float:
+        """그 시각의 활동 배수 — 국면 × 방학 × 시험기간."""
+        w = 0.0
+        for lo, hi, _, mult in self.phases:
+            if lo <= dt <= hi:
+                w = mult
+                break
+        else:
+            # 국면 밖(= 서비스가 열리기 전)이다. 여기엔 가입자가 없으므로
+            # 세션도 놓일 수 없지만, 0 을 돌려주면 기각 표집이 헛돈다.
+            w = self.phases[0][3] if self.phases else 1.0
+        for lo, hi, mult in self.seasons:
+            if lo <= dt <= hi:
+                w *= mult
+        return w
+
+    def active_dt(self, rng: random.Random, lo: datetime, hi: datetime,
+                  tries: int = 24) -> datetime:
+        """
+        [lo, hi] 안에서 **활동 배수에 비례하게** 한 시각을 뽑는다(기각 표집).
+
+        곡선을 유저마다 적분하지 않아도 되고, 배수를 바꿔도 코드가 안 바뀐다.
+        `tries` 를 다 쓰면 균등 추첨으로 물러선다 — 저점 구간에만 걸쳐 있는
+        짧은 활동 창에서 무한히 돌지 않게 하는 안전장치다.
+        """
+        if not self.enabled or hi <= lo:
+            return rand_dt(rng, lo, hi)
+        for _ in range(tries):
+            cand = rand_dt(rng, lo, hi)
+            if rng.random() < self.weight(cand) / self._w_max:
+                return cand
+        return rand_dt(rng, lo, hi)
+
+
+# ---------------------------------------------------------------------
+# updated_at 을 CSV 에 직접 싣는다 — 적재 후 UPDATE 를 없애기 위해
+# ---------------------------------------------------------------------
+# `updated_at` 은 BigQuery 증분 적재의 워터마크다. 컬럼 기본값이 `now()` 라
+# COPY 로 부으면 **전부 "적재한 순간"** 이 되고, 그래서 적재 뒤에
+# `96_backfill_updated_at.sql` 이 각 행의 원래 시각으로 되돌려 왔다.
+#
+# ⚠️ 그 UPDATE 가 감당이 안 되는 규모가 됐다. 2026-08-04 에 1억 4,126만 행을
+#    적재하면서 백필 하나가 **3시간**을 넘겼다. 원인은 행 수 자체가 아니라
+#    **인덱스**다 — `vote_candidate` 한 표에만 인덱스가 5개(11GB) 있고,
+#    그중 하나가 하필 `updated_at` 위에 걸려 있다(증분 적재용). 값이 바뀌는
+#    컬럼에 인덱스가 있으니 행마다 인덱스에서 지우고 다시 넣는 일이 생긴다.
+#
+# 그래서 **처음부터 맞는 값을 넣는다.** 트리거는 `BEFORE UPDATE` 라
+# (004_updated_at_watermark.sql) INSERT 로 들어온 값은 덮이지 않는다.
+#
+# ⚠️ 96번은 **지우지 않는다.** 안전망으로 남긴다 — 조건이
+#    `WHERE updated_at <> src` 라 이미 맞는 행은 건드리지 않으므로 공짜다.
+#    여기 목록에서 빠진 표가 생겨도 96번이 잡아준다.
+
+_UPDATED_AT_KEEP = {"app_user", "school", "post", "post_comment"}
+"""원래부터 updated_at 이 있던 표. 여기 값은 **진짜 수정 이력**이라 손대지 않는다."""
+
+_UPDATED_AT_PRIORITY = ("created_at", "served_at", "started_at", "published_at",
+                        "synced_at", "read_at", "starts_at")
+"""어느 컬럼을 물려받을지. 96번의 priority 배열과 **같은 순서여야 한다.**"""
+
+_HAS_UPDATED_AT = {
+    "ad_impression", "block_record", "comment_like", "friend_request", "friendship",
+    "heart_purchase", "heart_transaction", "hint_purchase", "meal_menu_item",
+    "meal_plan", "post_like", "question_request", "rejected_friend_recommendations",
+    "report", "sanction", "school_event", "school_notice", "school_notice_read",
+    "timetable", "user_session", "user_withdrawal", "vote_candidate", "vote_item",
+    "vote_received", "vote_session", "vote_shuffle",
+}
+"""004 가 updated_at 을 심은 표(keep 제외). 스키마가 바뀌면 96번이 차이를 메운다."""
+
+
 class Writer:
     """CSV 출력. 테이블별로 파일 하나."""
 
@@ -392,15 +549,35 @@ class Writer:
         self._files: dict[str, object] = {}
         self._writers: dict[str, csv.writer] = {}
         self.counts: dict[str, int] = {}
+        self._ua_src: dict[str, int | None] = {}   # 표 → updated_at 을 베낄 컬럼 위치
+
+    @staticmethod
+    def _updated_at_source(table: str, header: list[str]) -> int | None:
+        """`updated_at` 을 어느 컬럼에서 베낄지. 붙이지 않을 표면 None."""
+        if table in _UPDATED_AT_KEEP or table not in _HAS_UPDATED_AT:
+            return None
+        if "updated_at" in header:
+            return None      # 호출자가 직접 넣었다 (vote_candidate · meal_menu_item)
+        for col in _UPDATED_AT_PRIORITY:
+            if col in header:
+                return header.index(col)
+        return None          # 시각 컬럼이 없다 — 96번이 부모에게서 가져간다
 
     def write(self, table: str, header: list[str], row: list):
         if table not in self._writers:
+            src = self._updated_at_source(table, header)
+            self._ua_src[table] = src
+            if src is not None:
+                header = [*header, "updated_at"]
             f = open(self.out_dir / f"{table}.csv", "w", newline="", encoding="utf-8")
             self._files[table] = f
             w = csv.writer(f)
             w.writerow(header)
             self._writers[table] = w
             self.counts[table] = 0
+        src = self._ua_src[table]
+        if src is not None:
+            row = [*row, row[src]]
         self._writers[table].writerow(row)
         self.counts[table] += 1
 
@@ -450,6 +627,7 @@ class Generator:
         self.w = Writer(out_dir)
         self.start = datetime.fromisoformat(cfg["start_date"]).replace(tzinfo=KST)
         self.end = self.start + timedelta(days=30 * cfg["months"])
+        self.growth = GrowthCurve(cfg, self.start, self.end)
 
         self.regions: list[tuple] = []
         self.schools: list[dict] = []
@@ -567,7 +745,11 @@ class Generator:
 
         for uid in range(1, uc["count"] + 1):
             cls = class_by_id[seats[uid - 1]]
-            if self.rng.random() < uc["signup_spike_ratio"]:
+            # 국면이 있으면 국면이 가입 시점을 정한다. 없으면(1개월 샘플 등)
+            # 옛 spike 방식 — 첫 2주에 몰고 나머지는 균등.
+            if self.growth.enabled:
+                created = self.growth.signup_dt(self.rng)
+            elif self.rng.random() < uc["signup_spike_ratio"]:
                 created = rand_dt(self.rng, self.start, spike_end)
             else:
                 created = rand_dt(self.rng, spike_end, self.end - timedelta(days=1))
@@ -994,7 +1176,10 @@ class Generator:
             same_school = [f for f in friend_ids if self.users[f - 1].school_id == u.school_id]
 
             for _ in range(n_sess):
-                started = rand_dt(self.rng, u.unlocked_at, active_end)
+                # 활동 창 안에서 균등하게 뽑지 않는다 — 방학·시험기간·저점 국면에는
+                # 덜 들어온다. 세션 **수**는 잔존 구간이 정하고, 그 세션이 **언제**
+                # 놓이는지를 성장 곡선이 정한다.
+                started = self.growth.active_dt(self.rng, u.unlocked_at, active_end)
                 sess_id += 1
                 # 세션을 끝까지 안 채우고 나가는 사람이 있어야 퍼널이 성립한다.
                 # 이탈은 앞쪽에 몰린다 — 3문항 안에서 나가는 게 대부분이다.
@@ -1048,9 +1233,14 @@ class Generator:
                             if winner is not None and cu == winner and chosen_uid is None:
                                 chosen_uid = cu
                                 is_chosen = True
+                            # updated_at 은 부모(vote_item)의 출제 시각을 물려받는다.
+                            # 후보는 출제와 동시에 만들어지므로 이게 실제 생성 시각이다.
+                            # ⚠️ is_chosen 은 아래에서 row[2][5] 로 되짚으므로 뒤에 붙인다.
                             session_rows.append(("vote_candidate",
-                                ["id", "vote_item_id", "candidate_user_id", "shuffle_round", "slot", "is_chosen"],
-                                [cand_id, item_id, cu, rnd, slot, str(is_chosen).lower()]))
+                                ["id", "vote_item_id", "candidate_user_id", "shuffle_round",
+                                 "slot", "is_chosen", "updated_at"],
+                                [cand_id, item_id, cu, rnd, slot,
+                                 str(is_chosen).lower(), iso(served)]))
                         # 마지막 라운드에서 아무도 안 골렸으면 강제로 하나 고른다
                         if voted and rnd == rounds[-1] and chosen_uid is None:
                             chosen_uid = picks[0]
@@ -1750,14 +1940,15 @@ class Generator:
                     kinds = ["밥", "국", "주찬", "부찬", "김치", "후식"]
                     for order, kind in enumerate(kinds[:n_items], start=1):
                         mi_id += 1
+                        # updated_at 은 부모(meal_plan)의 created_at 을 물려받는다
                         self.w.write("meal_menu_item",
                                      ["id", "meal_plan_id", "dish_name", "allergy_codes",
-                                      "sort_order"],
+                                      "sort_order", "updated_at"],
                                      [mi_id, mp_id, self.rng.choice(DISHES[kind]),
                                       ".".join(self.rng.sample(ALLERGY_CODES,
                                                                self.rng.randint(1, 3)))
                                       if self.rng.random() < 0.55 else "",
-                                      order])
+                                      order, iso(day)])
 
             # --- 학사일정: NEIS 가 하루씩 주는 것을 기간으로 묶어 둔 형태
             for _ in range(self.rng.randint(2, 4) * max(1, self.cfg["months"])):

@@ -103,7 +103,8 @@ DDL과 스크립트가 진실이다.
 - `2026-07-30` [[join-requires-source|두 원천의 id 가 겹친다 — 조인에 `_source` 를 강제한다]]
 - `2026-07-30` [[soft-delete-marking|삭제를 전파하지는 않되, 표시는 한다 (앞 항목 보완)]]
 - `2026-07-31` [[purge-synthetic-data|합성 데이터를 전부 지운다 — 낡아서]]
-- `2026-08-03` [[row-guardrail-measured|행수 가드레일을 실측으로 다시 잡는다]]
+- `2026-08-03` ~~[[row-guardrail-measured|행수 가드레일을 실측으로 다시 잡는다]]~~ → [[row-cap-to-query-cap]]
+- `2026-08-04` [[row-cap-to-query-cap|행수 상한을 버리고 쿼리 하드캡으로 바꾼다]]
 
 ## 인프라
 
@@ -116,3 +117,4 @@ DDL과 스크립트가 진실이다.
 - `2026-07-31` [[integrity-checks-aged|정합성 검사 3종이 낡아 있었다]]
 - `2026-08-03` [[user-personas|페르소나는 분류가 아니라 생성 편의다]]
 - `2026-08-03` [[activity-by-retention-tier|활동 강도는 잔존 구간마다 다르다]]
+- `2026-08-04` [[growth-curve-two-channels|성장 곡선은 가입과 활동 두 갈래로 건다]]
