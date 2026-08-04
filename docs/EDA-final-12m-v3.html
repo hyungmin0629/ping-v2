@@ -1,0 +1,194 @@
+<meta charset="utf-8">
+<title>합성 데이터 12개월 v3 — 감사 3건 수정본 (중단된 판본)</title>
+<style>
+  @page { size: A4; margin: 18mm 16mm; }
+  * { box-sizing: border-box; }
+  body { font-family: "Malgun Gothic", "맑은 고딕", -apple-system, sans-serif;
+         font-size: 10.5pt; line-height: 1.6; color: #1a1a1a; margin: 0; }
+  h1 { font-size: 19pt; margin: 0 0 4px; letter-spacing: -0.5px; }
+  h2 { font-size: 13pt; margin: 24px 0 9px; padding-bottom: 5px;
+       border-bottom: 2px solid #1a1a1a; page-break-after: avoid; }
+  h3 { font-size: 11pt; margin: 16px 0 6px; page-break-after: avoid; }
+  p { margin: 6px 0; }
+  .sub { color: #666; font-size: 9.5pt; margin: 0 0 14px; }
+  .meta { border: 1px solid #ddd; background: #fafafa; padding: 10px 13px;
+          font-size: 9pt; color: #444; margin-bottom: 18px; }
+  .meta b { color: #1a1a1a; } .meta div { margin: 2px 0; }
+  table { border-collapse: collapse; width: 100%; margin: 8px 0 14px; font-size: 9.5pt; }
+  th, td { border: 1px solid #d8d8d8; padding: 4px 8px; text-align: left; vertical-align: top; }
+  th { background: #f2f2f2; font-weight: 600; }
+  td.n, th.n { text-align: right; font-variant-numeric: tabular-nums; }
+  tr { page-break-inside: avoid; }
+  .bad { color: #b3261e; font-weight: 600; }
+  .good { color: #1b6b3a; font-weight: 600; }
+  .warn { color: #8a6d1f; font-weight: 600; }
+  .dim { color: #777; }
+  .box { border-left: 4px solid #b3261e; background: #fdf3f2;
+         padding: 9px 13px; margin: 11px 0; page-break-inside: avoid; }
+  .box.ok { border-left-color: #1b6b3a; background: #f1f8f3; }
+  .box.note { border-left-color: #8a6d1f; background: #fdfaef; }
+  .box h4 { margin: 0 0 4px; font-size: 10.5pt; } .box p { margin: 4px 0; }
+  ul { margin: 6px 0 6px 19px; padding: 0; } li { margin: 3px 0; }
+  code { font-family: Consolas, monospace; font-size: 9pt;
+         background: #f0f0f0; padding: 1px 4px; border-radius: 2px; }
+  .pb { page-break-before: always; }
+  .bar { display: inline-block; height: 8px; background: #1a4a8a; vertical-align: middle; }
+  .bar.r { background: #b3261e; } .bar.g { background: #1b6b3a; }
+  footer { margin-top: 22px; padding-top: 8px; border-top: 1px solid #ddd;
+           font-size: 8.5pt; color: #777; }
+</style>
+
+<h1>합성 데이터 12개월 v3</h1>
+<p class="sub">전면 감사에서 나온 결함 3건을 고친 판본 — <b>확정 직전에 새 결함이 나와 중단됐다</b></p>
+
+<div class="meta">
+  <div><b>생성</b> 2026-08-04 · seed 20260803 · 15분 22초 · <b>189,179,833행</b> · CSV 15GB</div>
+  <div><b>적재</b> 로컬 <code>pgtest</code> · 2시간 2분 · 정합성 17종 <span class="good">위반 0</span>(1분 51초)</div>
+  <div><b>상태</b> <span class="bad">폐기</span> — 검증 도중 <code>user_session</code> 에
+       시간대·계절성이 안 걸린 것이 드러나 v4 로 넘어갔다</div>
+  <div><b>왜 이 문서를 남기나</b> 버린 판본에도 <b>측정값은 남는다.</b>
+       v4 가 무엇을 고쳤는지는 이 수치와 비교해야 말이 된다</div>
+</div>
+
+<h2>0. 요약 — 고친 3건은 전부 성공, 그런데 같은 결함이 다른 표에 남아 있었다</h2>
+
+<table>
+  <tr><th style="width:30%">항목</th><th class="n">v2</th><th class="n">v3</th>
+      <th class="n">목표</th><th>판정</th></tr>
+  <tr><td>인기도 상위 10% 점유</td><td class="n">48.1%</td><td class="n">49.3%</td>
+      <td class="n">49%</td><td class="good">달성</td></tr>
+  <tr><td>민감 질문 신고 배수</td><td class="n">3.4배</td><td class="n">3.2배</td>
+      <td class="n">2배+</td><td class="good">달성</td></tr>
+  <tr><td>완료율 두 측정 차</td><td class="n">0.4%p</td><td class="n">0.4%p</td>
+      <td class="n">일치</td><td class="good">달성</td></tr>
+  <tr><td><b>투표 세션 시간대</b></td><td class="n bad">완전 균등</td>
+      <td class="n good">22시 최고·4시 최저</td><td class="n">리듬</td><td class="good">해결</td></tr>
+  <tr><td><b>같은 반 친구 0~3명</b></td><td class="n bad">25.7%</td><td class="n good">15.9%</td>
+      <td class="n">15% 미만</td><td class="good">해결</td></tr>
+  <tr><td><b>투표 0회 유저</b></td><td class="n bad">14.6% (사고)</td>
+      <td class="n good">5.8% (설계)</td><td class="n">의도적</td><td class="good">해결</td></tr>
+  <tr><td><b>접속 세션 시간대</b></td><td class="n bad">완전 균등</td>
+      <td class="n bad">완전 균등</td><td class="n">리듬</td><td class="bad">미해결</td></tr>
+</table>
+
+<div class="box">
+  <h4>왜 중단했나 — 두 세션 표가 다르게 나왔다</h4>
+  <table style="margin:6px 0">
+    <tr><th>구간</th><th class="n">vote_session (투표)</th><th class="n">user_session (접속)</th></tr>
+    <tr><td>평시 일평균</td><td class="n">8,336</td><td class="n">2,965</td></tr>
+    <tr><td>시험기간</td><td class="n good">3,880 (47%)</td><td class="n bad">2,735 (92%)</td></tr>
+    <tr><td>겨울방학</td><td class="n good">1,954 (23%)</td><td class="n bad">1,664 (56%)</td></tr>
+  </table>
+  <p>시간대는 더 나빴다 — <code>user_session</code> 이 0~23시 <b>전부 4.14~4.21%</b>
+  (완전 균등)였다.</p>
+  <p><b>원인</b> — 하루 리듬을 <code>gen_votes()</code> 에만 걸었다.
+  접속 세션은 다른 함수에서 만들어지고 거기서는 하루 중 아무 분이나 균등하게
+  뽑는다(<code>randint(0, 1439)</code>).</p>
+  <p>⚠️ <b>처음 감사에서 시간대 균등을 발견한 것도 <code>user_session</code> 이었다.</b>
+  고칠 때 <code>vote_session</code> 만 보고 같은 결함을 한 번 더 놓쳤다.
+  "언제 앱을 여는가"를 묻는 가장 자연스러운 표가 이쪽이다.</p>
+</div>
+
+<h2>1. 성장 곡선 — 봄학기형</h2>
+
+<table>
+  <tr><th>월</th><th class="n">가입</th><th class="n">비중</th><th class="n">목표</th></tr>
+  <tr><td>2025-09</td><td class="n">6,905</td><td class="n">34.5%</td><td class="n">35%</td></tr>
+  <tr><td>2025-10~12</td><td class="n">2,892</td><td class="n">14.5%</td><td class="n">15%</td></tr>
+  <tr><td>2026-01~02</td><td class="n">1,063</td><td class="n">5.3%</td><td class="n">5%</td></tr>
+  <tr><td><b>2026-03</b></td><td class="n">3,974</td><td class="n good">19.9%</td><td class="n">20%</td></tr>
+  <tr><td>2026-04~05</td><td class="n">3,038</td><td class="n">15.2%</td><td class="n">15%</td></tr>
+  <tr><td>2026-06~07</td><td class="n">2,043</td><td class="n">10.2%</td><td class="n">10%</td></tr>
+</table>
+<p>국면별 가입 비중이 설정과 <b>최대 0.5%p</b> 안에서 맞았다. 저점 2개월 유지 →
+3월 봄학기 스파이크 → 완만한 하강이 그대로 나타난다.</p>
+
+<h2>2. 인기도 · 신고율 · 완료율</h2>
+
+<table>
+  <tr><th>10분위</th><th class="n">지목</th><th class="n">점유</th></tr>
+  <tr><td>상위 10%</td><td class="n">10,051,232</td><td class="n good">49.3%</td></tr>
+  <tr><td>2</td><td class="n">3,760,343</td><td class="n">18.4%</td></tr>
+  <tr><td>3</td><td class="n">2,362,381</td><td class="n">11.6%</td></tr>
+</table>
+
+<table>
+  <tr><th>카테고리</th><th>민감</th><th class="n">출제</th><th class="n">신고</th><th class="n">1천건당</th></tr>
+  <tr><td><b>APPEARANCE</b></td><td class="warn">예</td><td class="n">1,409,367</td>
+      <td class="n">1,639</td><td class="n good">1.163</td></tr>
+  <tr><td>RELATIONSHIP</td><td>아니오</td><td class="n">2,701,666</td><td class="n">969</td>
+      <td class="n">0.359</td></tr>
+  <tr><td>HUMOR</td><td>아니오</td><td class="n">2,186,881</td><td class="n">778</td>
+      <td class="n">0.356</td></tr>
+</table>
+<p>민감 질문이 <b>3.2배</b> 더 신고된다.</p>
+
+<table>
+  <tr><th>세션 상태</th><th class="n">건수</th><th class="n">비중</th><th class="n">평균 문항</th></tr>
+  <tr><td>COMPLETED</td><td class="n">1,983,311</td><td class="n">85.5%</td><td class="n">10.00</td></tr>
+  <tr><td>EXPIRED</td><td class="n">326,831</td><td class="n">14.1%</td><td class="n">3.80</td></tr>
+  <tr><td>IN_PROGRESS</td><td class="n">10,187</td><td class="n">0.4%</td><td class="n">10.00</td></tr>
+</table>
+<p><code>status</code> 기준 85.5% 와 <code>item_count=10</code> 기준 85.9% 가
+<b>0.4%p</b> 차이로 일치한다.</p>
+
+<h2 class="pb">3. 코호트 잔존 · 학교 진입</h2>
+
+<table>
+  <tr><th>가입 월</th><th class="n">인원</th><th class="n">M0</th><th class="n">M1</th>
+      <th class="n">M2</th><th class="n">M3</th><th class="n">M6</th></tr>
+  <tr><td>2025-09</td><td class="n">6,905</td><td class="n">95.6%</td><td class="n">33.6%</td>
+      <td class="n">11.5%</td><td class="n">6.1%</td><td class="n">2.6%</td></tr>
+  <tr><td>2025-10</td><td class="n">957</td><td class="n">94.9%</td><td class="n">31.2%</td>
+      <td class="n">11.6%</td><td class="n">7.1%</td><td class="n">3.4%</td></tr>
+  <tr><td>2025-11</td><td class="n">950</td><td class="n">93.3%</td><td class="n">32.6%</td>
+      <td class="n">9.9%</td><td class="n">5.6%</td><td class="n">3.7%</td></tr>
+</table>
+<p>M1→M2 낙차가 <b>2.9배</b>로 완만하다(v1 은 6.8배 절벽이었다).</p>
+
+<table>
+  <tr><th>첫 가입</th><th>학교</th><th class="n">유저</th><th>계층</th></tr>
+  <tr><td>2025-08-31</td><td>화*17고등학교</td><td class="n">1,013</td><td>core</td></tr>
+  <tr><td>2025-09-02</td><td>부*진29고등학교</td><td class="n">921</td><td>core</td></tr>
+  <tr><td>2025-09-05</td><td>부*진9중학교</td><td class="n">1,044</td><td>core</td></tr>
+  <tr><td>2025-09-06</td><td>부*진38고등학교</td><td class="n">828</td><td>core</td></tr>
+</table>
+<p>core 학교가 9월에 1,000명 규모로 열리고 tail 은 6~7월에 수십 명으로 들어온다.</p>
+
+<h2>4. 규모</h2>
+
+<table>
+  <tr><th>표</th><th class="n">행</th><th>표</th><th class="n">행</th></tr>
+  <tr><td>vote_candidate</td><td class="n">105,596,196</td><td>vote_session</td><td class="n">2,320,329</td></tr>
+  <tr><td>heart_transaction</td><td class="n">24,155,589</td><td>hint_purchase</td><td class="n">2,269,104</td></tr>
+  <tr><td>vote_item</td><td class="n">21,176,932</td><td>user_session</td><td class="n">894,062</td></tr>
+  <tr><td>vote_received</td><td class="n">20,392,019</td><td>app_user</td><td class="n">20,000</td></tr>
+  <tr><td colspan="4" class="dim">총 189,179,833행 · 40표 전부 채워짐 · 해금률 92.7% ·
+      평균 친구 37.5명</td></tr>
+</table>
+
+<h2>5. 이 판본이 남긴 것</h2>
+
+<div class="box ok">
+  <h4>확인된 것 — v4 로 그대로 이어진다</h4>
+  <ul>
+    <li>봄학기형 성장 곡선이 설정과 ±0.5%p 안에서 재현된다</li>
+    <li>인기도 49.3% · 민감 질문 신고 3.2배 · 완료율 두 측정 일치</li>
+    <li>같은 반 친구 0~3명 15.9% · CLASS 스코프 33.5%</li>
+    <li>투표 0회 유저가 <b>사고가 아니라 설계</b>로 만들어진다(5.8%)</li>
+    <li>정합성 17종 위반 0 · 적재 2시간 2분(바이너리 읽기로 36분 단축)</li>
+  </ul>
+</div>
+
+<div class="box note">
+  <h4>남긴 교훈 — 같은 결함을 두 번 놓쳤다</h4>
+  <p>시간대 균등을 <code>user_session</code> 에서 발견했는데, 고칠 때는
+  <code>vote_session</code> 만 봤다. <b>결함을 발견한 표와 고친 표가 달랐다.</b></p>
+  <p>같은 행동을 여러 표가 나눠 적는 구조에서는 <b>한 곳을 고치고 다 고쳤다고
+  믿기 쉽다.</b> 다음부터는 "이 행동을 적는 표가 또 있는가"를 먼저 묻는다.</p>
+</div>
+
+<footer>
+  ping-v2 · 12개월 v3 (중단된 판본) · 2026-08-05 기록 ·
+  측정은 로컬 <code>pgtest</code> 실측이며 seed 20260803 으로 재현 가능하다.
+</footer>
