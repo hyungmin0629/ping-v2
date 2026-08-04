@@ -313,13 +313,19 @@ def load_config(path: Path) -> dict:
         cfg["withdrawal"]["reason_weights"] = u["withdrawal_reason_weights"]
 
     # v1 에 있던 절(節)은 덮어쓰고, v2 에서 새로 생긴 절은 통째로 옮긴다.
-    # ⚠️ 새 절을 여기 안 적으면 그 생성기가 조용히 아무것도 안 만든다 —
-    #    에러가 안 나서 표가 비어 있는 것으로만 드러난다. 실제로 한 번 겪었다.
-    for section in ("retention", "friends", "sessions", "questions", "voting",
-                    "received", "hearts", "board", "moderation", "school_info",
-                    "text", "anomalies", "growth", "incremental_batch", "gates"):
-        if section in v2:
-            cfg.setdefault(section, {}).update(v2[section])
+    #
+    # ⚠️ 예전에는 옮길 절 이름을 **손으로 나열**했다. 그래서 새 절을 만들 때마다
+    #    여기 추가하는 것을 잊었고, 그 기능이 **조용히 사라졌다.** 오류가 안 나서
+    #    데이터를 다 만들어 분석해야 드러난다. 2026-08-03~04 에만
+    #    `growth` · `schools.tiers` · `schools.adoption` · `behavior` 네 번 겪었다.
+    #
+    #    그래서 **목록을 뒤집었다** — 위에서 이미 개별 처리한 절만 빼고
+    #    나머지는 전부 옮긴다. 새 절을 만들면 아무것도 안 해도 넘어온다.
+    handled = {"meta", "period", "scale", "schools", "users"}
+    for section, val in v2.items():
+        if section in handled or not isinstance(val, dict):
+            continue
+        cfg.setdefault(section, {}).update(val)
 
     cfg["_v2"] = v2
     return cfg
@@ -641,7 +647,12 @@ class User:
     #    "힌트를 잘 사는 사람"이라는 유형 자체가 데이터에 존재하지 않는다.
     hint_appetite: float = 0.0
     locked: bool = False            # 친구 5명 게이트를 못 넘는 유저
+    barely: bool = False            # 겨우 게이트를 넘은 유저 (친구 5~9명에 머문다)
     is_hub: bool = False            # 친구가 아주 많은 유저
+    # 생활 리듬 — 하루 중 언제 쓰는가. 전원이 같은 곡선을 따르면 안 된다.
+    hour_w: tuple = ()              # (평일 24개, 주말 24개) 개인 가중치
+    hour_mean: float = 1.0          # 그 가중치의 평균 — 물량 보정에 쓴다
+    never_votes: bool = False       # 해금은 했지만 투표를 한 번도 안 하는 유저
     fame: float = 1.0               # 학급 안에서의 인기도 가중치 (지목받을 확률)
     friends: set[int] = field(default_factory=set)
     unlocked_at: datetime | None = None
@@ -804,6 +815,7 @@ class Generator:
         caps = self._plan_schools(sc)
         lo_pc, hi_pc = sc["students_per_class"]
         avg_pc = (lo_pc + hi_pc) / 2
+        max_pc = sc.get("max_students_per_class")
 
         cls_id = 0
         for sid in range(1, sc["count"] + 1):
@@ -812,8 +824,12 @@ class Generator:
             # ⚠️ 학급 수를 정원에서 유도한다. 고정 범위(9~18)를 쓰면 정원 975명인
             #    core 학교의 한 반이 **77명**이 된다. 인기도는 학급 안 순위로
             #    정해지므로 반이 커질수록 쏠림이 커진다 — 실제로 상위 10% 점유가
-            #    44% 에서 51% 로 뛰었다. 학급당 인원을 실측(14~22)에 맞춘다.
+            #    44% 에서 51% 로 뛰었다.
+            # ⚠️ **절대 상한(35명)을 지킨다.** 평균으로 나누면 분포의 위쪽이
+            #    상한을 넘을 수 있으므로, 상한으로 나눈 학급 수를 하한으로 둔다.
             n_classes = max(3, round(caps[sid] / avg_pc / 3) * 3)
+            if max_pc:
+                n_classes = max(n_classes, round(caps[sid] / max_pc / 3 + 0.5) * 3)
             school = {
                 "id": sid,
                 "region_id": region[0],
@@ -951,6 +967,126 @@ class Generator:
             print(f"  ⚠️ 학교 정원을 넘겨 배정한 유저 {overflow:,}명 — "
                   f"schools.tiers 의 users_per_school 을 늘리거나 학교를 더 열 것")
 
+    # -- 생활 리듬 ----------------------------------------------------
+    def _assign_chronotypes(self):
+        """
+        유저마다 **하루 중 언제 쓰는가**를 정한다. [Q23 · Q27]
+
+        ⚠️ Q23 에서 정해 놓고 한 번도 구현되지 않았다. v3 실측이 0~23시 전부
+           4.1~4.2%(완전 균등)였고, "언제 쓰는가" 분석이 통째로 불가능했다.
+
+        ⚠️ **전원이 같은 곡선을 따르면 안 된다.** 페르소나와 같은 이유다 —
+           모두가 22시에 몰리면 "심야형 유저"라는 분석 대상이 사라진다.
+           유형으로 봉우리를 옮기고, 혼합·무배정·개인 편차로 한 번 더 흔든다.
+        """
+        b = self.cfg.get("behavior") or {}
+        base_wd = b.get("hourly", {}).get("weekday")
+        base_we = b.get("hourly", {}).get("weekend")
+        if not base_wd or not base_we:
+            return
+        types = b.get("chronotypes") or {}
+        if not types:
+            return
+        names = list(types)
+        weights = [types[n].get("ratio", 0) for n in names]
+        mix_r = b.get("chronotype_mix_ratio", 0.0)
+        none_r = b.get("chronotype_none_ratio", 0.0)
+        jitter = b.get("chronotype_jitter", 0.0)
+
+        def curve(base, shift, flatten):
+            """봉우리를 옮기고(shift) 필요하면 평평하게(flatten) 만든다."""
+            n = len(base)
+            out = [base[(i - shift) % n] for i in range(n)]
+            if flatten > 0:
+                avg = sum(out) / n
+                out = [v * (1 - flatten) + avg * flatten for v in out]
+            return out
+
+        for u in self.users:
+            if self.rng.random() < none_r:
+                # 유형 없음 — 순수 무작위. 시간대 구분이 아예 없는 사람
+                u.hour_w = (tuple([1.0] * 24), tuple([1.0] * 24))
+                u.hour_mean = 1.0
+                continue
+            t1 = self.rng.choices(names, weights=weights, k=1)[0]
+            s1 = types[t1].get("shift", 0)
+            f1 = types[t1].get("flatten", 0.0)
+            if self.rng.random() < mix_r:
+                # 두 유형을 6:4 로 섞는다 — 경계가 사라진다
+                t2 = self.rng.choices(names, weights=weights, k=1)[0]
+                s1 = s1 * 0.6 + types[t2].get("shift", 0) * 0.4
+                f1 = f1 * 0.6 + types[t2].get("flatten", 0.0) * 0.4
+            # 개인 편차 — 같은 야행성이라도 봉우리 위치가 흔들린다
+            s1 += self.rng.uniform(-jitter, jitter)
+            sh = int(round(s1))
+            wd = curve(base_wd, sh, f1)
+            we = curve(base_we, sh, f1)
+            u.hour_w = (tuple(wd), tuple(we))
+            # 평균 가중치 — 물량 보정에 쓴다. 시간대로 솎아낸 만큼 미리 부풀려야
+            # 총 세션 수가 유지된다. 주 5일 : 2일로 섞는다.
+            u.hour_mean = max((sum(wd) / 24 * 5 + sum(we) / 24 * 2) / 7, 1e-3)
+
+    def _hour_weight(self, u: User, dt: datetime) -> float:
+        """그 유저에게 그 시각이 얼마나 그럴듯한가. 0~1 근처."""
+        if not u.hour_w:
+            return 1.0
+        wd, we = u.hour_w
+        return (we if dt.weekday() >= 5 else wd)[dt.hour]
+
+    def _pick_hour_dt(self, u: User, lo: datetime, hi: datetime) -> datetime:
+        """
+        기각 표집이 실패했을 때 쓰는 되돌림 — 그래도 시간대는 지킨다.
+
+        균등 추첨으로 물러서면 그 세션만 시간대 패턴을 벗어난다. 창이 짧은
+        유저(당일만 쓴 사람)는 그 세션이 전부라, 균등으로 물러서면 패턴이
+        통째로 사라진다. 그래서 날짜를 먼저 정하고 **시각만 가중 추첨**한다.
+        """
+        base = rand_dt(self.rng, lo, hi)
+        if not u.hour_w:
+            return base
+        wd, we = u.hour_w
+        w = list(we if base.weekday() >= 5 else wd)
+        hour = self.rng.choices(range(24), weights=w, k=1)[0]
+        cand = base.replace(hour=hour, minute=self.rng.randint(0, 59),
+                            second=self.rng.randint(0, 59))
+        return cand if lo <= cand <= hi else base
+
+    def _assign_never_voters(self):
+        """
+        **해금은 했는데 투표를 한 번도 안 하는 유저**를 정한다.
+
+        ⚠️ v3 에서는 이 상태가 계절성 솎아내기의 **부작용**으로 생겼다
+           (세션이 1개뿐인 유저는 그 하나가 솎이면 0이 된다). 사고와 의도가
+           섞이면 어느 쪽인지 구분할 수 없으므로, 솎아내기에는 최소 1개를
+           보장하고 비투표는 여기서 **명시적으로** 만든다.
+
+        친구가 딱 5명이라 겨우 연 사람이 가장 많이 안 하고, 친구가 많으면
+        거의 없다. **0 이 아니다** — 친구 40명인데 안 하는 사람도 소수 있어야
+        "친구 수가 곧 활동"이라는 동어반복을 피한다.
+        """
+        v = self.cfg["voting"]
+        table = v.get("never_vote_by_friends") or {}
+        if not table:
+            return
+        bands = sorted((int(k), float(p)) for k, p in table.items())
+        use_trait = v.get("never_vote_trait_weight", False)
+        n = 0
+        for u in self.users:
+            if u.no_activity or not u.unlocked_at:
+                continue
+            fc = len(u.friends)
+            p = next((p for hi, p in bands if fc <= hi), bands[-1][1])
+            if use_trait:
+                # ⚠️ 확률을 그대로 쓰면 "친구 5명 = 40%"라는 **규칙**이 된다.
+                #    자주 투표하는 성향이면 덜 빠지고, 아니면 더 빠진다.
+                p = scaled_prob(p, 1.0 / max(u.traits["vote_freq"], 0.2))
+            if self.rng.random() < p:
+                u.never_votes = True
+                n += 1
+        if n:
+            print(f"  해금했지만 투표 0회 {n:,}명 "
+                  f"({n / max(sum(1 for x in self.users if x.unlocked_at), 1) * 100:.1f}%)")
+
     def _assign_reactivation(self):
         """
         휴면했다 **돌아오는** 유저를 정한다. [Q4]
@@ -1019,12 +1155,22 @@ class Generator:
         # ⚠️ 친구 관계는 양방향이다. 고립 유저의 목표치만 낮추면 남들이 그를 골라
         #    친구가 계속 붙어서 고립이 사라진다(실제로 그래서 해금률이 100%가 됐다).
         #    그래서 고립 유저는 **남의 후보 풀에서도 빼야** 한다.
+        # ⚠️ **"딱 해금한 유저"도 같은 처리가 필요하다.** locked_hard 는 5명 미만만
+        #    남의 풀에서 빼고 그 바로 위에는 아무 장치가 없었다. 그래서 v3 데이터에
+        #    친구 5~9명인 유저가 **한 명도 없었다** — 게이트를 넘는 순간 10명 이상으로
+        #    끌려 올라간다. "겨우 열었지만 거의 안 쓰는 사람"을 만들려면 이 구간이
+        #    필요하다. 다만 완전히 빼지는 않는다(`barely_exclude_prob`) — 그러면
+        #    고립 유저와 구분이 안 된다.
         hub_lo, hub_hi = fc.get("hub_per_user", [150, 600])
+        bare_lo, bare_hi = fc.get("barely_unlocked_target", [5, 9])
         targets: dict[int, int] = {}
         for u in self.users:
             if self.rng.random() < fc["locked_user_ratio"]:
                 u.locked = True
                 targets[u.id] = self.rng.randint(0, 4)
+            elif self.rng.random() < fc.get("barely_unlocked_ratio", 0.0):
+                u.barely = True
+                targets[u.id] = self.rng.randint(bare_lo, bare_hi)
             elif self.rng.random() < fc.get("hub_ratio", 0.0):
                 u.is_hub = True
                 targets[u.id] = self.rng.randint(hub_lo, hub_hi)
@@ -1032,12 +1178,16 @@ class Generator:
                 targets[u.id] = max(0, int(self.rng.triangular(lo, hi, med)
                                            * u.traits["friends"]))
 
-        # 남이 친구로 걸 수 있는 사람 = 고립으로 정해지지 않은 사람
-        open_by_class = {k: [i for i in v if not self.users[i - 1].locked]
+        # 남이 친구로 걸 수 있는 사람 = 고립이 아니고, "딱 해금" 유저도 대부분 뺀다.
+        # barely 는 확률로 빼므로 일부는 남의 풀에 남는다 — 완전히 빼면 고립과 같아진다.
+        bare_ex = fc.get("barely_exclude_prob", 0.0)
+        hidden = {u.id for u in self.users
+                  if u.locked or (u.barely and self.rng.random() < bare_ex)}
+        open_by_class = {k: [i for i in v if i not in hidden]
                          for k, v in self.by_class.items()}
-        open_by_school = {k: [i for i in v if not self.users[i - 1].locked]
+        open_by_school = {k: [i for i in v if i not in hidden]
                           for k, v in self.by_school.items()}
-        open_all = [u.id for u in self.users if not u.locked]
+        open_all = [u.id for u in self.users if u.id not in hidden]
 
         for u in self.users:
             need = targets[u.id] - len(u.friends)
@@ -1064,8 +1214,8 @@ class Generator:
                 if cand == u.id or cand in u.friends:
                     continue
                 other = self.users[cand - 1]
-                # 상대가 고립으로 정해졌으면 그 사람의 목표치를 넘겨선 안 된다
-                if other.locked and len(other.friends) >= targets[other.id]:
+                # 상대가 고립이거나 "딱 해금"이면 그 사람의 목표치를 넘겨선 안 된다
+                if (other.locked or other.barely) and len(other.friends) >= targets[other.id]:
                     continue
                 key = (min(u.id, cand), max(u.id, cand))
                 if key in edges:
@@ -1336,10 +1486,12 @@ class Generator:
         rc = self.cfg["received"]
         h = self.cfg["hearts"]
 
-        # ⚠️ 복귀 배정은 **친구 그래프 뒤**여야 한다. unlocked_at 이 거기서
+        # ⚠️ 이 셋은 **친구 그래프 뒤**여야 한다. unlocked_at 과 친구 수가 거기서
         #    정해지기 때문이다. gen_users 안에서 부르면 전원이 unlocked_at=None
         #    이라 아무도 복귀하지 않는다(실제로 0명이 나왔다).
         self._assign_reactivation()
+        self._assign_chronotypes()
+        self._assign_never_voters()
 
         by_scope: dict[str, list[dict]] = {"CLASS": [], "SCHOOL": [], "GLOBAL": []}
         for q in self.questions:
@@ -1382,6 +1534,9 @@ class Generator:
         for u in self.users:
             if not u.unlocked_at or u.no_activity or len(u.friends) < 5:
                 continue
+            # 해금은 했는데 한 번도 투표하지 않는 유저 — 의도된 상태다
+            if u.never_votes:
+                continue
             # 세션 수 = (그 구간의 월 빈도) × (활동 기간이 몇 달인가).
             # 기간에 비례해야 1개월 샘플이 12개월치를 담지 않는다(EDA 문제 ②).
             # 빈도 자체는 **잔존 구간마다 다르다** — 오래 남은 사람이 자주 온다.
@@ -1417,14 +1572,25 @@ class Generator:
             boost = self.growth.volume_boost()
             starts: list[datetime] = []
             for w_lo, w_hi, w_n in windows:
-                for _ in range(max(1, round(w_n * boost))):
-                    if self.growth.volume:
-                        # 덜어내기 모드 — 날짜는 균등하게 뽑고 계절로 솎아낸다
-                        cand = rand_dt(self.rng, w_lo, w_hi)
-                        if self.rng.random() < self.growth.keep_prob(cand):
-                            starts.append(cand)
-                    else:
-                        starts.append(self.growth.active_dt(self.rng, w_lo, w_hi))
+                win: list[datetime] = []
+                # 시각을 뽑고 **계절 × 시간대** 두 가중치로 한 번에 판정한다.
+                # ⚠️ **재시도를 넣으면 안 된다.** 12번 재시도했더니 수용률이
+                #    50% → 97% 가 되어 계절성 솎아내기가 무력해지고 세션이
+                #    56% 불었다. 대신 **미리 부풀린다** — 솎아낼 만큼 더 뽑는다.
+                n_draw = max(1, round(w_n * boost / u.hour_mean))
+                for _ in range(n_draw):
+                    cand = (rand_dt(self.rng, w_lo, w_hi) if self.growth.volume
+                            else self.growth.active_dt(self.rng, w_lo, w_hi))
+                    keep = (self.growth.keep_prob(cand) if self.growth.volume else 1.0)
+                    if self.rng.random() < keep * self._hour_weight(u, cand):
+                        win.append(cand)
+                # ⚠️ **창마다 최소 1개는 남긴다.** 솎아내기로 0이 되면
+                #    "해금했는데 투표 0회"가 사고로 생긴다 — 그건
+                #    `never_vote_by_friends` 가 의도적으로 만드는 상태이므로,
+                #    둘이 섞이면 어느 쪽인지 구분할 수 없다.
+                if not win and w_n > 0:
+                    win.append(self._pick_hour_dt(u, w_lo, w_hi))
+                starts.extend(win)
 
             for started in starts:
                 sess_id += 1

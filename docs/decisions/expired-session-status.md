@@ -50,3 +50,9 @@ status = COMPLETED if completed >= n_items * 0.8 else IN_PROGRESS
 ## 이어지는 결정
 - [[integrity-checks-aged|정합성 검사 3종이 낡아 있었다]]
   — 둘 다 **측정이 틀린** 경우다 — 데이터가 아니라 재는 방법이 문제였다
+
+## 이어지는 결정
+- [[integrity-checks-aged|정합성 검사 3종이 낡아 있었다]]
+  — 둘 다 **측정이 틀린** 경우다 — 데이터가 아니라 재는 방법이 문제였다
+- [[never-voters-by-friend-count|해금하고도 투표 안 하는 유저를 의도적으로 만든다 — 친구가 적을수록 많이]]
+  — 둘 다 **기록이 실제 행동과 어긋난** 경우다. 사고로 생긴 상태를 설계된 상태로 바꿨다

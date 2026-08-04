@@ -142,15 +142,21 @@ def main() -> int:
                 print(f"  {table:<22} 건너뜀 (파일 없음)")
                 continue
 
-            with open(path, encoding="utf-8") as f:
-                header = f.readline().strip().split(",")
+            # ⚠️ **바이너리 모드로 읽는다.** 텍스트 모드로 열면 파이썬이 UTF-8 을
+            #    문자열로 디코딩하고 psycopg 가 그걸 다시 UTF-8 로 인코딩한다 —
+            #    15GB 를 두 번 변환하는 셈이라 파이썬이 CPU 병목이 된다
+            #    (2026-08-04 실측: COPY 중 Postgres 는 Client/ClientRead 로 놀고
+            #    파이썬만 코어 하나를 69% 쓰고 있었다). 바이트를 그대로 흘리면
+            #    변환이 사라진다. 청크도 1MB → 8MB 로 키운다.
+            with open(path, "rb") as f:
+                header = f.readline().decode("utf-8").strip().split(",")
                 cols = ", ".join(f'"{c}"' for c in header)
                 copy_sql = (
                     f"COPY {table} ({cols}) FROM STDIN "
                     "WITH (FORMAT csv, NULL '', ENCODING 'UTF8')"
                 )
                 with cur.copy(copy_sql) as cp:
-                    while chunk := f.read(1 << 20):
+                    while chunk := f.read(8 << 20):
                         cp.write(chunk)
 
             cur.execute(f"SELECT count(*) FROM {table}")

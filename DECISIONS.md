@@ -126,4 +126,7 @@ DDL과 스크립트가 진실이다.
 - `2026-08-04` [[retention-quarter-tier|잔존 구간에 30~89일을 새로 넣는다]]
 - `2026-08-04` [[popularity-floor-is-activity|인기도 45%는 도달할 수 없다]]
 - `2026-08-04` [[expired-session-status|중도 이탈 세션은 EXPIRED 로 적는다]]
+- `2026-08-04` [[daily-rhythm-night-peak|하루 리듬을 붙인다 — 최대 봉우리는 밤 22시]]
+- `2026-08-04` [[never-voters-by-friend-count|해금하고도 투표 안 하는 유저를 의도적으로 만든다]]
+- `2026-08-04` [[class-size-for-class-scope|같은 반 친구는 비율이 아니라 수가 기준이다]]
 

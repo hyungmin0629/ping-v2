@@ -24,6 +24,20 @@ DEC = ROOT / "docs" / "decisions"
 # (a, b, 왜 이어지는가) — 양쪽에서 같은 문장으로 읽히게 쓴다
 PAIRS = [
     # ── 합성 데이터 v3 (2026-08-04) ──────────────────────────────────
+    ("daily-rhythm-night-peak", "user-personas",
+     "둘 다 **유형을 두되 또렷하지 않게** 흐린다 — 규칙을 벗어나는 사람이 있어야 한다"),
+    ("daily-rhythm-night-peak", "growth-curve-two-channels",
+     "시각을 정하는 두 축 — 곡선이 **어느 날**인지, 리듬이 **몇 시**인지"),
+    ("never-voters-by-friend-count", "expired-session-status",
+     "둘 다 **기록이 실제 행동과 어긋난** 경우다. 사고로 생긴 상태를 설계된 상태로 바꿨다"),
+    ("never-voters-by-friend-count", "friendship-ended-at",
+     "친구 수가 곧 서비스 경험을 가른다 — 맺는 쪽과 끊는 쪽"),
+    ("class-size-for-class-scope", "pad-candidates-keep-scope",
+     "같은 반 후보가 4명이 안 될 때 무엇을 하는가 — 채우거나(앞), 애초에 모자라지 않게 하거나(뒤)"),
+    ("class-size-for-class-scope", "retention-quarter-tier",
+     "둘 다 **실측을 그대로 쓰면 분석이 성립하지 않아** 의도적으로 벗어난 값이다"),
+    ("class-size-for-class-scope", "school-sequential-adoption",
+     "학급 크기가 인기도와 CLASS 스코프를 동시에 좌우한다 — 상한 35명이 그 균형점"),
     ("growth-curve-two-channels", "spring-spike-growth-curve",
      "앞은 곡선을 **어떻게 거는가**(가입·활동 두 갈래), 뒤는 곡선의 **모양**을 정한다"),
     ("spring-spike-growth-curve", "reactivation-cohort",

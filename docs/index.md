@@ -55,7 +55,7 @@ API 스펙 등 바깥에서 온 문서.
 
 _아직 없다._
 
-## 결정 <sub>`docs/decisions` · 73</sub>
+## 결정 <sub>`docs/decisions` · 76</sub>
 
 왜 그렇게 했는지. 하나가 한 노드다.
 
@@ -70,8 +70,10 @@ _아직 없다._
 - [[bigquery-source-column|실유저와 합성 데이터를 같은 BigQuery 테이블에 `_source` 로 섞는다]] — 테이블 하나다. 적재할 때 _source 컬럼을 붙이고, 키를 (_source, id) 로 쓴다.
 - [[board-school-scope|게시판 범위는 학교, 카테고리는 하나]] — 끌어온다. 카테고리는 시드에 5개가 있지만 자유게시판 하나만 연다.
 - [[candidate-rows-kept|후보 4명을 행으로 저장하고 셔플 전후를 모두 남긴다]] — 또 "어떤 후보였을 때 셔플을 눌렀는가"는 광고 수익과 직결되는 분석인데 데이터가 없으면 못 본다.
+- [[class-size-for-class-scope|같은 반 친구는 비율이 아니라 **수**가 기준이다 — 4명이 있어야 투표가 된다]] — 상한 35), 같은 반에서 친구를 고르는 비율도 올린다(same_class_ratio
 - [[client-write-minimal|클라이언트에 쓰기 권한을 거의 주지 않는다]] — 클라이언트가 직접 INSERT/UPDATE 하지 못하게 막는다. 나중에 RPC 함수로 처리한다.
 - [[closed-test-adults|성인 지인 대상 클로즈드 테스트로 한정]] — 필요하고, 외모 관련 투표와 익명 게시판을 미성년자에게 열면서 모니터링이 없으면 감당할 수 없다.
+- [[daily-rhythm-night-peak|하루 리듬을 붙인다 — 최대 봉우리는 점심이 아니라 밤 22시다]] — 12~13시 최대 봉우리"를 밤 22~23시로 바꾼다.
 - [[drop-admin-user|admin_user 를 없애고 app_user.is_admin 하나로 접는다]] — 유지할 근거가 "언젠가 운영 화면을 만들면"뿐이었다. 그 언젠가가 이 프로젝트의
 - [[events-on-meal-calendar|학사일정을 급식 달력에 얹는다 — 따로 만들지 않고]] — 날짜 칸 아래 점이 그날 일정이고, 달력 아래에 그 달 일정이 통째로 나온다.
 - [[expired-session-status|중도 이탈 세션은 EXPIRED 로 적는다 — 완료율이 98.6%로 보이던 이유]] — 이미 있는 값이라 스키마는 건드리지 않는다.
@@ -94,6 +96,7 @@ _아직 없다._
 - [[local-docker-airflow|Cloud Composer 대신 로컬 Docker Airflow]] — 로컬 Docker면 0원이고, 나중에 필요하면 작은 VM(월 3~4만원)으로 옮기면 된다.
 - [[lower-scope-when-short|후보가 4명이 안 되면 스코프를 낮추고, 그래도 안 되면 질문을 내지 않는다]] — 낮춘다. GLOBAL 에서도 모자라면 그 질문은 출제하지 않는다(세션에 넣지 않는다).
 - [[neis-merge-spans|NEIS 가 하루씩 주는 것을 기간으로 묶는다]] — 하나로 합쳐 start_date~end_date 로 저장한다. 사이에 낀 주말은 이어진
+- [[never-voters-by-friend-count|해금하고도 투표 안 하는 유저를 의도적으로 만든다 — 친구가 적을수록 많이]] — 확률로 만든다. 친구가 딱 5명이라 겨우 연 사람이 가장 많이 안 하고,
 - [[no-anonymous-board|익명 게시판을 v1에서 제외]] — 전례가 있고, 1인 프로젝트로는 신고 검토를 감당할 수 없다. 사고가 났을 때 책임을 질 수 없는 기능은 열지 않는다.
 - [[no-delete-propagation|원천의 삭제는 BigQuery 로 전파하지 않는다]] — BigQuery raw 에는 남는다.
 - [[no-schema-change-for-synthetic|합성 데이터를 위해 스키마를 바꾸지 않는다]] — (TEAM-PLAN 1장). 분포의 비현실성은 거의 전부 파라미터 문제였고, 실제로
@@ -191,4 +194,4 @@ _아직 없다._
 
 ---
 
-문서 137개 · `python db/wiki_index.py` 로 갱신
+문서 140개 · `python db/wiki_index.py` 로 갱신
