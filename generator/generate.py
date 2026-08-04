@@ -23,6 +23,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+import math
 import random
 import sys
 from collections import Counter
@@ -290,7 +291,11 @@ def load_config(path: Path) -> dict:
     # 학교는 **활성 학교 수**를 쓴다. 마스터 5,724개에 유저를 뿌리면 학급당
     # 1명이 되어 친구 그래프가 성립하지 않는다(설정 파일의 경고와 같은 이유).
     cfg["schools"]["count"] = v2["schools"]["active_count"]
-    for k in ("middle_ratio", "classes_per_school", "students_per_class"):
+    # ⚠️ 여기 안 적은 키는 **조용히 사라진다.** 실제로 겪었다(2026-08-04) —
+    #    tiers·adoption 을 빼먹어 학교 50곳이 전부 첫날 열렸고, 정원이
+    #    기본값으로 잡혀 유저 2,535명이 정원을 넘겼다. 오류는 안 났다.
+    for k in ("middle_ratio", "classes_per_school", "students_per_class",
+              "tiers", "adoption"):
         if k in v2["schools"]:
             cfg["schools"][k] = v2["schools"][k]
 
@@ -454,6 +459,34 @@ class GrowthCurve:
         self._w_max = (max((p[3] for p in self.phases), default=1.0)
                        * max([1.0] + [s[2] for s in self.seasons]))
 
+        # 계절 배수를 **세션 수에도** 적용할지. [신설 2026-08-04]
+        #
+        # ⚠️ v2 는 배수가 세션의 *날짜만* 옮겼다. 그런데 유저 대다수는 활동 창이
+        #    며칠뿐이라 옮길 곳이 없다 — 그래서 겨울방학 설정 0.30 이 실측
+        #    0.66배에 그쳤다. 켜면 날짜를 옮기는 대신 **실제로 덜어낸다.**
+        #
+        # ⚠️ 둘을 같이 걸면 안 된다. 기각 표집으로 날짜를 옮기고 다시 확률로
+        #    덜어내면 계절 효과가 **제곱**된다. 그래서 이 모드에서는 날짜를
+        #    균등하게 뽑고 덜어내기만 한다(덜어내는 것 자체가 날짜를 기울인다).
+        # ⚠️ `enabled` 를 함께 봐야 한다. 국면이 안 겹치는 1개월 샘플에서도
+        #    여름방학 창은 겹치므로, 이걸 빼면 시즌 배수만 홀로 작동해
+        #    세션이 65% 날아간다(실제로 그랬다 — 117만 → 72만 행).
+        #    곡선이 꺼지면 계절성도 함께 꺼진다는 규칙은 여기에도 적용된다.
+        self.volume = bool(g.get("seasonality_affects_volume")) and self.enabled
+        self._mean_ratio = 1.0
+        if self.volume:
+            n = max(int((self.end - self.start).days), 1)
+            tot = sum(self.weight(self.start + timedelta(days=i)) for i in range(n))
+            self._mean_ratio = max(tot / n / self._w_max, 1e-6)
+
+    def keep_prob(self, dt: datetime) -> float:
+        """그 시각의 세션이 살아남을 확률. `volume` 모드에서만 쓴다."""
+        return self.weight(dt) / self._w_max if self.volume else 1.0
+
+    def volume_boost(self) -> float:
+        """덜어낸 만큼 미리 부풀리는 계수. 총 물량이 유지되게 한다."""
+        return 1.0 / self._mean_ratio if self.volume else 1.0
+
     def _clip(self, rng_pair) -> tuple[datetime, datetime] | None:
         """설정의 [시작일, 종료일] 을 생성 기간 안으로 자른다. 종료일은 그날 끝까지."""
         lo = datetime.fromisoformat(rng_pair[0]).replace(tzinfo=self.start.tzinfo)
@@ -612,6 +645,9 @@ class User:
     fame: float = 1.0               # 학급 안에서의 인기도 가중치 (지목받을 확률)
     friends: set[int] = field(default_factory=set)
     unlocked_at: datetime | None = None
+    # 휴면했다 돌아온 유저의 **두 번째 활동 창**. None 이면 안 돌아왔다.
+    reactivated_at: datetime | None = None
+    reactivated_days: int = 0
     # 하트 타임라인: (시각, 유형코드, 델타, 참조컬럼, 참조id)
     ledger: list[tuple] = field(default_factory=list)
 
@@ -647,11 +683,112 @@ class Generator:
         # 게시판·신고가 서로를 참조하므로 만든 것을 들고 있어야 한다
         self.posts: list[tuple] = []      # (id, school_id, author_id, created_at)
         self.comments: list[tuple] = []   # (id, post_id, author_id, created_at)
+        # 누가 몇 번 지목받았나. 인기도 집중을 **생성 직후 바로 재기** 위한 것이다.
+        # ⚠️ v2 는 목표(top10_share 0.45)를 설정에 적어두고 아무도 안 읽어서,
+        #    실측 64.2% 라는 것을 적재·EDA 를 다 끝낸 뒤에야 알았다.
+        self.pick_counts: Counter = Counter()
         self._calib: dict = {}          # (확률, 트레잇) -> 보정 계수
         self._reward_vals: list[int] | None = None
         self._reward_wts: list[float] = []
 
     # -- 1. 조직 ------------------------------------------------------
+    # -- 학교 계층과 개교일 ------------------------------------------
+    def _plan_schools(self, sc: dict) -> dict[int, int]:
+        """
+        학교를 만들기 **전에** 계층·정원·개교일을 정해 둔다.
+
+        학급 수가 정원에서 나오므로 순서가 이래야 한다. 반환값은
+        `{school_id: 정원}` 이고, 나머지는 `self._school_plan` 에 담아 둔다.
+        """
+        tiers = sc.get("tiers") or {}
+        ad = sc.get("adoption") or {}
+        n_schools = sc["count"]
+        ids = list(range(1, n_schools + 1))
+        self.rng.shuffle(ids)
+
+        want = [(name, int(t.get("schools", 0)), t.get("users_per_school", [50, 200]),
+                 ad.get(f"{name}_start"))
+                for name, t in tiers.items()]
+        total_want = sum(n for _, n, _, _ in want) or 1
+        scale = n_schools / total_want
+
+        plan: dict[int, dict] = {}
+        idx = 0
+        for name, n, per, window in want:
+            take = max(1, round(n * scale)) if scale < 1 else n
+            for sid in ids[idx:idx + take]:
+                plan[sid] = {"tier": name, "capacity": self.rng.randint(*per),
+                             "opened_at": self._draw_window(window) if window else self.start}
+            idx += take
+        fallback = want[-1] if want else ("tail", 0, [40, 250], None)
+        for sid in ids[idx:]:
+            plan[sid] = {"tier": fallback[0], "capacity": self.rng.randint(*fallback[2]),
+                         "opened_at": (self._draw_window(fallback[3])
+                                       if fallback[3] else self.start)}
+        self._school_plan = plan
+        return {sid: p["capacity"] for sid, p in plan.items()}
+
+    def _assign_school_tiers(self):
+        """
+        `_plan_schools` 가 정해둔 값을 학교 dict 에 옮긴다. [Q1·Q5]
+
+        ⚠️ v2 까지는 `schools.tiers` 도 `schools.adoption` 도 **설정에만 있고
+           아무도 안 읽었다.** 그래서 50개 학교가 처음부터 동시에 존재했고,
+           학급 정원만 보고 채우다 보니 50교 × 약 270석 = 13,500석에
+           20,000명을 밀어 넣어 학급이 넘쳤다.
+
+        계층이 하는 일은 **밀도를 만드는 것**이다. 균등하게 400명씩 넣으면
+        어느 학교도 "전교생을 아는 곳"이 되지 못하고, 반대로 몇 곳에 몰면
+        학교 차원이 사라진다. core(크게)·mid·tail(작게)로 나눈다.
+
+        개교일이 하는 일은 **순차 확산**이다. 실제 서비스는 학교가 하나씩
+        들어온다 — 그래야 "이 학교는 언제 들어왔나"가 분석 축이 된다.
+        """
+        for s in self.schools:
+            p = self._school_plan[s["id"]]
+            s["tier"] = p["tier"]
+            s["capacity"] = p["capacity"]
+            s["remaining"] = p["capacity"]
+            s["opened_at"] = p["opened_at"]
+
+    def _pick_school(self, at: datetime) -> tuple[dict, int]:
+        """
+        그 시각에 **이미 열려 있고 자리가 남은** 학교 하나를 고른다.
+
+        가중치는 `남은 정원 × 로지스틱 램프`다. 램프는 개교 직후를 낮게 잡아
+        (`intra_school_curve: logistic`) 학교 안 확산이 S자를 그리게 한다 —
+        열자마자 전교생이 가입하지는 않는다. 남은 정원을 곱하므로 뒤로 갈수록
+        느려져, 두 효과가 합쳐지면 S자가 된다.
+
+        반환값의 둘째는 **정원을 넘겨 흘려보낸 수**(0 또는 1)다. 9월 스파이크가
+        core 학교 정원보다 크면 여기서 새는데, 조용히 새면 안 되므로 센다.
+        """
+        open_now = [s for s in self.schools if s["opened_at"] <= at]
+        if not open_now:
+            # 맨 앞 몇 명 — 아직 아무 학교도 안 열었다. 가장 먼저 여는 곳으로.
+            return min(self.schools, key=lambda s: s["opened_at"]), 0
+
+        weights = []
+        for s in open_now:
+            if s["remaining"] <= 0:
+                weights.append(0.0)
+                continue
+            days = (at - s["opened_at"]).days
+            ramp = 1.0 / (1.0 + math.exp(-(days - 20) / 8.0))
+            weights.append(s["remaining"] * max(ramp, 0.02))
+
+        if sum(weights) <= 0:
+            # 열린 학교가 전부 찼다. 정원을 넘겨서라도 넣되 센다.
+            return self.rng.choice(open_now), 1
+        return self.rng.choices(open_now, weights=weights, k=1)[0], 0
+
+    def _draw_window(self, window) -> datetime:
+        """설정의 [시작일, 종료일] 안에서 하루를 뽑되 생성 기간 밖으로 안 나가게."""
+        lo = datetime.fromisoformat(window[0]).replace(tzinfo=KST)
+        hi = datetime.fromisoformat(window[1]).replace(tzinfo=KST)
+        lo, hi = max(lo, self.start), min(hi, self.end - timedelta(days=1))
+        return rand_dt(self.rng, lo, hi) if hi > lo else lo
+
     def gen_org(self):
         rid = 0
         for sido, gus in SIDO:
@@ -662,11 +799,21 @@ class Generator:
                              [rid, sido, gu, iso(self.start)])
 
         sc = self.cfg["schools"]
+        # 계층·정원·개교일을 **학급을 만들기 전에** 정한다. 학급 수가 정원에서
+        # 나오기 때문이다.
+        caps = self._plan_schools(sc)
+        lo_pc, hi_pc = sc["students_per_class"]
+        avg_pc = (lo_pc + hi_pc) / 2
+
         cls_id = 0
         for sid in range(1, sc["count"] + 1):
             region = self.rng.choice(self.regions)
             is_mid = self.rng.random() < sc["middle_ratio"]
-            n_classes = self.rng.randint(*sc["classes_per_school"])
+            # ⚠️ 학급 수를 정원에서 유도한다. 고정 범위(9~18)를 쓰면 정원 975명인
+            #    core 학교의 한 반이 **77명**이 된다. 인기도는 학급 안 순위로
+            #    정해지므로 반이 커질수록 쏠림이 커진다 — 실제로 상위 10% 점유가
+            #    44% 에서 51% 로 뛰었다. 학급당 인원을 실측(14~22)에 맞춘다.
+            n_classes = max(3, round(caps[sid] / avg_pc / 3) * 3)
             school = {
                 "id": sid,
                 "region_id": region[0],
@@ -690,6 +837,8 @@ class Generator:
                                  ["id", "school_id", "grade", "class_num", "label", "created_at"],
                                  [cls_id, sid, grade, cnum, label, iso(self.start)])
             self.schools.append(school)
+
+        self._assign_school_tiers()
 
         # student_count 는 유저 배정 후 갱신되므로 일단 0으로 두고 마지막에 다시 쓴다
         # info_school_id: 급식·학사일정을 어느 학교 것으로 가져오는가. 보통 자기 자신을
@@ -722,37 +871,46 @@ class Generator:
             ("same_day_only", ret["same_day_only"], (0, 0)),
             ("within_week", ret["within_week"], (1, 6)),
             ("within_month", ret["within_month"], (7, 29)),
-            ("long_term", ret["long_term"], (30, 30 * self.cfg["months"])),
+            ("within_quarter", ret.get("within_quarter", 0.0), (30, 89)),
+            # ⚠️ 상한이 하한보다 작아지면 안 된다. 1개월 샘플이면 30×1=30 이라
+            #    (90, 30) 이 되어 뒤집힌다. 짧은 기간에도 "오래 남는 사람"은
+            #    존재해야 하므로 하한을 지키고 상한만 끌어올린다.
+            ("long_term", ret["long_term"], (90, max(90, 30 * self.cfg["months"]))),
         ]
+        buckets = [b for b in buckets if b[1] > 0 or b[0] in ("no_activity", "long_term")]
 
-        # 학교를 하나씩 골라 학급 정원을 채우는 방식으로 배정한다.
-        # 균등 분산하면 학급당 1명꼴이 되어 친구 그래프가 성립하지 않는다.
+        # ── 가입 시점을 **먼저 전부 정하고 정렬한다** ────────────────────
+        # 순서가 핵심이다. 학교를 먼저 고르고 가입일을 나중에 뽑으면 두 분포가
+        # 서로를 망친다 — 성장 곡선이 정한 월별 비중이 학교 개교일에 눌린다.
+        # 가입일이 먼저면 곡선은 그대로 보존되고, 학교 선택만 그 시점에 열려
+        # 있는 곳으로 제한된다.
+        signups = []
+        for _ in range(uc["count"]):
+            if self.growth.enabled:
+                signups.append(self.growth.signup_dt(self.rng))
+            elif self.rng.random() < uc["signup_spike_ratio"]:
+                signups.append(rand_dt(self.rng, self.start, spike_end))
+            else:
+                signups.append(rand_dt(self.rng, spike_end, self.end - timedelta(days=1)))
+        signups.sort()
+
+        class_by_id = {c["id"]: c for c in self.classes}
         sc = self.cfg["schools"]
         lo_cap, hi_cap = sc["students_per_class"]
-        seats: list[int] = []
-        school_order = list(self.schools)
-        self.rng.shuffle(school_order)
-        for s in school_order:
-            if len(seats) >= uc["count"]:
-                break
-            for cid in s["class_ids"]:
-                seats.extend([cid] * self.rng.randint(lo_cap, hi_cap))
-        if len(seats) < uc["count"]:
-            seats.extend(self.rng.choices(seats or [c["id"] for c in self.classes],
-                                          k=uc["count"] - len(seats)))
-        seats = seats[:uc["count"]]
-        class_by_id = {c["id"]: c for c in self.classes}
+        class_room = {c["id"]: self.rng.randint(lo_cap, hi_cap) for c in self.classes}
+        overflow = 0
 
         for uid in range(1, uc["count"] + 1):
-            cls = class_by_id[seats[uid - 1]]
-            # 국면이 있으면 국면이 가입 시점을 정한다. 없으면(1개월 샘플 등)
-            # 옛 spike 방식 — 첫 2주에 몰고 나머지는 균등.
-            if self.growth.enabled:
-                created = self.growth.signup_dt(self.rng)
-            elif self.rng.random() < uc["signup_spike_ratio"]:
-                created = rand_dt(self.rng, self.start, spike_end)
-            else:
-                created = rand_dt(self.rng, spike_end, self.end - timedelta(days=1))
+            created = signups[uid - 1]
+            school, spilled = self._pick_school(created)
+            overflow += spilled
+            # 학급은 아직 자리가 남은 곳부터. 다 찼으면 아무 반에나 넣는다 —
+            # 학급이 조금 넘치는 것이 학교를 못 찾는 것보다 낫다.
+            room = [cid for cid in school["class_ids"] if class_room.get(cid, 0) > 0]
+            cid = self.rng.choice(room or school["class_ids"])
+            class_room[cid] = class_room.get(cid, 0) - 1
+            school["remaining"] -= 1
+            cls = class_by_id[cid]
 
             label, traits = self._make_traits()
             u = User(
@@ -788,6 +946,67 @@ class Generator:
                 u.no_activity = name == "no_activity"
                 u.hint_appetite = self._hint_appetite(u)
             cut += take
+
+        if overflow:
+            print(f"  ⚠️ 학교 정원을 넘겨 배정한 유저 {overflow:,}명 — "
+                  f"schools.tiers 의 users_per_school 을 늘리거나 학교를 더 열 것")
+
+    def _assign_reactivation(self):
+        """
+        휴면했다 **돌아오는** 유저를 정한다. [Q4]
+
+        설정에 `reactivation_rate` 가 v2 부터 있었지만 **읽는 쪽이 없었다.**
+        그래서 "한 번 떠나면 영원히 안 돌아온다"는 데이터가 나왔고,
+        복귀 코호트라는 분석 재료가 통째로 없었다.
+
+        ⚠️ 복귀는 **봄학기(3월)에 몰리되 다른 달에도 있어야** 한다. 3월에만
+           몰면 "복귀 = 3월"이 되어 갈라볼 것이 없다. 달마다 가중치를 준다.
+
+        대상은 **복귀 창이 열리기 전에 활동이 끝난 사람**뿐이다. 아직 활동
+        중인 사람에게 두 번째 창을 주면 그냥 활동 기간이 늘어난 것이지
+        '복귀'가 아니다.
+        """
+        ret = self.cfg["retention"]
+        rate = ret.get("reactivation_rate", 0.0)
+        win = ret.get("reactivation_window")
+        if rate <= 0 or not win:
+            return
+        lo = max(datetime.fromisoformat(win[0]).replace(tzinfo=KST), self.start)
+        hi = min(datetime.fromisoformat(win[1]).replace(tzinfo=KST),
+                 self.end - timedelta(days=1))
+        if hi <= lo:
+            return
+
+        # 달마다 가중치를 줘서 뽑는다. 설정에 없는 달은 1.0.
+        mw = ret.get("reactivation_month_weights") or {}
+        months: list[tuple[datetime, datetime, float]] = []
+        cur = lo.replace(day=1)
+        while cur <= hi:
+            nxt = (cur.replace(day=28) + timedelta(days=4)).replace(day=1)
+            m_lo, m_hi = max(cur, lo), min(nxt - timedelta(seconds=1), hi)
+            if m_hi > m_lo:
+                months.append((m_lo, m_hi, float(mw.get(cur.strftime("%Y-%m"), 1.0))))
+            cur = nxt
+        if not months or sum(m[2] for m in months) <= 0:
+            return
+
+        lo_d, hi_d = ret.get("reactivation_days", [7, 45])
+        n = 0
+        for u in self.users:
+            if u.no_activity or not u.unlocked_at:
+                continue
+            # 활동이 복귀 창보다 먼저 끝난 사람만
+            ended = u.created_at + timedelta(days=u.activity_days + 1)
+            if ended >= lo:
+                continue
+            if self.rng.random() >= rate:
+                continue
+            m_lo, m_hi, _ = self.rng.choices(months, weights=[m[2] for m in months], k=1)[0]
+            u.reactivated_at = rand_dt(self.rng, m_lo, m_hi)
+            u.reactivated_days = self.rng.randint(lo_d, hi_d)
+            n += 1
+        if n:
+            print(f"  복귀 유저 {n:,}명 ({n / max(len(self.users), 1) * 100:.1f}%)")
 
     # -- 3. 친구 그래프 -----------------------------------------------
     def gen_friends(self):
@@ -960,7 +1179,10 @@ class Generator:
                 scope = weighted_choice(self.rng, qc["scope_ratio"])
                 is_user = self.rng.random() < qc["user_submitted_ratio"]
                 suffix = "" if qid <= len(pool) else f" ({qid // len(pool) + 1})"
-                self.questions.append({"id": qid, "scope": scope})
+                # code·sensitive 를 함께 들고 있어야 신고 성향을 걸 수 있다.
+                # v2 는 {"id","scope"} 뿐이라 gen_moderation 이 민감도를 몰랐다.
+                self.questions.append({"id": qid, "scope": scope, "code": code,
+                                       "sensitive": code == "APPEARANCE"})
                 self.w.write("question",
                              ["id", "text", "scope", "category_id", "status", "source",
                               "report_count", "created_by_admin_id", "created_at"],
@@ -1114,6 +1336,11 @@ class Generator:
         rc = self.cfg["received"]
         h = self.cfg["hearts"]
 
+        # ⚠️ 복귀 배정은 **친구 그래프 뒤**여야 한다. unlocked_at 이 거기서
+        #    정해지기 때문이다. gen_users 안에서 부르면 전원이 unlocked_at=None
+        #    이라 아무도 복귀하지 않는다(실제로 0명이 나왔다).
+        self._assign_reactivation()
+
         by_scope: dict[str, list[dict]] = {"CLASS": [], "SCHOOL": [], "GLOBAL": []}
         for q in self.questions:
             by_scope[q["scope"]].append(q)
@@ -1175,11 +1402,31 @@ class Generator:
             same_class = [f for f in friend_ids if self.users[f - 1].class_id == u.class_id]
             same_school = [f for f in friend_ids if self.users[f - 1].school_id == u.school_id]
 
-            for _ in range(n_sess):
-                # 활동 창 안에서 균등하게 뽑지 않는다 — 방학·시험기간·저점 국면에는
-                # 덜 들어온다. 세션 **수**는 잔존 구간이 정하고, 그 세션이 **언제**
-                # 놓이는지를 성장 곡선이 정한다.
-                started = self.growth.active_dt(self.rng, u.unlocked_at, active_end)
+            # 활동 창은 하나, 복귀 유저는 둘이다.
+            # 세션 **수**는 잔존 구간이 정하고, **언제** 놓이는지를 성장 곡선이 정한다.
+            windows = [(u.unlocked_at, active_end, n_sess)]
+            if u.reactivated_at and u.reactivated_days > 0:
+                r_lo = max(u.reactivated_at, u.unlocked_at)
+                r_hi = min(r_lo + timedelta(days=u.reactivated_days), self.end)
+                if r_hi > r_lo:
+                    # 돌아온 사람은 예전만큼 쓰지는 않는다
+                    windows.append((r_lo, r_hi, max(1, round(
+                        per_month * u.reactivated_days / 30.0
+                        * u.traits["vote_freq"] * 0.6))))
+
+            boost = self.growth.volume_boost()
+            starts: list[datetime] = []
+            for w_lo, w_hi, w_n in windows:
+                for _ in range(max(1, round(w_n * boost))):
+                    if self.growth.volume:
+                        # 덜어내기 모드 — 날짜는 균등하게 뽑고 계절로 솎아낸다
+                        cand = rand_dt(self.rng, w_lo, w_hi)
+                        if self.rng.random() < self.growth.keep_prob(cand):
+                            starts.append(cand)
+                    else:
+                        starts.append(self.growth.active_dt(self.rng, w_lo, w_hi))
+
+            for started in starts:
                 sess_id += 1
                 # 세션을 끝까지 안 채우고 나가는 사람이 있어야 퍼널이 성립한다.
                 # 이탈은 앞쪽에 몰린다 — 3문항 안에서 나가는 게 대부분이다.
@@ -1233,6 +1480,7 @@ class Generator:
                             if winner is not None and cu == winner and chosen_uid is None:
                                 chosen_uid = cu
                                 is_chosen = True
+                                self.pick_counts[cu] += 1
                             # updated_at 은 부모(vote_item)의 출제 시각을 물려받는다.
                             # 후보는 출제와 동시에 만들어지므로 이게 실제 생성 시각이다.
                             # ⚠️ is_chosen 은 아래에서 row[2][5] 로 되짚으므로 뒤에 붙인다.
@@ -1419,7 +1667,18 @@ class Generator:
                     sess_id -= 1
                     continue
 
-                status = "COMPLETED" if completed >= n_items * 0.8 else "IN_PROGRESS"
+                # ⚠️ v2 는 `completed >= n_items * 0.8` 만 봤다. 그런데 n_items 는
+                #    **이미 이탈로 줄어든 수**라, 1문항만 받고 나간 세션도
+                #    "1개 중 1개 했으니 완료"가 되어 COMPLETED 로 찍혔다.
+                #    그 결과 완료율이 98.6% 로 보였다(실제 84.6%).
+                #    끝까지 안 간 세션은 EXPIRED 다 — enum 에 이미 있는 값이다.
+                full_len = v["items_per_session"]
+                if n_items < full_len:
+                    status = "EXPIRED"
+                elif completed >= n_items * 0.8:
+                    status = "COMPLETED"
+                else:
+                    status = "IN_PROGRESS"
                 last = started + timedelta(minutes=self.rng.randint(2, 20))
                 self.w.write("vote_session",
                              ["id", "user_id", "status", "item_count", "started_at", "completed_at"],
@@ -1767,6 +2026,12 @@ class Generator:
         # 균등하게 흩뿌리면 "반복 피신고자" 라는 분석 대상이 사라진다.
         hot_users = self.rng.sample(actives, max(1, len(actives) // 50))
 
+        # 민감 질문은 더 신고된다. 이 가중치가 없으면 `is_sensitive` 플래그를
+        # 데이터로 검증할 수 없다 — 외모 카테고리를 연 이유가 그것이었다.
+        sens_mult = m.get("sensitive_report_multiplier", 1.0)
+        q_report_w = {q["id"]: (sens_mult if q.get("sensitive") else 1.0)
+                      for q in self.questions}
+
         rep_id = san_id = 0
         reviewed_reports: list[tuple[int, int, datetime]] = []
         for _ in range(n_reports):
@@ -1789,7 +2054,13 @@ class Generator:
                 tgt_user = victim.id
                 at = rand_dt(self.rng, max(reporter.created_at, victim.created_at), self.end)
             elif ttype == "QUESTION":
-                tgt_q = self.rng.choice(self.questions)["id"]
+                # ⚠️ v2 는 여기서 그냥 rng.choice 를 썼다 — **완전 균등**이라
+                #    외모 질문(0.439/1천건)과 유머(0.379)가 사실상 같았고,
+                #    `is_sensitive` 플래그가 데이터에서 아무 의미도 못 가졌다.
+                #    외모 카테고리를 연 목적이 신고율 측정이었으므로 그건 실패다.
+                tgt_q = self.rng.choices(
+                    self.questions,
+                    weights=[q_report_w[q["id"]] for q in self.questions], k=1)[0]["id"]
                 at = rand_dt(self.rng, reporter.created_at, self.end)
             elif ttype == "POST":
                 pid, _sch, author, created = self.rng.choice(self.posts)
@@ -2120,6 +2391,25 @@ def main():
     for t in sorted(counts, key=lambda x: -counts[x]):
         print(f"  {t:<{width}}  {counts[t]:>9,}")
     print(f"\n  총 {sum(counts.values()):,} 행")
+
+    # 인기도 집중을 **여기서 바로** 재서 목표와 나란히 보여준다.
+    # 적재하고 EDA 를 돌린 뒤에야 알면 이미 몇 시간이 지나 있다.
+    pop = cfg.get("voting", {}).get("popularity", {})
+    if pop.get("enabled") and g.pick_counts:
+        picks = sorted((g.pick_counts.get(u.id, 0) for u in g.users), reverse=True)
+        total = sum(picks) or 1
+        top = sum(picks[:max(1, len(picks) // 10)]) / total
+        target = pop.get("top10_share")
+        mark = ""
+        if target:
+            gap = abs(top - target)
+            mark = ("  ✅" if gap <= 0.05 else "  ⚠️ 목표에서 "
+                    f"{(top - target) * 100:+.1f}%p — zipf_alpha 를 "
+                    f"{'낮춰야' if top > target else '높여야'} 한다")
+        print(f"\n  상위 10% 지목 점유: {top * 100:.1f}%"
+              f"{f' (목표 {target * 100:.0f}%)' if target else ''}{mark}")
+        print(f"  지목 0회: {sum(1 for p in picks if p == 0):,}명 / {len(picks):,}명")
+
     if g.skipped_hints:
         print(f"\n  잔액 부족으로 무산된 힌트 구매: {g.skipped_hints:,}건")
         print(f"  그에 따라 HIDDEN 으로 되돌린 열람 기록: {g.downgraded_reveals:,}건")

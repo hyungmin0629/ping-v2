@@ -100,6 +100,7 @@ def main() -> int:
     conn = connect()
     conn.autocommit = False
     total = 0
+    dropped: list[tuple[str, str]] = []
 
     with conn.cursor() as cur:
         if args.truncate:
@@ -109,6 +110,31 @@ def main() -> int:
                 + ", ".join(reversed(LOAD_ORDER))
                 + " RESTART IDENTITY CASCADE"
             )
+
+        # ── 제약을 받치지 않는 인덱스를 잠시 지운다 ──────────────────────
+        # 인덱스가 있으면 COPY 가 행마다 인덱스도 함께 갱신한다. 1억 4천만 행에서
+        # 이 비용이 지배적이다(2026-08-04 실측: 적재 2시간 57분).
+        # ⚠️ PK·UNIQUE 를 받치는 인덱스는 **건드리지 않는다** — FK 가 참조하므로
+        #    지울 수도 없고, 지우면 중복이 들어와도 안 걸린다.
+        cur.execute("""
+            SELECT i.indexrelid::regclass::text, pg_get_indexdef(i.indexrelid)
+            FROM pg_index i
+            JOIN pg_class c ON c.oid = i.indrelid
+            JOIN pg_namespace n ON n.oid = c.relnamespace
+            WHERE n.nspname = 'public' AND c.relkind = 'r'
+              AND NOT i.indisprimary AND NOT i.indisunique
+              AND NOT EXISTS (SELECT 1 FROM pg_constraint k
+                              WHERE k.conindid = i.indexrelid)
+        """)
+        dropped = [(name, ddl) for name, ddl in cur.fetchall()]
+        if dropped:
+            print(f"인덱스 {len(dropped)}개를 잠시 지운다 (적재 후 다시 만든다)")
+            # ⚠️ 중간에 죽으면 인덱스가 없는 채로 남는다. 복구 DDL 을 **먼저**
+            #    찍어두어 손으로도 되살릴 수 있게 한다.
+            for _, ddl in dropped:
+                print(f"    복구용: {ddl};")
+            for name, _ in dropped:
+                cur.execute(f"DROP INDEX IF EXISTS {name}")
 
         for table in LOAD_ORDER:
             path = args.in_dir / f"{table}.csv"
@@ -148,6 +174,16 @@ def main() -> int:
         with conn.cursor() as cur:
             cur.execute(BACKFILL_SQL.read_text(encoding="utf-8"))
         conn.commit()
+
+    # 지웠던 인덱스를 다시 만든다. **백필 뒤**여야 한다 — 백필이 UPDATE 라
+    # 인덱스가 있으면 그 비용을 또 문다.
+    if dropped:
+        print(f"\n인덱스 {len(dropped)}개 재생성...")
+        for i, (name, ddl) in enumerate(dropped, start=1):
+            with conn.cursor() as cur:
+                cur.execute(ddl)
+            conn.commit()
+            print(f"  [{i}/{len(dropped)}] {name}")
 
     conn.close()
 
