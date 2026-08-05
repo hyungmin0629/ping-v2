@@ -19,6 +19,43 @@ git log 와 다르다 — git 은 파일이 어떻게 바뀌었는지를 남기�
 
 ---
 
+
+## [2026-08-05] ingest | 합성 데이터 v4 확정 후보 — 결정 11개를 노드로
+
+8/3~8/5 사흘간 합성 데이터를 **네 번** 만들고 세 번 버렸다. 그동안 정한 것이
+커밋 메시지와 설정 주석에만 있어서 결정 노드로 옮겼다.
+
+**새 결정 노드 11개**
+
+  성장 곡선     growth-curve-two-channels · spring-spike-growth-curve
+  구조          school-sequential-adoption · reactivation-cohort ·
+                retention-quarter-tier · class-size-for-class-scope
+  행동          daily-rhythm-night-peak · never-voters-by-friend-count
+  측정·기록     expired-session-status · sensitive-question-report-weight
+  파이프라인    row-cap-to-query-cap · generator-emits-updated-at
+
+`link_decisions.py` 에 짝 18개를 넣어 기존 결정과 이었다. 결정 76개 · 링크 평균 2.2개.
+
+**새 리포트 5개** — `docs/reports.md` 를 만들어 목록 노드로 뒀다.
+PDF·HTML 24개가 마크다운이 아니라 그래프에 안 보이던 것을, 옵시디언
+`showAttachments` 를 켜고 마크다운 링크로 이어 붙였다.
+
+  synthetic-data-decision-history   30문답 · 판본 6개 · 뒤집힌 결정 8건 · 교훈
+  EDA-final-12m-v{2,3,4}             전면 감사 · 폐기 판본 기록 · 확정 후보
+  pipeline-overview                  저장소 셋이 어디서 갈라지고 만나는가
+
+**고친 것**
+
+  CLAUDE.md   630 → 559줄. 중복 117줄을 걷었다(합성 v2 이야기 · W0~W19 표).
+              ⚠️ "세 가지 연산"과 "되돌리기"는 **CLAUDE.md 밖에 없어** 안 건드렸다.
+  README      786만 행 등 v1 시절 수치 3곳
+  ops-synthetic-data  3단계 → 스모크·프로브·최종. **적재 전 CSV 검증** 절 신설.
+              지표 목표 4개 추가(시간대·계절성·같은 반)
+  link_decisions.py   꼬리말이 없는 노드에서 블록이 frontmatter 안으로
+              들어가 YAML 이 깨지던 버그
+
+**lint 통과.** 볼트 md 143개 · 고아 노드는 `raw/meetings/_template` 하나뿐.
+
 ## [2026-07-31] lint | 문서가 주장하는 숫자를 살아 있는 DB 와 대조
 
 낡은 주장 9곳을 고쳤다. README 의 W 단계 표가 순서가 뒤엉켜 있었고(W8→W16→

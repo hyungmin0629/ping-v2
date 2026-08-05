@@ -30,7 +30,7 @@ docker run -d --name pgtest \
 ```
 
 > `--shm-size=1g` 를 빠뜨리지 말 것. 도커 기본값은 64MB 이고, 그 상태로 합성
-> 786만 행에 정합성 검사를 돌리면 병렬 워커가
+> 1억 8,922만 행에 정합성 검사를 돌리면 병렬 워커가
 > `could not resize shared memory segment ... No space left on device` 로 죽는다.
 > 디스크가 아니라 공유메모리 문제다.
 
@@ -141,8 +141,12 @@ docker exec -i pgtest psql -U postgres -d pingv2 < db/ddl/96_backfill_updated_at
 나중에 새 행을 넣을 때 PK 충돌이 난다.
 
 `96` — 증분 워터마크(`updated_at`)의 기본값이 `now()` 라, COPY 로 부어 넣으면
-786만 행이 전부 "적재한 순간"이 된다. 3개월치가 하루에 뭉치고 BigQuery
-파티션이 무의미해진다. 각 행의 원래 시각으로 되돌린다.
+모든 행이 "적재한 순간"이 된다. 12개월치가 하루에 뭉치고 BigQuery 파티션이
+무의미해진다.
+
+⚠️ **지금은 거의 할 일이 없다.** 생성기가 `updated_at` 을 CSV 에 직접 싣기
+때문이다([[generator-emits-updated-at]]). 96 은 안전망으로 남겨 둔 것이다 —
+예전에는 이 UPDATE 하나가 **3시간**을 먹었다.
 
 ---
 
@@ -150,7 +154,7 @@ docker exec -i pgtest psql -U postgres -d pingv2 < db/ddl/96_backfill_updated_at
 
 ```bash
 python pipeline/extract_load.py --source supabase     # 실유저 (증분)
-python pipeline/extract_load.py --source local        # 합성 786만 행
+python pipeline/extract_load.py --source local        # 합성 (v4 = 1억 8,922만 행)
 python pipeline/verify_load.py  --source supabase     # 행 수 대조
 ```
 
@@ -252,12 +256,14 @@ python pipeline/verify_load.py  --source local                  # 행 수 대조
 | 단계 | 내용 | 상태 |
 |---|---|---|
 | P0 | 스키마·DDL | **완료** |
-| P1 | 합성 데이터 생성 | **v2 진행 중** — 40표 전부 생성 · 342컬럼 중 338개 채움 · 페르소나 도입.
-  1단계(500명·1개월) 통과. **2·3단계 남음.** [[ops-synthetic-data]] |
+| P1 | 합성 데이터 생성 | **완료 (v4, 2026-08-05)** — 20,000명 · 12개월 · **1억 8,922만 행**.
+  40표 · 342컬럼 중 340개 채움 · 정합성 17종 위반 0.
+  검수는 [EDA-final-12m-v4.pdf](docs/EDA-final-12m-v4.pdf), 절차는 [[ops-synthetic-data]] |
 | P2 | Postgres 적재 | **완료** — 순서 정의 40표. 95·96 자동 실행 |
 | P3 | NEIS 수집 | 학교·학급·급식·**학사일정 완료** · DAG 화는 남음 |
 | P4 | BigQuery 적재 DAG | **완료** — 40테이블 · 행 수 대조 통과.
-  한때 789만 행이 흘렀으나 **합성을 지워 지금은 실유저 35,951행** |
+  ⚠️ **합성 v4 는 아직 안 올렸다.** 지금 raw 는 실유저 36,268행뿐.
+  올리면 약 13.9 GiB(월 135원 수준) |
 | P5 | 품질 검증 | |
 | P6 | stg / mart | |
 | P7 | 대시보드 | |
