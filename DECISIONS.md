@@ -129,4 +129,5 @@ DDL과 스크립트가 진실이다.
 - `2026-08-04` [[daily-rhythm-night-peak|하루 리듬을 붙인다 — 최대 봉우리는 밤 22시]]
 - `2026-08-04` [[never-voters-by-friend-count|해금하고도 투표 안 하는 유저를 의도적으로 만든다]]
 - `2026-08-04` [[class-size-for-class-scope|같은 반 친구는 비율이 아니라 수가 기준이다]]
+- `2026-08-05` [[confirm-v4-with-known-limits|합성 데이터 v4 를 확정한다 — 한계 5건을 고치지 않고 문서화한다]]
 

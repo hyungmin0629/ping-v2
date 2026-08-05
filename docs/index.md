@@ -55,7 +55,7 @@ API 스펙 등 바깥에서 온 문서.
 
 _아직 없다._
 
-## 결정 <sub>`docs/decisions` · 76</sub>
+## 결정 <sub>`docs/decisions` · 77</sub>
 
 왜 그렇게 했는지. 하나가 한 노드다.
 
@@ -73,6 +73,7 @@ _아직 없다._
 - [[class-size-for-class-scope|같은 반 친구는 비율이 아니라 **수**가 기준이다 — 4명이 있어야 투표가 된다]] — 상한 35), 같은 반에서 친구를 고르는 비율도 올린다(same_class_ratio
 - [[client-write-minimal|클라이언트에 쓰기 권한을 거의 주지 않는다]] — 클라이언트가 직접 INSERT/UPDATE 하지 못하게 막는다. 나중에 RPC 함수로 처리한다.
 - [[closed-test-adults|성인 지인 대상 클로즈드 테스트로 한정]] — 필요하고, 외모 관련 투표와 익명 게시판을 미성년자에게 열면서 모니터링이 없으면 감당할 수 없다.
+- [[confirm-v4-with-known-limits|합성 데이터 v4 를 확정한다 — 한계 5건을 고치지 않고 문서화한다]] — 확정 직전에 돌린 정밀 EDA 에서 새 한계 5건이 나왔지만, 재생성하지 않고
 - [[daily-rhythm-night-peak|하루 리듬을 붙인다 — 최대 봉우리는 점심이 아니라 밤 22시다]] — 12~13시 최대 봉우리"를 밤 22~23시로 바꾼다.
 - [[drop-admin-user|admin_user 를 없애고 app_user.is_admin 하나로 접는다]] — 유지할 근거가 "언젠가 운영 화면을 만들면"뿐이었다. 그 언젠가가 이 프로젝트의
 - [[events-on-meal-calendar|학사일정을 급식 달력에 얹는다 — 따로 만들지 않고]] — 날짜 칸 아래 점이 그날 일정이고, 달력 아래에 그 달 일정이 통째로 나온다.
@@ -194,4 +195,4 @@ _아직 없다._
 
 ---
 
-문서 140개 · `python db/wiki_index.py` 로 갱신
+문서 141개 · `python db/wiki_index.py` 로 갱신

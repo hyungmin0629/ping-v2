@@ -196,6 +196,17 @@ PAIRS = [
      "운영자 여부가 **유저가 UPDATE 하는 표**로 옮겨왔다 — 스스로 켤 수 없어야 한다"),
     ("drop-admin-user", "remove-circular-fk",
      "쓰지 않는 구조를 걷어내 스키마를 줄인 판단 둘"),
+
+    # 합성 데이터 확정
+    ("confirm-v4-with-known-limits", "purge-synthetic-data",
+     "그때는 **틀려서** 버렸고 이번엔 **부족한 채로 쓴다** — 기준이 "
+     "보관 가치가 아니라 '이 데이터로 답할 질문이 남는가'인 것은 같다"),
+    ("confirm-v4-with-known-limits", "app-follows-generator",
+     "생성이 확정된 **지금이 앱을 맞출 시점이다**"),
+    ("confirm-v4-with-known-limits", "integrity-checks-aged",
+     "검사는 쓰인 시점의 세계를 안다 — 탈퇴·제재 이후 활동을 **아무도 묻지 않았다**"),
+    ("confirm-v4-with-known-limits", "reactivation-cohort",
+     "복귀 736명은 `vote_session` 으로만 보인다 — `user_session` 으로 재면 **0명**이다"),
 ]
 
 BLOCK = "## 이어지는 결정"
@@ -223,8 +234,12 @@ def main() -> int:
     for slug, links in rel.items():
         p = DEC / f"{slug}.md"
         text = p.read_text(encoding="utf-8")
-        # 다시 돌려도 되게 옛 블록을 먼저 걷어낸다
-        text = re.sub(rf"\n{BLOCK}\n.*?(?=\n---\n)", "", text, flags=re.S)
+        # 다시 돌려도 되게 옛 블록을 먼저 걷어낸다.
+        # ⚠️ **`\Z` 를 빼면 안 된다.** 꼬리말 구분선이 없는 노드는 블록 뒤에
+        #    `\n---\n` 이 없어 걷어내기가 실패하고, 아래에서 끝에 새로 붙이므로
+        #    **돌릴 때마다 한 벌씩 쌓인다**(2026-08-05 에 16개 노드가 2~3벌이 됐다).
+        #    생성물이라 오류도 안 나고 다음 생성 때 사라지지도 않는다.
+        text = re.sub(rf"\n{BLOCK}\n.*?(?=\n---\n|\Z)", "", text, flags=re.S)
 
         lines = [f"\n{BLOCK}\n"]
         for other, why in sorted(links):

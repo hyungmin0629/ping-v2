@@ -256,9 +256,11 @@ python pipeline/verify_load.py  --source local                  # 행 수 대조
 | 단계 | 내용 | 상태 |
 |---|---|---|
 | P0 | 스키마·DDL | **완료** |
-| P1 | 합성 데이터 생성 | **완료 (v4, 2026-08-05)** — 20,000명 · 12개월 · **1억 8,922만 행**.
+| P1 | 합성 데이터 생성 | **완료 · v4 확정 (2026-08-05)** — 20,000명 · 12개월 · **1억 8,922만 행**.
   40표 · 342컬럼 중 340개 채움 · 정합성 17종 위반 0.
-  검수는 [EDA-final-12m-v4.pdf](docs/EDA-final-12m-v4.pdf), 절차는 [[ops-synthetic-data]] |
+  ⚠️ **분석 전에 [EDA-final-12m-v4.pdf](docs/EDA-final-12m-v4.pdf) 13장을 본다** —
+  이 데이터로 **할 수 없는 것이 14가지** 있다([[confirm-v4-with-known-limits]]).
+  절차는 [[ops-synthetic-data]] |
 | P2 | Postgres 적재 | **완료** — 순서 정의 40표. 95·96 자동 실행 |
 | P3 | NEIS 수집 | 학교·학급·급식·**학사일정 완료** · DAG 화는 남음 |
 | P4 | BigQuery 적재 DAG | **완료** — 40테이블 · 행 수 대조 통과.
