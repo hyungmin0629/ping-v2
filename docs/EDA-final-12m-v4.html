@@ -73,8 +73,9 @@
   <div><b>이 판본의 변경</b> 접속 세션(<code>user_session</code>)에 하루 리듬과
        계절성을 걸었다 — v3 에서 투표 세션에만 걸려 있던 것</div>
   <div><b>이 문서의 범위</b> v4 판정에 더해 <b>정밀 EDA 를 새로 돌렸다</b> —
-       인구·계층·경제·퍼널·분포형태 등 <b>9개 축</b>을 추가로 캐고,
-       정합성 검사가 <b>못 잡는 항목</b>을 따로 뒤졌다(3장·11장·12장)</div>
+       인구·계층·경제·퍼널·분포형태 등 <b>10개 축</b>을 추가로 캐고,
+       정합성 검사가 <b>못 잡는 항목</b>을 따로 뒤졌다(3장·7-2장·11장·12장).
+       <b>결함 1건 · 경계 5건</b>을 찾았다</div>
   <div><b>⚠️ 문서 판본 ≠ 데이터 판본</b> 이 문서가 <b>네 번째 12개월 데이터</b>다.
        판본 이력은 아래 1장</div>
 </div>
@@ -82,15 +83,32 @@
 <h2>0. 요약 — 무엇을 확정하고 무엇을 알고 써야 하는가</h2>
 
 <div class="box ok">
-  <h4>판정 — 확정한다</h4>
+  <h4>판정 — 확정한다 (단, 13장을 읽고 쓴다)</h4>
   <p>정합성 <b>17종 위반 0</b> · 이상치 <b>9종 전부 0</b> · 40표 전부 채워짐 ·
   목표 지표 <b>10개 전부 달성</b>. v1~v3 에서 지적된 결함이 모두 해소됐다.
   <b>파이프라인·분석 연습용으로 확정 가능하다.</b></p>
+  <p>새로 찾은 <b>결함 1건은 꼬리 0.5%에 한정</b>되고, 아래 두 규칙만 지키면
+  나머지 분석은 전부 살아 있다 — <b>①상위 1% 세그먼트를 보지 않는다
+  ②활동 집중 지표의 절대값을 인용하지 않는다.</b></p>
+</div>
+
+<div class="box">
+  <h4>⚠️ 먼저 — <b>결함 1건</b>을 새로 찾았다 (경계가 아니다)</h4>
+  <p><b>하루 투표 세션 수에 상한이 없다.</b> 그 결과 꼬리가
+  <b>물리적으로 불가능한 값</b>을 갖는다 — 하루 최다 <b>2,243세션</b>,
+  하루에 투표로 보낸 시간 최대 <b>406.8시간</b>, 24시간을 넘는 유저-일이
+  <b>1,251일(67명)</b>. 1위 유저는 하루에 554세션 · 99.2시간 투표했다.</p>
+  <p><b>정합성 17종·이상치 9종 어느 것도 이걸 묻지 않는다.</b>
+  "하루에 몇 번까지가 사람인가"는 검사에 없는 질문이었다.</p>
+  <p><b>영향은 꼬리에 한정된다</b> — 전체 유저-일 25.5만 중 24시간 초과는 0.5%다.
+  다만 그 0.5%가 <b>투표 활동 집중 지표(상위 10% = 89.5% · 지니 0.936)를 부풀린다.</b>
+  <b>상위 1% 세그먼트 분석을 하면 안 된다</b> — 그 167명이 사람이 아니다.
+  자세한 분포는 <b>7-2장</b>.</p>
 </div>
 
 <div class="box note">
-  <h4>다만 — 이번 정밀 EDA 에서 <b>새로 드러난 한계 5가지</b>가 있다</h4>
-  <p>전부 <b>결함이 아니라 경계</b>다. 데이터를 못 쓰게 만들지 않지만,
+  <h4>그리고 — <b>경계 5가지</b>가 더 있다</h4>
+  <p>이쪽은 <b>결함이 아니라 경계</b>다. 데이터를 못 쓰게 만들지 않지만,
   <b>모르고 쓰면 틀린 결론이 나온다.</b> 재생성 없이 이번 판본으로 간다.</p>
   <table style="margin-top:6px">
     <tr><th style="width:30%">한계</th><th style="width:34%">무엇이 불가능해지나</th><th>본문</th></tr>
@@ -256,9 +274,14 @@
       <td><b>매출 집계가 틀어진다</b></td></tr>
   <tr><td class="warn">탈퇴 후 접속 세션</td><td class="n">727</td><td class="n">232</td>
       <td>탈퇴자의 12%</td></tr>
+  <tr><td class="bad">하루 24시간을 넘는 투표 활동</td><td class="n bad">1,251 <span class="dim">유저-일</span></td>
+      <td class="n">67</td><td>최대 <b>406.8시간/일</b>. 7-2장 — <b>이번의 유일한 결함</b></td></tr>
   <tr><td>차단한 사람이 후보로 나옴</td><td class="n good">0</td><td class="n good">0</td>
       <td class="good">막혀 있다 — 확인함</td></tr>
 </table>
+<p class="cap">앞의 여섯은 <b>탈퇴·제재가 나중에 붙은 개념</b>이라 검사가 안 묻는 것이고,
+마지막 <b>하루 상한</b>은 <b>아무도 물을 생각을 못 한 것</b>이다 —
+"사람이 하루에 몇 번까지 할 수 있나"는 스키마 제약으로 표현되지 않는다.</p>
 
 <div class="box">
   <h4>이것이 뜻하는 것 — 탈퇴는 <b>라벨일 뿐</b>이다</h4>
@@ -752,19 +775,294 @@ GLOBAL 은 친구 전체가 후보라 모자랄 일이 없다. 설계대로다.<
   <tr><td class="n">1,089</td><td class="n">54</td><td class="n">499</td><td class="n">2,597</td>
       <td class="n">8,645</td><td class="n">48,019</td><td class="n">1,268명 (6.3%)</td></tr>
 </table>
+<h4>받은 투표 — 십분위 (전체 20,000명 기준)</h4>
 <table>
-  <tr><th style="width:34%">집중도</th><th class="n">상위 1%</th><th class="n">상위 10%</th>
-      <th class="n">상위 20%</th><th class="n">상위 50%</th><th class="n">지니</th></tr>
-  <tr><td><b>받은</b> 투표 점유</td><td class="n">12.4%</td><td class="n">49.3%</td>
-      <td class="n">65.9%</td><td class="n">90.8%</td><td class="n">0.657</td></tr>
-  <tr><td><b>한</b> 투표 점유</td><td class="n dim">—</td><td class="n bad">89.5%</td>
-      <td class="n dim">—</td><td class="n dim">—</td><td class="n bad">0.936</td></tr>
+  <tr><th class="n" style="width:9%">십분위</th><th class="n">인원</th><th class="n">받은 투표</th>
+      <th class="n">비중</th><th class="n">누적</th><th class="n">범위</th><th style="width:22%"></th></tr>
+  <tr><td class="n"><b>1</b> <span class="dim">상위</span></td><td class="n">2,000</td><td class="n">10,051,913</td>
+      <td class="n">49.30%</td><td class="n">49.30%</td><td class="n">2,474~48,019</td>
+      <td><span class="chart"><span class="bar" style="width:100%"></span></span></td></tr>
+  <tr><td class="n">2</td><td class="n">2,000</td><td class="n">3,757,595</td>
+      <td class="n">18.43%</td><td class="n">67.72%</td><td class="n">1,453~2,473</td>
+      <td><span class="chart"><span class="bar" style="width:37.4%"></span></span></td></tr>
+  <tr><td class="n">3</td><td class="n">2,000</td><td class="n">2,360,449</td>
+      <td class="n">11.58%</td><td class="n">79.30%</td><td class="n">950~1,453</td>
+      <td><span class="chart"><span class="bar" style="width:23.5%"></span></span></td></tr>
+  <tr><td class="n">4</td><td class="n">2,000</td><td class="n">1,572,771</td>
+      <td class="n">7.71%</td><td class="n">87.01%</td><td class="n">645~950</td>
+      <td><span class="chart"><span class="bar" style="width:15.6%"></span></span></td></tr>
+  <tr><td class="n">5</td><td class="n">2,000</td><td class="n">1,075,325</td>
+      <td class="n">5.27%</td><td class="n">92.29%</td><td class="n">444~645</td>
+      <td><span class="chart"><span class="bar" style="width:10.7%"></span></span></td></tr>
+  <tr><td class="n">6</td><td class="n">2,000</td><td class="n">731,405</td>
+      <td class="n">3.59%</td><td class="n">95.87%</td><td class="n">296~444</td>
+      <td><span class="chart"><span class="bar" style="width:7.3%"></span></span></td></tr>
+  <tr><td class="n">7</td><td class="n">2,000</td><td class="n">471,601</td>
+      <td class="n">2.31%</td><td class="n">98.19%</td><td class="n">180~295</td>
+      <td><span class="chart"><span class="bar" style="width:4.7%"></span></span></td></tr>
+  <tr><td class="n">8</td><td class="n">2,000</td><td class="n">269,890</td>
+      <td class="n">1.32%</td><td class="n">99.51%</td><td class="n">90~180</td>
+      <td><span class="chart"><span class="bar" style="width:2.7%"></span></span></td></tr>
+  <tr><td class="n">9</td><td class="n">2,000</td><td class="n">96,987</td>
+      <td class="n">0.48%</td><td class="n">99.98%</td><td class="n">11~90</td>
+      <td><span class="chart"><span class="bar" style="width:1%"></span></span></td></tr>
+  <tr><td class="n">10 <span class="dim">하위</span></td><td class="n">2,000</td><td class="n">3,113</td>
+      <td class="n">0.02%</td><td class="n">100%</td><td class="n">0~11</td>
+      <td><span class="chart"><span class="bar" style="width:0.3%"></span></span></td></tr>
 </table>
+<p class="cap">기울기가 <b>완만하다</b> — 1분위 49.3%에서 10분위 0.02%까지 계단이
+고르게 내려온다. 지니 <b>0.657</b>. 이것이 "인기도"의 실제 모양이다.</p>
+
+<h2 class="pb">7-2. 투표 활동 분포 — 누가 던지나</h2>
+
+<p>받은 쪽(위)과 <b>던진 쪽</b>은 모양이 완전히 다르다.
+받은 쪽 지니가 0.657 인데 던진 쪽은 <b>0.936</b> 이다.</p>
+
+<h3>분위수 — 투표한 16,656명 기준</h3>
+<table>
+  <tr><th class="n">최소</th><th class="n">p10</th><th class="n">p25</th><th class="n">중앙값</th>
+      <th class="n">p75</th><th class="n">p90</th><th class="n">p95</th><th class="n">p99</th>
+      <th class="n">최대</th><th class="n">평균</th></tr>
+  <tr><td class="n">1</td><td class="n">7</td><td class="n">10</td><td class="n">29</td>
+      <td class="n">252</td><td class="n">1,511</td><td class="n">3,886</td><td class="n">23,693</td>
+      <td class="n bad">545,707</td><td class="n">1,224</td></tr>
+</table>
+<p class="cap"><b>중앙값 29 · 평균 1,224 — 42배 차이다.</b> 받은 투표는 이 비가 2.2배였다
+(중앙값 499 · 평균 1,089). 평균이 아무것도 대표하지 못한다.
+p99(23,693)와 최대(545,707)도 <b>23배</b> 벌어져 있다 — 꼬리 안에 또 꼬리가 있다.</p>
+
+<h3>십분위 — 투표한 사람만 (16,656명)</h3>
+<table>
+  <tr><th class="n" style="width:9%">십분위</th><th class="n">인원</th><th class="n">던진 투표</th>
+      <th class="n">비중</th><th class="n">누적</th><th class="n">범위</th>
+      <th class="n">1인 평균</th><th style="width:18%"></th></tr>
+  <tr><td class="n"><b>1</b> <span class="dim">상위</span></td><td class="n">1,666</td><td class="n">18,252,768</td>
+      <td class="n bad">89.51%</td><td class="n">89.51%</td><td class="n">1,511~545,707</td><td class="n">10,956</td>
+      <td><span class="chart"><span class="bar" style="width:100%"></span></span></td></tr>
+  <tr><td class="n">2</td><td class="n">1,666</td><td class="n">1,364,723</td>
+      <td class="n">6.69%</td><td class="n">96.21%</td><td class="n">425~1,510</td><td class="n">819</td>
+      <td><span class="chart"><span class="bar" style="width:7.5%"></span></span></td></tr>
+  <tr><td class="n">3</td><td class="n">1,666</td><td class="n">437,680</td>
+      <td class="n">2.15%</td><td class="n">98.35%</td><td class="n">154~425</td><td class="n">263</td>
+      <td><span class="chart"><span class="bar" style="width:2.4%"></span></span></td></tr>
+  <tr><td class="n">4</td><td class="n">1,666</td><td class="n">164,128</td>
+      <td class="n">0.80%</td><td class="n">99.16%</td><td class="n">60~154</td><td class="n">99</td>
+      <td><span class="chart"><span class="bar" style="width:0.9%"></span></span></td></tr>
+  <tr><td class="n">5</td><td class="n">1,666</td><td class="n">69,257</td>
+      <td class="n">0.34%</td><td class="n">99.50%</td><td class="n">29~60</td><td class="n">42</td>
+      <td><span class="chart"><span class="bar" style="width:0.4%"></span></span></td></tr>
+  <tr><td class="n">6</td><td class="n">1,666</td><td class="n">38,705</td>
+      <td class="n">0.19%</td><td class="n">99.69%</td><td class="n">19~29</td><td class="n">23</td>
+      <td><span class="chart"><span class="bar" style="width:0.2%"></span></span></td></tr>
+  <tr><td class="n">7</td><td class="n">1,665</td><td class="n">26,591</td>
+      <td class="n">0.13%</td><td class="n">99.82%</td><td class="n">12~19</td><td class="n">16</td>
+      <td><span class="chart"><span class="bar" style="width:0.15%"></span></span></td></tr>
+  <tr><td class="n">8</td><td class="n">1,665</td><td class="n">17,002</td>
+      <td class="n">0.08%</td><td class="n">99.90%</td><td class="n">10~12</td><td class="n">10</td>
+      <td><span class="chart"><span class="bar" style="width:0.1%"></span></span></td></tr>
+  <tr><td class="n">9</td><td class="n">1,665</td><td class="n">15,047</td>
+      <td class="n">0.07%</td><td class="n">99.97%</td><td class="n">7~10</td><td class="n">9</td>
+      <td><span class="chart"><span class="bar" style="width:0.08%"></span></span></td></tr>
+  <tr><td class="n">10 <span class="dim">하위</span></td><td class="n">1,665</td><td class="n">5,148</td>
+      <td class="n">0.03%</td><td class="n">100%</td><td class="n">1~7</td><td class="n">3</td>
+      <td><span class="chart"><span class="bar" style="width:0.03%"></span></span></td></tr>
+</table>
+<p class="cap">1분위 안에서 <b>1,511표부터 545,707표까지</b> 벌어져 있다 — 361배다.
+2분위(819)와 1분위(10,956)의 1인 평균 차이가 <b>13배</b>다.
+<b>이 표의 1분위 한 칸이 전체의 89.5%</b> 이므로, 집중을 이해하려면
+1분위를 다시 갈라야 한다(아래).</p>
+
+<h3>상위 점유 — 얼마나 좁게 몰려 있나</h3>
+<table>
+  <tr><th style="width:22%">상위</th><th class="n">0.1%</th><th class="n">1%</th><th class="n">5%</th>
+      <th class="n">10%</th><th class="n">20%</th><th class="n">50%</th></tr>
+  <tr><td>인원 <span class="dim">(투표자 중)</span></td><td class="n">17명</td><td class="n">167명</td>
+      <td class="n">833명</td><td class="n">1,666명</td><td class="n">3,331명</td><td class="n">8,328명</td></tr>
+  <tr><td><b>던진 투표 점유</b></td><td class="n">15.85%</td><td class="n bad">48.54%</td>
+      <td class="n">79.64%</td><td class="n bad">89.51%</td><td class="n">96.20%</td><td class="n">99.50%</td></tr>
+  <tr><td class="dim">비교: 받은 투표</td><td class="n dim">—</td><td class="n dim">12.4%</td>
+      <td class="n dim">—</td><td class="n dim">49.3%</td><td class="n dim">65.9%</td><td class="n dim">90.8%</td></tr>
+</table>
+<p><b>17명이 전체 투표의 15.85%를 던진다.</b> 167명(1%)이 절반(48.54%)이다.
+받은 투표에서 상위 1%가 12.4%인 것과 견주면 <b>4배 더 좁다.</b></p>
+
+<h3>히스토그램 — 전체 20,000명이 어디에 있나</h3>
+<table>
+  <tr><th style="width:15%">던진 투표</th><th class="n">인원</th><th class="n">인원 비중</th>
+      <th style="width:20%"></th><th class="n">투표 합</th><th class="n">투표 비중</th><th style="width:20%"></th></tr>
+  <tr><td>0 <span class="dim">안 함</span></td><td class="n">3,344</td><td class="n">16.72%</td>
+      <td><span class="chart"><span class="bar" style="width:49.3%"></span></span></td>
+      <td class="n">0</td><td class="n">0.00%</td><td></td></tr>
+  <tr><td>1~9</td><td class="n">2,830</td><td class="n">14.15%</td>
+      <td><span class="chart"><span class="bar" style="width:41.7%"></span></span></td>
+      <td class="n">15,195</td><td class="n">0.07%</td>
+      <td><span class="chart"><span class="bar s2" style="width:0.1%"></span></span></td></tr>
+  <tr><td><b>10~49</b></td><td class="n good">6,789</td><td class="n">33.95%</td>
+      <td><span class="chart"><span class="bar" style="width:100%"></span></span></td>
+      <td class="n">136,101</td><td class="n">0.67%</td>
+      <td><span class="chart"><span class="bar s2" style="width:1%"></span></span></td></tr>
+  <tr><td>50~99</td><td class="n">1,299</td><td class="n">6.50%</td>
+      <td><span class="chart"><span class="bar" style="width:19.1%"></span></span></td>
+      <td class="n">93,334</td><td class="n">0.46%</td>
+      <td><span class="chart"><span class="bar s2" style="width:0.7%"></span></span></td></tr>
+  <tr><td>100~249</td><td class="n">1,559</td><td class="n">7.80%</td>
+      <td><span class="chart"><span class="bar" style="width:23.0%"></span></span></td>
+      <td class="n">252,793</td><td class="n">1.24%</td>
+      <td><span class="chart"><span class="bar s2" style="width:1.9%"></span></span></td></tr>
+  <tr><td>250~499</td><td class="n">1,096</td><td class="n">5.48%</td>
+      <td><span class="chart"><span class="bar" style="width:16.1%"></span></span></td>
+      <td class="n">390,791</td><td class="n">1.92%</td>
+      <td><span class="chart"><span class="bar s2" style="width:2.9%"></span></span></td></tr>
+  <tr><td>500~999</td><td class="n">935</td><td class="n">4.68%</td>
+      <td><span class="chart"><span class="bar" style="width:13.8%"></span></span></td>
+      <td class="n">658,510</td><td class="n">3.23%</td>
+      <td><span class="chart"><span class="bar s2" style="width:4.9%"></span></span></td></tr>
+  <tr><td>1,000~2,499</td><td class="n">980</td><td class="n">4.90%</td>
+      <td><span class="chart"><span class="bar" style="width:14.4%"></span></span></td>
+      <td class="n">1,566,620</td><td class="n">7.68%</td>
+      <td><span class="chart"><span class="bar s2" style="width:11.5%"></span></span></td></tr>
+  <tr><td>2,500~4,999</td><td class="n">468</td><td class="n">2.34%</td>
+      <td><span class="chart"><span class="bar" style="width:6.9%"></span></span></td>
+      <td class="n">1,619,150</td><td class="n">7.94%</td>
+      <td><span class="chart"><span class="bar s2" style="width:11.9%"></span></span></td></tr>
+  <tr><td>5,000~9,999</td><td class="n">298</td><td class="n">1.49%</td>
+      <td><span class="chart"><span class="bar" style="width:4.4%"></span></span></td>
+      <td class="n">2,093,447</td><td class="n">10.27%</td>
+      <td><span class="chart"><span class="bar s2" style="width:15.4%"></span></span></td></tr>
+  <tr><td class="bad"><b>10,000+</b></td><td class="n">402</td><td class="n">2.01%</td>
+      <td><span class="chart"><span class="bar" style="width:5.9%"></span></span></td>
+      <td class="n bad">13,565,108</td><td class="n bad">66.52%</td>
+      <td><span class="chart"><span class="bar s2" style="width:100%"></span></span></td></tr>
+</table>
+<div class="legend"><span><i class="key k1"></i>인원</span><span><i class="key k2"></i>투표 수</span></div>
+<p class="cap"><b>두 막대가 정반대로 생겼다.</b> 사람은 10~49표 구간(6,789명)에 몰려 있는데,
+투표는 <b>10,000표 이상 구간(402명, 2.01%)이 66.52%</b> 를 차지한다.
+전형적인 <b>이중 봉우리</b>다 — "가볍게 써 본 다수"와 "붙박이 소수"가 섞여 있다.</p>
+
+<h3>로렌츠 곡선 — 전체 20,000명 기준</h3>
+<div class="chart">
+  <div class="row"><span class="lab w">하위 10%</span><span class="track"><span class="bar" style="width:0.1%"></span></span><span class="val">0.00%</span></div>
+  <div class="row"><span class="lab w">하위 20%</span><span class="track"><span class="bar" style="width:0.1%"></span></span><span class="val">0.00%</span></div>
+  <div class="row"><span class="lab w">하위 30%</span><span class="track"><span class="bar" style="width:0.1%"></span></span><span class="val">0.07%</span></div>
+  <div class="row"><span class="lab w">하위 40%</span><span class="track"><span class="bar" style="width:0.2%"></span></span><span class="val">0.16%</span></div>
+  <div class="row"><span class="lab w">하위 50%</span><span class="track"><span class="bar" style="width:0.3%"></span></span><span class="val">0.31%</span></div>
+  <div class="row"><span class="lab w">하위 60%</span><span class="track"><span class="bar" style="width:0.6%"></span></span><span class="val">0.55%</span></div>
+  <div class="row"><span class="lab w">하위 70%</span><span class="track"><span class="bar" style="width:1.1%"></span></span><span class="val">1.08%</span></div>
+  <div class="row"><span class="lab w">하위 80%</span><span class="track"><span class="bar" style="width:2.7%"></span></span><span class="val">2.67%</span></div>
+  <div class="row"><span class="lab w">하위 90%</span><span class="track"><span class="bar" style="width:8.4%"></span></span><span class="val">8.35%</span></div>
+  <div class="row"><span class="lab w">전체 100%</span><span class="track"><span class="bar" style="width:100%"></span></span><span class="val">100%</span></div>
+  <p class="cap">막대 = 그 지점까지 누적된 <b>투표 점유율</b>. 완전 균등이면 대각선이 된다.
+  <b>하위 90%가 8.35%</b> 밖에 안 되고 나머지 91.65%가 마지막 10%에 있다.
+  지니 <b>0.9364</b> — 소득 불평등으로 치면 현실에 존재하지 않는 수준이다.</p>
+</div>
+
+<h3>무엇이 이 집중을 만드나 — 친구가 아니라 <b>기간</b>이다</h3>
+<table>
+  <tr><th class="n" style="width:9%">십분위</th><th class="n">1인 평균 투표</th>
+      <th class="n">평균 친구</th><th class="n">투표 세션</th>
+      <th class="n">활동 기간(일)</th><th class="n">하트 잔액</th></tr>
+  <tr><td class="n"><b>1</b></td><td class="n">9,344</td><td class="n">44.8</td>
+      <td class="n bad">1,053</td><td class="n bad">91.9</td><td class="n">6,154</td></tr>
+  <tr><td class="n">2</td><td class="n">579</td><td class="n">43.8</td><td class="n">71</td>
+      <td class="n">39.6</td><td class="n">2,493</td></tr>
+  <tr><td class="n">3</td><td class="n">162</td><td class="n">44.4</td><td class="n">21</td>
+      <td class="n">30.5</td><td class="n">1,742</td></tr>
+  <tr><td class="n">4</td><td class="n">54</td><td class="n">41.7</td><td class="n">7</td>
+      <td class="n">24.9</td><td class="n">1,735</td></tr>
+  <tr><td class="n">5</td><td class="n">24</td><td class="n">41.8</td><td class="n">3</td>
+      <td class="n">15.5</td><td class="n">1,801</td></tr>
+  <tr><td class="n">6</td><td class="n">15</td><td class="n">40.9</td><td class="n">2</td>
+      <td class="n">8.9</td><td class="n">1,454</td></tr>
+  <tr><td class="n">7</td><td class="n">10</td><td class="n">38.5</td><td class="n">1</td>
+      <td class="n">0.5</td><td class="n">1,672</td></tr>
+  <tr><td class="n">8</td><td class="n">6</td><td class="n">39.8</td><td class="n">1</td>
+      <td class="n">1.3</td><td class="n">1,546</td></tr>
+  <tr><td class="n">9</td><td class="n">0</td><td class="n">23.5</td><td class="n">1</td>
+      <td class="n">0.1</td><td class="n">1,213</td></tr>
+  <tr><td class="n">10</td><td class="n">0</td><td class="n">15.2</td><td class="n">1</td>
+      <td class="n">0.0</td><td class="n">1,347</td></tr>
+</table>
+<div class="box info">
+  <h4>읽는 법 — 1분위와 8분위의 친구 수가 <b>거의 같다</b></h4>
+  <p>친구 수는 1분위 44.8 · 8분위 39.8 로 <b>1.1배</b> 차이다. 그런데 투표 수는
+  9,344 대 6 으로 <b>1,557배</b> 차이다. <b>친구가 많아서 많이 던지는 것이 아니다.</b></p>
+  <p>같이 움직이는 것은 <b>활동 기간</b>(91.9일 ↔ 1.3일, 71배)과
+  <b>투표 세션 수</b>(1,053 ↔ 1, 1,053배)다. 즉 이 분포는
+  <b>"얼마나 오래 남았나"가 거의 전부를 설명한다.</b></p>
+  <p>9·10분위에서만 친구가 23.5 · 15.2 로 떨어진다 — 게이트(5명)를 못 넘었거나
+  갓 넘은 사람들이다. <b>친구 수는 "할 수 있느냐"만 정하고, "얼마나 하느냐"는 기간이 정한다.</b></p>
+</div>
+
+<h3>상위 10명 — 꼬리 안을 들여다본다</h3>
+<table>
+  <tr><th class="n" style="width:7%">순위</th><th class="n">던진 투표</th><th class="n">투표 세션</th>
+      <th class="n">활동 기간</th><th class="n">친구</th><th class="n">받은 투표</th>
+      <th class="n">하루 평균 세션</th></tr>
+  <tr><td class="n">1</td><td class="n bad">545,707</td><td class="n bad">56,982</td><td class="n">226일</td>
+      <td class="n">56</td><td class="n">1,066</td><td class="n bad">252</td></tr>
+  <tr><td class="n">2</td><td class="n">458,887</td><td class="n">49,402</td><td class="n">314일</td>
+      <td class="n">82</td><td class="n bad">0</td><td class="n bad">157</td></tr>
+  <tr><td class="n">3</td><td class="n">285,099</td><td class="n">29,883</td><td class="n">74일</td>
+      <td class="n">80</td><td class="n">3,296</td><td class="n bad">404</td></tr>
+  <tr><td class="n">4</td><td class="n">215,982</td><td class="n">23,602</td><td class="n">242일</td>
+      <td class="n">49</td><td class="n">610</td><td class="n">98</td></tr>
+  <tr><td class="n">5</td><td class="n">194,195</td><td class="n">20,449</td><td class="n">57일</td>
+      <td class="n">37</td><td class="n">1,067</td><td class="n bad">359</td></tr>
+  <tr><td class="n">6</td><td class="n">182,530</td><td class="n">20,070</td><td class="n">213일</td>
+      <td class="n">29</td><td class="n">199</td><td class="n">94</td></tr>
+  <tr><td class="n">7</td><td class="n">173,852</td><td class="n">19,360</td><td class="n">295일</td>
+      <td class="n">55</td><td class="n">393</td><td class="n">66</td></tr>
+  <tr><td class="n">8</td><td class="n">167,824</td><td class="n">18,198</td><td class="n">56일</td>
+      <td class="n">86</td><td class="n">952</td><td class="n bad">325</td></tr>
+  <tr><td class="n">9</td><td class="n">155,712</td><td class="n">17,273</td><td class="n">292일</td>
+      <td class="n">25</td><td class="n">141</td><td class="n">59</td></tr>
+  <tr><td class="n">10</td><td class="n">154,639</td><td class="n">16,374</td><td class="n">114일</td>
+      <td class="n">47</td><td class="n">4,431</td><td class="n bad">144</td></tr>
+</table>
+
+<div class="box">
+  <h4>⚠️ <b>새로 찾은 결함</b> — 이 꼬리는 물리적으로 불가능하다</h4>
+  <p>하루 투표 세션 수에 <b>상한이 없다.</b> 세션 하나가 평균 11분이므로
+  하루에 쓴 시간을 계산할 수 있다.</p>
+  <table style="margin-top:5px">
+    <tr><th style="width:44%">측정</th><th class="n">값</th></tr>
+    <tr><td>하루 최다 투표 세션</td><td class="n bad">2,243회</td></tr>
+    <tr><td>하루에 투표로 보낸 최대 시간</td><td class="n bad">406.8시간 <span class="dim">(하루는 24시간)</span></td></tr>
+    <tr><td><b>24시간을 넘는 유저-일</b></td><td class="n bad">1,251일 · <b>67명</b></td></tr>
+    <tr><td>12시간을 넘는 유저-일</td><td class="n warn">4,555일</td></tr>
+    <tr><td>하루 100세션을 넘는 유저-일</td><td class="n warn">1,981일 · 89명</td></tr>
+    <tr><td class="dim">전체 유저-일 · 하루 평균 세션</td><td class="n dim">254,691일 · 9.1회</td></tr>
+  </table>
+  <p>1위 유저는 <b>2026-03-24 하루에 554세션 · 99.2시간</b>을 투표했다.
+  2위는 <b>314일 동안 458,887번 던지고 한 번도 지목받지 못했다</b>(받은 투표 0).
+  16위는 <b>친구가 8명뿐인데 98,862번 던졌다</b> — 같은 8명을 평균 12,358번씩 지목한 셈이다.</p>
+  <p><b>정합성 17종·이상치 9종 어느 것도 이걸 묻지 않는다.</b>
+  "하루에 몇 번까지가 사람인가"는 검사에 없는 질문이었다.</p>
+  <p><b>원인</b> — 생성기가 <code>sessions_per_month_by_tier</code> 로 월 세션 수를 뽑고
+  활동일에 나눠 담는데, <b>하루 상한이 없다.</b> 잔존 상위 구간 · 긴 수명 · 볼륨 보정이
+  겹치면 하루치가 수백 회로 부푼다.</p>
+</div>
+
+<div class="box note">
+  <h4>그래서 이 분포를 어떻게 쓰나</h4>
+  <ul>
+    <li><b>모양은 유효하다.</b> "소수가 대부분을 던진다"는 실서비스에서도 참이고,
+        이중 봉우리(가벼운 다수 + 붙박이 소수)도 현실적이다</li>
+    <li><b>절대 수치는 인용하지 않는다.</b> 89.5% · 지니 0.936 · 상위 1% 48.5% 는
+        전부 불가능한 꼬리가 부풀린 값이다</li>
+    <li><b>상위 1% 세그먼트 분석을 하지 않는다.</b> 그 167명이 사람이 아니다</li>
+    <li><b>꼬리를 자르면 쓸 수 있다</b> — 예를 들어 <code>하루 세션 ≤ 20</code> 인
+        유저-일만 남기면 남는 부분은 그럴듯하다. 다만 <b>자른 사실을 반드시 밝힌다</b></li>
+    <li><b>받은 투표 쪽(49.3% · 지니 0.657)은 상대적으로 안전하다</b> —
+        같은 꼬리의 영향을 받지만 4명 중 1명만 골라지므로 훨씬 희석된다</li>
+  </ul>
+</div>
+
 <div class="box note">
   <h4>⚠️ 인기도 49.3% 를 "인기 쏠림"으로 읽으면 안 된다</h4>
-  <p><b>투표하는 쪽의 지니가 0.936</b> 이다 — 투표자 상위 10%가 전체 투표의
-  <b>89.5%</b> 를 던진다. 받는 쪽 집중(49.3%)의 대부분은 <b>활동 불균형이 만드는
-  구조적 값</b>이지 매력도 차이가 아니다.</p>
+  <p>받는 쪽 집중(49.3%)의 상당 부분은 <b>던지는 쪽의 활동 불균형</b>이 만드는
+  구조적 값이지 매력도 차이가 아니다. 위에서 봤듯 그 불균형 자체가
+  <b>부풀려져 있다.</b></p>
   <p>받는 쪽 지니 0.657 은 받은 투표가 <b>완전 균등(0)도 완전 독점(1)도 아닌</b>
   중간이라는 뜻이다. <b>순위·모양은 유효하고, 절대 수치는 인용하지 않는다.</b></p>
 </div>
@@ -1199,7 +1497,11 @@ LTV·세그먼트 연습에 쓸 수 있다.</p>
   <tr><th style="width:34%">함정</th><th>이유</th></tr>
   <tr><td class="warn">UTC 그대로 시간 집계</td><td>봉우리가 <b>9시간</b> 밀린다</td></tr>
   <tr><td class="warn">인기도 집중의 <b>절대 수치</b> 인용</td>
-      <td>49.3%는 활동 불균형(투표자 지니 <b>0.936</b>)이 만드는 구조적 값이다</td></tr>
+      <td>49.3%는 활동 불균형(투표자 지니 <b>0.936</b>)이 만드는 구조적 값이고,
+          그 불균형 자체가 <b>불가능한 꼬리로 부풀려져 있다</b>(7-2장). 순위·모양은 유효</td></tr>
+  <tr><td class="warn">투표 활동 분포를 <b>꼬리째</b> 쓰기</td>
+      <td>하루 24시간 초과가 1,251 유저-일 있다. <b>하루 세션 ≤ 20 으로 자르면</b>
+          남는 부분은 그럴듯하다 — <b>자른 사실을 밝힌다</b></td></tr>
   <tr><td class="warn">같은 반/학교 <b>비율</b> 인용</td>
       <td>설정(42%/80%)과 실측(23%/69%)이 다르다. <b>수</b>로 보면 목표 안</td></tr>
   <tr><td class="warn">게시판 참여율의 절대 수준</td><td>96%가 좋아요를 누른다 — 실제 커뮤니티와 다르다</td></tr>
@@ -1216,6 +1518,8 @@ LTV·세그먼트 연습에 쓸 수 있다.</p>
   <tr><td class="bad">앱 열기 → 투표 퍼널</td><td>두 세션 표가 독립. 겹침 3.84% (12장)</td></tr>
   <tr><td class="bad">체류시간 · 응답속도 분포</td><td>전부 균등분포. 평균만 유효 (11장)</td></tr>
   <tr><td class="bad">이탈(탈퇴) 예측 모델</td><td>라벨과 피처가 독립. <b>수명으로 대체</b> (3장)</td></tr>
+  <tr><td class="bad">상위 1% 헤비유저 세그먼트</td>
+      <td>그 167명이 하루 100~2,243세션을 돈다 — <b>사람이 아니다</b> (7-2장)</td></tr>
   <tr><td class="bad">요일 효과</td><td>총량 CV 0.024. <code>weekend_multiplier</code> 가 안 읽힌다</td></tr>
   <tr><td class="bad">질문별 인기 · A/B</td><td>출제량 CV 0.045. "인기 질문"이 없다</td></tr>
   <tr><td class="bad">후보 슬롯 위치 편향</td><td>CV 0.0008. 검정하면 반드시 기각된다</td></tr>
@@ -1253,22 +1557,47 @@ LTV·세그먼트 연습에 쓸 수 있다.</p>
 <table>
   <tr><th class="n" style="width:6%">순위</th><th style="width:30%">고칠 것</th>
       <th style="width:16%">비용</th><th>얻는 것</th></tr>
-  <tr><td class="n">1</td><td><b>시간 간격을 로그정규로</b></td><td>생성기 6줄</td>
+  <tr><td class="n">1</td><td class="bad"><b>하루 세션 수에 상한을 건다</b></td><td>생성기 2~3줄</td>
+      <td><b>유일한 결함이다.</b> 꼬리가 사람 범위로 돌아오고
+          <b>활동 집중 지표를 그대로 인용할 수 있게 된다</b></td></tr>
+  <tr><td class="n">2</td><td><b>시간 간격을 로그정규로</b></td><td>생성기 6줄</td>
       <td>체류시간·응답속도·열람지연의 <b>분포 분석이 열린다</b></td></tr>
-  <tr><td class="n">2</td><td><b>투표 세션을 접속 세션 안에 넣는다</b></td><td>세션 생성 재설계</td>
+  <tr><td class="n">3</td><td><b>투표 세션을 접속 세션 안에 넣는다</b></td><td>세션 생성 재설계</td>
       <td><b>퍼널 분석이 열린다</b>. 휴면 정의가 하나로 통일된다</td></tr>
-  <tr><td class="n">3</td><td>탈퇴·BAN 이후 활동을 끊는다</td><td>생성기 조건 1개</td>
+  <tr><td class="n">4</td><td>탈퇴·BAN 이후 활동을 끊는다</td><td>생성기 조건 1개</td>
       <td><b>이탈 예측</b>이 가능해진다. 검사 2종을 추가할 수 있다</td></tr>
-  <tr><td class="n">4</td><td><code>weekend_multiplier</code> 를 읽는다</td><td>1줄</td>
+  <tr><td class="n">5</td><td><code>weekend_multiplier</code> 를 읽는다</td><td>1줄</td>
       <td>요일 효과가 생긴다</td></tr>
-  <tr><td class="n">5</td><td>질문·슬롯·카테고리에 인기 편차를 준다</td><td>가중치 3곳</td>
+  <tr><td class="n">6</td><td>질문·슬롯·카테고리에 인기 편차를 준다</td><td>가중치 3곳</td>
       <td>A/B·위치편향 연습 소재가 생긴다</td></tr>
-  <tr><td class="n">6</td><td><code>REVEALED</code> 전이 · 앱 버전 롤아웃 · 플랫폼 고정</td><td>각 1~3줄</td>
+  <tr><td class="n">7</td><td><code>REVEALED</code> 전이 · 앱 버전 롤아웃 · 플랫폼 고정</td><td>각 1~3줄</td>
       <td>자잘한 축이 살아난다</td></tr>
 </table>
-<p class="cap"><b>지금은 v4 로 간다.</b> 1·2번은 전면 재생성(2시간 20분)이 필요하고,
-얻는 것이 이 프로젝트의 목표(파이프라인·대시보드)가 아니다.
-<b>P5 품질 검증과 P6 stg/mart 를 먼저 하고, 막히는 것이 나오면 그때 v5 를 만든다.</b></p>
+<div class="box note">
+  <h4>⚠️ 1번이 나오면서 판단이 갈린다 — 두 갈래를 적어 둔다</h4>
+  <p>애초 계획은 <b>"v4 로 간다"</b> 였다. 5건이 전부 <b>경계</b>였고,
+  고쳐서 얻는 것(분포 형태 분석)이 이 프로젝트의 목표가 아니었기 때문이다.
+  그런데 <b>1번은 경계가 아니라 결함</b>이다 — 데이터가 사람이 할 수 없는 값을 갖는다.</p>
+  <table style="margin-top:6px">
+    <tr><th style="width:16%">갈래</th><th style="width:20%">비용</th><th>근거</th></tr>
+    <tr><td><b>A. v4 로 간다</b></td><td>0</td>
+        <td>영향이 <b>꼬리 0.5%</b>(유저-일 25.5만 중 1,251)에 한정된다.
+            "상위 1% 세그먼트를 안 본다 · 집중 지표 절대값을 인용 안 한다"
+            <b>두 규칙만 지키면 나머지 분석은 전부 살아 있다.</b>
+            <b>Q28 2차 증분 배치</b>가 더 큰 미이행이다</td></tr>
+    <tr><td><b>B. v5 를 만든다</b></td><td>2시간 20분<br><span class="dim">생성 16분 + 적재 1시간 54분 + 검수</span></td>
+        <td>어차피 재생성한다면 <b>1·2·4·5·6·7 을 한 번에</b> 고칠 수 있다 —
+            3번(세션 재설계)만 빼면 전부 <b>몇 줄</b>이다.
+            그러면 "할 수 없다 14종" 중 <b>9종이 열린다</b></td></tr>
+  </table>
+  <p><b>권고 — B 를 하되 지금은 아니다.</b> 지금 재생성하면 확정이 또 하루 밀리고,
+  <b>P5·P6 에서 정말 필요한 축이 무엇인지 아직 모른다.</b>
+  P5 품질 검증과 P6 stg/mart 를 v4 로 진행하면서 <b>막히는 축을 적어 두고</b>,
+  Q28 2차 증분 배치까지 끝난 뒤 <b>모아서 한 번에</b> v5 를 만든다.
+  1번은 그때 <b>1순위로 고친다.</b></p>
+  <p>⚠️ 그때까지는 <b>이 문서의 13장이 안전장치다.</b> v4 로 분석하는 사람이
+  13장을 안 보면 상위 1%를 "헤비유저"로 읽는다.</p>
+</div>
 
 <footer>
   ping-v2 · 12개월 v4 (확정) · 2026-08-05 ·
