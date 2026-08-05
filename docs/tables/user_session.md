@@ -30,8 +30,9 @@ tags: [테이블, 유저]
 | `ended_at` | timestamptz |  |  |
 | `updated_at` | timestamptz | NOT NULL |  |
 
-## 얽힌 결정 1개
+## 얽힌 결정 2개
 
+- [[daily-rhythm-night-peak|하루 리듬을 붙인다 — 최대 봉우리는 점심이 아니라 밤 22시다]]
 - [[generator-emits-updated-at|`updated_at` 을 생성기가 직접 싣는다 — 백필 UPDATE 가 3시간을 먹었다]]
 
 ## 이 표를 지키는 정합성 검사 1종
