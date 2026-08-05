@@ -2,11 +2,17 @@
 title: 합성 데이터 v4 를 확정한다 — 한계 5건을 고치지 않고 문서화한다
 date: 2026-08-05
 group: 검증
-status: active
+status: superseded
+superseded_by: session-bounded-actions
 tags: [결정, 합성데이터, 검증]
 ---
 
 # 합성 데이터 v4 를 확정한다 — 한계 5건을 고치지 않고 문서화한다
+
+> ⚠️ **이 결정은 뒤집혔다** — 2026-08-05 같은 날 v5 를 만들어 결함 1건과
+> 경계 5건 중 다섯을 닫았다. 경위는 [[session-bounded-actions]] ·
+> [[lognormal-not-uniform]] · [[withdrawal-is-terminal]] · [[dow-from-legacy-attendance]].
+> **아래는 그때의 판단이며 기록으로 남긴다.**
 
 **결정** — 12개월 v4(20,000명 · 1억 8,922만 행)를 **확정판으로 쓴다.**
 확정 직전에 돌린 **정밀 EDA 에서 결함 1건 · 경계 5건**이 나왔지만,
@@ -104,3 +110,5 @@ v4 로 진행하며 막히는 축을 적어 두고, Q28 까지 끝난 뒤 **모�
   — 그때는 **틀려서** 버렸고 이번엔 **부족한 채로 쓴다** — 기준이 보관 가치가 아니라 '이 데이터로 답할 질문이 남는가'인 것은 같다
 - [[reactivation-cohort|휴면했다 돌아오는 유저를 만든다 — 3월에 몰리되 다른 달에도 있게]]
   — 복귀 736명은 `vote_session` 으로만 보인다 — `user_session` 으로 재면 **0명**이다
+- [[session-bounded-actions|유저의 직접 행동은 접속 세션 안에서만 일어난다 — v5]]
+  — v4 가 '고치지 않고 문서화한다'로 남긴 것을 **같은 날 고쳤다**

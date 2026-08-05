@@ -207,6 +207,24 @@ PAIRS = [
      "검사는 쓰인 시점의 세계를 안다 — 탈퇴·제재 이후 활동을 **아무도 묻지 않았다**"),
     ("confirm-v4-with-known-limits", "reactivation-cohort",
      "복귀 736명은 `vote_session` 으로만 보인다 — `user_session` 으로 재면 **0명**이다"),
+
+    # v5 — v4 의 결함 1건과 경계 5건을 닫은 네 결정
+    ("session-bounded-actions", "confirm-v4-with-known-limits",
+     "v4 가 '고치지 않고 문서화한다'로 남긴 것을 **같은 날 고쳤다**"),
+    ("session-bounded-actions", "lognormal-not-uniform",
+     "둘 다 v5 의 축이다 — 세션이 **언제**인지와 **얼마나 걸리는지**"),
+    ("session-bounded-actions", "reactivation-cohort",
+     "세션이 활동에서 파생되므로 **복귀를 어느 표로 재도 같은 답**이 나온다"),
+    ("session-bounded-actions", "daily-rhythm-night-peak",
+     "세션을 30분 규칙으로 묶으면 시간대 봉우리가 낮아진다 — 대비 5.3배 → 3.1배"),
+    ("withdrawal-is-terminal", "integrity-checks-aged",
+     "검사는 쓰인 시점의 세계를 안다 — 탈퇴 이후 활동을 **아무도 묻지 않았다**"),
+    ("withdrawal-is-terminal", "session-bounded-actions",
+     "둘 다 '행동이 일어날 수 있는 창'을 좁힌다 — 세션 안이고 탈퇴 전이다"),
+    ("dow-from-legacy-attendance", "daily-rhythm-night-peak",
+     "하루 리듬(시간대)과 주간 리듬(요일)은 **따로 걸어야** 한다"),
+    ("dow-from-legacy-attendance", "school-sequential-adoption",
+     "설정에 값이 있어도 코드가 안 읽으면 없는 것 — 같은 함정의 8번째 사례"),
 ]
 
 BLOCK = "## 이어지는 결정"

@@ -55,7 +55,7 @@ API 스펙 등 바깥에서 온 문서.
 
 _아직 없다._
 
-## 결정 <sub>`docs/decisions` · 77</sub>
+## 결정 <sub>`docs/decisions` · 81</sub>
 
 왜 그렇게 했는지. 하나가 한 노드다.
 
@@ -75,6 +75,7 @@ _아직 없다._
 - [[closed-test-adults|성인 지인 대상 클로즈드 테스트로 한정]] — 필요하고, 외모 관련 투표와 익명 게시판을 미성년자에게 열면서 모니터링이 없으면 감당할 수 없다.
 - [[confirm-v4-with-known-limits|합성 데이터 v4 를 확정한다 — 한계 5건을 고치지 않고 문서화한다]] — 확정 직전에 돌린 정밀 EDA 에서 결함 1건 · 경계 5건이 나왔지만,
 - [[daily-rhythm-night-peak|하루 리듬을 붙인다 — 최대 봉우리는 점심이 아니라 밤 22시다]] — 12~13시 최대 봉우리"를 밤 22~23시로 바꾼다.
+- [[dow-from-legacy-attendance|요일 패턴은 구 서비스 출석 로그를 따라간다 — 우하향이 아니라 V자]] — (raw/legacy-analysis/08_attendance_feature.md §2)을 그대로 옮긴다.
 - [[drop-admin-user|admin_user 를 없애고 app_user.is_admin 하나로 접는다]] — 유지할 근거가 "언젠가 운영 화면을 만들면"뿐이었다. 그 언젠가가 이 프로젝트의
 - [[events-on-meal-calendar|학사일정을 급식 달력에 얹는다 — 따로 만들지 않고]] — 날짜 칸 아래 점이 그날 일정이고, 달력 아래에 그 달 일정이 통째로 나온다.
 - [[expired-session-status|중도 이탈 세션은 EXPIRED 로 적는다 — 완료율이 98.6%로 보이던 이유]] — 이미 있는 값이라 스키마는 건드리지 않는다.
@@ -95,6 +96,7 @@ _아직 없다._
 - [[join-requires-source|두 원천의 id 가 겹친다 — 조인에 `_source` 를 강제한다]] — P6 stg 층에서 대리키를 만들어 구조적으로 막는다.
 - [[local-db-via-apply|로컬 DB 는 `apply.py` 로만 만든다]] — 마이그레이션 3종 뒤처진 채 몇 주를 돌았고, 그 결과:
 - [[local-docker-airflow|Cloud Composer 대신 로컬 Docker Airflow]] — 로컬 Docker면 0원이고, 나중에 필요하면 작은 VM(월 3~4만원)으로 옮기면 된다.
+- [[lognormal-not-uniform|시간 간격을 균등분포에서 로그정규로 바꾼다 — v5]] — 균등분포의 stddev)가 6종에서 1.0 근처로 나왔다 — 완전한 균등이라는 뜻이다.
 - [[lower-scope-when-short|후보가 4명이 안 되면 스코프를 낮추고, 그래도 안 되면 질문을 내지 않는다]] — 낮춘다. GLOBAL 에서도 모자라면 그 질문은 출제하지 않는다(세션에 넣지 않는다).
 - [[neis-merge-spans|NEIS 가 하루씩 주는 것을 기간으로 묶는다]] — 하나로 합쳐 start_date~end_date 로 저장한다. 사이에 낀 주말은 이어진
 - [[never-voters-by-friend-count|해금하고도 투표 안 하는 유저를 의도적으로 만든다 — 친구가 적을수록 많이]] — 확률로 만든다. 친구가 딱 5명이라 겨우 연 사람이 가장 많이 안 하고,
@@ -120,6 +122,7 @@ _아직 없다._
 - [[school-sequential-adoption|학교를 순차로 열고, 학급 수를 정원에서 유도한다]] — 개교일을 정하고, 가입일 순서로 그 시점에 열려 있는 학교 중에서 고른다.
 - [[selectable-hints|힌트를 골라 사게 바꾼다 — 순차 4단계 폐기]] — 값이 커서(합계 2,000하트) 실제로 끝까지 사는 사람이 없었고, 순서가 고정이라
 - [[sensitive-question-report-weight|민감 질문에 신고 성향을 심는다 — 안 심으면 플래그가 아무 의미도 없다]] — 준다.
+- [[session-bounded-actions|유저의 직접 행동은 접속 세션 안에서만 일어난다 — v5]] — 만든다. 30분 넘게 비면 새 세션으로 나눈다. 자리가 없으면 그 행동을 만들지 않는다.
 - [[shuffle-once-constraint|셔플은 DB 제약으로 1회를 강제한다]] — 스키마로 막으면 코드에 버그가 있어도 데이터가 오염되지 않는다.
 - [[signup-single-rpc|가입은 RPC 하나로만 한다]] — RLS 는 행 단위라 이걸 막지 못한다.
 - [[soft-delete-marking|삭제를 전파하지는 않되, 표시는 한다 (앞 항목 보완)]] — 다만 _deleted_at 을 찍어 지워진 행임을 표시한다.
@@ -135,6 +138,7 @@ _아직 없다._
 - [[watermark-updated-at|증분 워터마크를 `updated_at` 하나로 통일한다]] — . 적재 조건은 테이블과 무관하게
 - [[webapp-first-track|웹앱을 최우선 트랙으로 재편]] — 9단계를 다 끝내도 나오는 것은 BigQuery 테이블과 대시보드뿐이었다. 대화에서는
 - [[withdraw-keeps-rows|계정 삭제는 행을 지우지 않는다]] — 없어 누가 탈퇴했는지 특정할 수 없었다. 사유의 57%가 "기타"였고, 탈퇴 사유를
+- [[withdrawal-is-terminal|탈퇴는 종점이다 — 그 뒤로 어떤 로그도 남기지 않는다]] — 세션·투표·원장을 전부 훑어 가장 늦은 것을 찾은 다음 그 뒤에 놓는다.
 - [[withdrawal-user-id|탈퇴 기록에 유저 식별자를 넣는다]] — 누가 탈퇴했는지 특정할 수 없었다. 탈퇴 사유를 유저 속성과 교차분석하는 게 원천 봉쇄됐다.
 
 ## 운영 참조 <sub>`docs/ops` · 6</sub>
@@ -195,4 +199,4 @@ _아직 없다._
 
 ---
 
-문서 141개 · `python db/wiki_index.py` 로 갱신
+문서 145개 · `python db/wiki_index.py` 로 갱신

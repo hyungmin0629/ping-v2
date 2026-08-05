@@ -154,7 +154,7 @@ docker exec -i pgtest psql -U postgres -d pingv2 < db/ddl/96_backfill_updated_at
 
 ```bash
 python pipeline/extract_load.py --source supabase     # 실유저 (증분)
-python pipeline/extract_load.py --source local        # 합성 (v4 = 1억 8,922만 행)
+python pipeline/extract_load.py --source local        # 합성 (v5 = 1억 2,370만 행)
 python pipeline/verify_load.py  --source supabase     # 행 수 대조
 ```
 
@@ -256,15 +256,15 @@ python pipeline/verify_load.py  --source local                  # 행 수 대조
 | 단계 | 내용 | 상태 |
 |---|---|---|
 | P0 | 스키마·DDL | **완료** |
-| P1 | 합성 데이터 생성 | **완료 · v4 확정 (2026-08-05)** — 20,000명 · 12개월 · **1억 8,922만 행**.
-  40표 · 342컬럼 중 340개 채움 · 정합성 17종 위반 0.
-  ⚠️ **분석 전에 [EDA-final-12m-v4.pdf](docs/EDA-final-12m-v4.pdf) 13장을 본다** —
-  이 데이터로 **할 수 없는 것이 14가지** 있다([[confirm-v4-with-known-limits]]).
-  절차는 [[ops-synthetic-data]] |
+| P1 | 합성 데이터 생성 | **완료 · v5 (2026-08-05)** — 20,000명 · 12개월 · **1억 2,370만 행**.
+  40표 · 정합성 17종 · 이상치 9종 위반 0.
+  v4 의 **결함 1건·경계 5건**을 닫았다([[session-bounded-actions]] 외 3건).
+  ⚠️ **분석 전에 [EDA-final-12m-v5.pdf](docs/EDA-final-12m-v5.pdf) 13장을 본다** —
+  할 수 없는 것이 **7가지** 남아 있다. 절차는 [[ops-synthetic-data]] |
 | P2 | Postgres 적재 | **완료** — 순서 정의 40표. 95·96 자동 실행 |
 | P3 | NEIS 수집 | 학교·학급·급식·**학사일정 완료** · DAG 화는 남음 |
 | P4 | BigQuery 적재 DAG | **완료** — 40테이블 · 행 수 대조 통과.
-  ⚠️ **합성 v4 는 아직 안 올렸다.** 지금 raw 는 실유저 36,268행뿐.
+  ⚠️ **합성 v5 는 아직 안 올렸다.** 지금 raw 는 실유저 36,268행뿐.
   올리면 약 13.9 GiB(월 135원 수준) |
 | P5 | 품질 검증 | |
 | P6 | stg / mart | |

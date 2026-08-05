@@ -29,10 +29,11 @@ tags: [테이블, 질문과 투표]
 
 **이 표를 참조하는 표** — [[heart_transaction]] · [[hint_purchase]] · [[vote_shuffle]]
 
-## 얽힌 결정 2개
+## 얽힌 결정 3개
 
 - [[ads-payments-stub|MVP에서 광고와 결제를 스텁으로 처리]]
 - [[heart-economy-rebalance|하트 경제를 다시 잡는다 — v1 실측을 버린다]]
+- [[lognormal-not-uniform|시간 간격을 균등분포에서 로그정규로 바꾼다 — v5]]
 
 ## 이 표를 지키는 정합성 검사 1종
 

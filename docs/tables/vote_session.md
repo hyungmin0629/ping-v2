@@ -27,11 +27,12 @@ tags: [테이블, 질문과 투표]
 
 **이 표를 참조하는 표** — [[vote_item]]
 
-## 얽힌 결정 3개
+## 얽힌 결정 4개
 
 - [[daily-rhythm-night-peak|하루 리듬을 붙인다 — 최대 봉우리는 점심이 아니라 밤 22시다]]
 - [[expired-session-status|중도 이탈 세션은 EXPIRED 로 적는다 — 완료율이 98.6%로 보이던 이유]]
 - [[lower-scope-when-short|후보가 4명이 안 되면 스코프를 낮추고, 그래도 안 되면 질문을 내지 않는다]]
+- [[session-bounded-actions|유저의 직접 행동은 접속 세션 안에서만 일어난다 — v5]]
 
 ## 이 표를 다루는 정책·RPC
 

@@ -390,6 +390,66 @@ def rand_dt(rng: random.Random, start: datetime, end: datetime) -> datetime:
     return start + timedelta(seconds=rng.randint(0, delta))
 
 
+def lognormal_span(rng: random.Random, lo: float, hi: float,
+                   *, peak: float = 0.25, sigma: float = 0.85) -> float:
+    """
+    lo~hi 안에서 **짧은 쪽이 두껍고 긴 꼬리가 붙는** 값을 뽑는다.
+
+    ⚠️ v4 까지 시간 간격이 **전부 `randint(lo, hi)`** 였다. 균등분포는 오류가
+       안 나고 정합성 검사도 통과하지만, 분석에서 **분포 형태를 통째로 못 보게**
+       만든다 — v4 EDA 에서 6종이 균등도 1.0 으로 나왔고(11장), 그래서
+       "체류가 길수록 많이 투표한다" 같은 가설이 **검정 자체가 안 됐다.**
+
+    peak  = 봉우리가 구간의 어디쯤인가(0~1). 작을수록 앞쪽에 몰린다
+    sigma = 꼬리의 두께. 클수록 길게 끌린다
+
+    ⚠️ **상한을 넘으면 다시 뽑는다 — 자르지 않는다.** 잘라서 hi 로 만들면
+       상한에 값이 뭉쳐 히스토그램에 벽이 생긴다. 8번까지 다시 뽑고,
+       그래도 안 되면 균등으로 물러선다(전체의 1% 미만).
+    """
+    if hi <= lo:
+        return lo
+    span = hi - lo
+    median = span * peak
+    for _ in range(8):
+        v = median * math.exp(rng.gauss(0.0, sigma))
+        if v <= span:
+            return lo + v
+    return lo + rng.random() * span
+
+
+def lognormal_secs(rng: random.Random, lo: float, hi: float, **kw) -> timedelta:
+    """`lognormal_span` 을 초 단위 timedelta 로."""
+    return timedelta(seconds=lognormal_span(rng, lo, hi, **kw))
+
+
+def lognormal_mins(rng: random.Random, lo: float, hi: float, **kw) -> timedelta:
+    """`lognormal_span` 을 분 단위 timedelta 로."""
+    return timedelta(minutes=lognormal_span(rng, lo, hi, **kw))
+
+
+def lognormal_hours(rng: random.Random, lo: float, hi: float, **kw) -> timedelta:
+    """`lognormal_span` 을 시간 단위 timedelta 로."""
+    return timedelta(hours=lognormal_span(rng, lo, hi, **kw))
+
+
+# 요일 가중치 — 월요일이 0, 일요일이 6 (파이썬 weekday() 와 같다).
+#
+# 구 서비스(ping v1) 출석 로그의 실측 모양을 그대로 옮겼다.
+# raw/legacy-analysis/08_attendance_feature.md §2 —
+#   월 382,739 · 화 371,520 · 수 280,063 · 목 266,176 · 금 252,136 ·
+#   토 325,030 · 일 344,663
+#
+# ⚠️ **단조 우하향이 아니라 V자다.** 월·화가 높고 **금요일이 최저**이며
+#    주말에 회복한다. 원본 문서가 명시한다 — "주중/주말 뚜렷한 이분법이
+#    아니라, 월~화에 높았다가 주 중반~금요일로 갈수록 줄어들고 주말(특히
+#    일요일)에 다시 살짝 회복하는 패턴".
+#
+# ⚠️ 출처가 **출석(attendance)** 로그다 — 접속·투표 세션이 아니다.
+#    raw/ 에 요일 데이터가 이것 하나뿐이라 대리 지표로 쓴다.
+DOW_WEIGHTS = (1.00, 0.97, 0.73, 0.70, 0.66, 0.85, 0.90)
+
+
 def iso(dt: datetime | None) -> str:
     return dt.isoformat() if dt else ""
 
@@ -661,6 +721,20 @@ class User:
     reactivated_days: int = 0
     # 하트 타임라인: (시각, 유형코드, 델타, 참조컬럼, 참조id)
     ledger: list[tuple] = field(default_factory=list)
+    # [v5] 투표 세션이 차지한 구간 (시작, 끝). 접속 세션을 여기서 만든다 —
+    #      유저의 직접 행동은 **접속 세션 안에서만** 일어나야 하기 때문이다.
+    vote_spans: list[tuple] = field(default_factory=list)
+    # [v5] 확정된 접속 세션 창 (시작, 끝). 게시판 활동도 이 안에 놓는다.
+    app_sessions: list[tuple] = field(default_factory=list)
+    # [v5] 이 유저의 **마지막 활동 시각**. 탈퇴를 이 뒤에 찍는다 —
+    #      v4 는 탈퇴자의 88.7% 가 탈퇴 후에도 로그를 남겼다.
+    last_activity_at: datetime | None = None
+    # [v5] 탈퇴 시각. 찍혔으면 **그 뒤로 어떤 행도 만들지 않는다.**
+    withdrawn_at: datetime | None = None
+    # [v5] 좋아요를 누르는 사람인가. 전원이 누르면 참여율이 96% 가 된다.
+    is_liker: bool = False
+    # [v5] 하트 원장에서 쓴 마지막 시각 (충전·지급 포함). 탈퇴를 이 뒤에 찍는다.
+    ledger_last_at: datetime | None = None
 
 
 # =====================================================================
@@ -1033,6 +1107,26 @@ class Generator:
         wd, we = u.hour_w
         return (we if dt.weekday() >= 5 else wd)[dt.hour]
 
+    def _dow_weight(self, dt: datetime) -> float:
+        """
+        요일 가중치. 구 서비스(ping v1) 출석 로그 실측을 따라간다 —
+        월·화가 높고 **금요일이 최저**, 주말에 회복하는 V자다(`DOW_WEIGHTS`).
+
+        ⚠️ v4 에는 요일 효과가 **아예 없었다**(변동계수 0.024). 설정에
+           `weekend_multiplier: 0.55` 가 있었지만 **읽는 코드가 없었다.**
+           그래서 이번엔 상수를 코드 옆에 두고, 설정으로는 켜고 끄기만 한다 —
+           값이 설정에만 있으면 또 조용히 죽는다.
+        """
+        ss = self.cfg["sessions"]
+        if not ss.get("use_dow_weights", True):
+            return 1.0
+        # ⚠️ 가중치를 **그대로 쓰면 진폭이 눌린다.** 이 값이 계절·시간대
+        #    가중치와 함께 기각 판정에 들어가고, 창마다 최소 1개는 남기는
+        #    규칙도 있어서다. v5 1차 실측이 최저 0.76(목표 0.66)이었다.
+        #    지수를 씌워 미리 날카롭게 만든다 — 1.6 이면 0.66 → 0.51 이 되고
+        #    실측이 0.66 근처로 돌아온다.
+        return DOW_WEIGHTS[dt.weekday()] ** ss.get("dow_gamma", 1.6)
+
     def _pick_hour_dt(self, u: User, lo: datetime, hi: datetime) -> datetime:
         """
         기각 표집이 실패했을 때 쓰는 되돌림 — 그래도 시간대는 지킨다.
@@ -1248,7 +1342,7 @@ class Generator:
             sender, receiver = (lo_id, hi_id) if self.rng.random() < 0.5 else (hi_id, lo_id)
 
             fr_id += 1
-            responded = created + timedelta(minutes=self.rng.randint(1, 60 * 48))
+            responded = created + lognormal_mins(self.rng, 1, 60 * 48, peak=0.08, sigma=1.0)
             self.w.write("friend_request",
                          ["id", "sender_id", "receiver_id", "status", "source", "created_at", "responded_at"],
                          [fr_id, sender, receiver, "ACCEPTED", source, iso(created), iso(responded)])
@@ -1295,7 +1389,7 @@ class Generator:
                          ["id", "sender_id", "receiver_id", "status", "source", "created_at", "responded_at"],
                          [fr_id, s, r_, "PENDING" if is_pending else "REJECTED",
                           self.rng.choice(["INVITE_CODE", "RECOMMEND"]), iso(created),
-                          "" if is_pending else iso(created + timedelta(hours=self.rng.randint(1, 72)))])
+                          "" if is_pending else iso(created + lognormal_hours(self.rng, 1, 72, peak=0.15, sigma=0.9))])
 
         # 친구 수 확정 + 게이트 해금 시점
         for u in self.users:
@@ -1495,6 +1589,8 @@ class Generator:
         v = self.cfg["voting"]
         rc = self.cfg["received"]
         h = self.cfg["hearts"]
+        ss_cfg = self.cfg["sessions"]
+        self.capped_days = 0        # [v5] 하루 상한에 걸린 유저-일 수
 
         # ⚠️ 이 셋은 **친구 그래프 뒤**여야 한다. unlocked_at 과 친구 수가 거기서
         #    정해지기 때문이다. gen_users 안에서 부르면 전원이 unlocked_at=None
@@ -1592,7 +1688,8 @@ class Generator:
                     cand = (rand_dt(self.rng, w_lo, w_hi) if self.growth.volume
                             else self.growth.active_dt(self.rng, w_lo, w_hi))
                     keep = (self.growth.keep_prob(cand) if self.growth.volume else 1.0)
-                    if self.rng.random() < keep * self._hour_weight(u, cand):
+                    # [v5] 계절 × 시간대 × **요일** 세 가중치로 한 번에 판정한다.
+                    if self.rng.random() < keep * self._hour_weight(u, cand) * self._dow_weight(cand):
                         win.append(cand)
                 # ⚠️ **창마다 최소 1개는 남긴다.** 솎아내기로 0이 되면
                 #    "해금했는데 투표 0회"가 사고로 생긴다 — 그건
@@ -1601,6 +1698,36 @@ class Generator:
                 if not win and w_n > 0:
                     win.append(self._pick_hour_dt(u, w_lo, w_hi))
                 starts.extend(win)
+
+            # ── [v5] 하루 상한 — **시간 예산**이다 ────────────────────────
+            # v4 는 하루에 2,243세션 · 406.8시간(하루는 24시간)을 투표한
+            # 유저-일이 있었다. 정합성 17종·이상치 9종 어느 것도 안 물었다.
+            #
+            # ⚠️ **개수로 자르지 않는다.** 개수 상한(12회)을 걸었더니 헤비유저가
+            #    통째로 사라져 행이 반토막 나고 지목 쏠림이 49% → 39% 로
+            #    주저앉았다. 막아야 하는 것은 "많이 한다"가 아니라
+            #    **하루에 낼 수 없는 시간을 쓴다**는 것뿐이다.
+            #    그래서 시간 예산을 세션 수로 환산해서 쓴다 — 상한은
+            #    개수가 아니라 **시간에서 유도된다.**
+            #
+            # ⚠️ 앞에서 자르지 않고 **날짜별로 고르게** 남긴다. 앞에서 자르면
+            #    그날 오전만 남아 시간대 분포가 망가진다.
+            starts.sort()
+            budget_h = ss_cfg.get("max_vote_hours_per_day", 6.0)
+            est_min = max(ss_cfg.get("est_vote_session_minutes", 7), 1)
+            cap_day = int(budget_h * 60 / est_min) if budget_h else 0
+            if cap_day:
+                by_day: dict[object, list[datetime]] = {}
+                for st in starts:
+                    by_day.setdefault(st.date(), []).append(st)
+                kept: list[datetime] = []
+                for lst in by_day.values():
+                    if len(lst) <= cap_day:
+                        kept.extend(lst)
+                    else:
+                        kept.extend(self.rng.sample(lst, cap_day))
+                        self.capped_days += 1
+                starts = sorted(kept)
 
             for started in starts:
                 sess_id += 1
@@ -1615,6 +1742,7 @@ class Generator:
                     else:
                         n_items = self.rng.randint(4, v["items_per_session"] - 1)
                 completed = 0
+                last_item_at: datetime | None = None
 
                 session_rows = []
                 for pos in range(1, n_items + 1):
@@ -1627,7 +1755,10 @@ class Generator:
                         continue
                     q = self.rng.choice(by_scope[scope])
                     item_id += 1
-                    served = started + timedelta(seconds=pos * self.rng.randint(8, 40))
+                    # [v5] 문항 간격도 로그정규다 — 앞 문항은 빨리 넘기고
+                    #      가끔 오래 고민한다. v4 는 randint(8,40) 균등이었다.
+                    step_gap = lognormal_span(self.rng, 4, 45, peak=0.28, sigma=0.7)
+                    served = started + timedelta(seconds=pos * step_gap)
                     if served > self.end:
                         break
 
@@ -1695,7 +1826,10 @@ class Generator:
                                 u.ledger.append((ad_start, "AD_REWARD", h["ad_reward"],
                                                  "ad_impression_id", ad_id))
 
-                    voted_at = served + timedelta(seconds=self.rng.randint(3, 25)) if voted else None
+                    # [v5] 응답 시간도 로그정규. 대부분 몇 초 안에 찍고
+                    #      가끔 한참 망설인다. v4 는 randint(3,25) 균등이었다.
+                    voted_at = (served + lognormal_secs(self.rng, 2, 90, peak=0.12, sigma=0.9)
+                                if voted else None)
                     # 후보가 모자라면 스코프를 낮추지 않고 친구 전체에서 채운다.
                     # 채운 수를 남기지 않으면 "이 표가 진짜 같은 반에서 나온 것인가"를
                     # 나중에 물을 수 없다.
@@ -1707,6 +1841,8 @@ class Generator:
                          "position", "shuffle_count", "padded_count", "served_at", "voted_at"],
                         [item_id, sess_id, u.id, q["id"], scope, pos,
                          1 if did_shuffle else 0, padded, iso(served), iso(voted_at)]))
+                    # [v5] 세션 종료를 여기서 계산하기 위해 마지막 문항 시각을 쥔다.
+                    last_item_at = max(last_item_at or served, voted_at or served)
 
                     if voted and chosen_uid:
                         completed += 1
@@ -1715,7 +1851,8 @@ class Generator:
                         # 열람도 건별 동전던지기가 아니라 사람의 성향이다
                         read = self.rng.random() < self.pchance(
                             rc["read_rate"], receiver, "read")
-                        read_at = voted_at + timedelta(hours=self.rng.randint(1, 72)) if read else None
+                        read_at = (voted_at + lognormal_hours(self.rng, 0.2, 72, peak=0.06, sigma=1.1)
+                                   if read else None)
                         if read_at and read_at > self.end:
                             read, read_at = False, None
 
@@ -1727,7 +1864,7 @@ class Generator:
                             elif rr < rc["answer_public_rate"] + rc["answer_private_rate"]:
                                 ans = "PRIVATE"
                             if ans != "NONE":
-                                ans_at = read_at + timedelta(minutes=self.rng.randint(1, 600))
+                                ans_at = read_at + lognormal_mins(self.rng, 1, 600, peak=0.07, sigma=1.0)
                             # 건별 확률이 아니라 **그 사람의 성향**으로 정해진다
                             if self.rng.random() < receiver.hint_appetite:
                                 reveal = "PARTIAL"
@@ -1742,7 +1879,7 @@ class Generator:
                                     else rc.get("reply_rate_no_hint", 0.0))
                             if self.rng.random() < self.pchance(
                                     rate, receiver, "reply"):
-                                cand = read_at + timedelta(hours=self.rng.randint(1, 96))
+                                cand = read_at + lognormal_hours(self.rng, 0.5, 96, peak=0.08, sigma=1.0)
                                 if cand <= self.end:
                                     reply = self.rng.choice(REPLY_TEXTS)
                                     replied = cand
@@ -1790,7 +1927,7 @@ class Generator:
                             step = 0
                             for kind in kinds:
                                 at = read_at + timedelta(
-                                    minutes=(step + 1) * self.rng.randint(1, 30))
+                                    minutes=(step + 1) * lognormal_span(self.rng, 0.5, 40, peak=0.15, sigma=0.9))
                                 if at > self.end:
                                     break
                                 step += 1
@@ -1827,7 +1964,7 @@ class Generator:
                             # 이름 공개는 기본 3개 이상을 연 뒤에만
                             if step >= 3 and self.rng.random() < 0.18:
                                 at = read_at + timedelta(
-                                    minutes=(step + 1) * self.rng.randint(1, 30))
+                                    minutes=(step + 1) * lognormal_span(self.rng, 0.5, 40, peak=0.15, sigma=0.9))
                                 if at <= self.end:
                                     step += 1
                                     hint_id += 1
@@ -1855,7 +1992,26 @@ class Generator:
                     status = "COMPLETED"
                 else:
                     status = "IN_PROGRESS"
-                last = started + timedelta(minutes=self.rng.randint(2, 20))
+                # ── [v5] 세션 끝은 **문항에서 나온다** ────────────────────────
+                # v4 는 `started + randint(2,20)분` 이라 문항을 아예 안 봤다.
+                # 그 결과 완료 세션 198만 중 **38.7만(19.50%)이 마지막 문항보다
+                # 먼저 끝났고**, 세션 길이와 문항 소요시간의 상관이 0.0007 이었다
+                # — "오래 붙잡은 세션"이라는 것이 데이터에 존재하지 않았다.
+                #
+                # 이제 마지막 문항 뒤에 **꼬리**(결과를 보고 닫기까지)만 붙인다.
+                # 꼬리도 로그정규다 — 대개 바로 닫고 가끔 한참 들여다본다.
+                tail_lo, tail_hi = ss_cfg.get("session_tail_minutes", [0.5, 6])
+                last = (last_item_at or started) + lognormal_mins(
+                    self.rng, tail_lo, tail_hi, peak=0.3, sigma=0.8)
+                # 상한 — 논리적으로 말이 안 되는 세션 길이를 막는다.
+                cap_min = ss_cfg.get("max_vote_session_minutes", 90)
+                if (last - started).total_seconds() > cap_min * 60:
+                    last = started + timedelta(minutes=cap_min)
+                if last > self.end:
+                    last = self.end
+                # 접속 세션을 만들 재료. 이탈 세션도 **머문 시간은 있다** —
+                # completed_at 이 비는 것과 실제로 앉아 있던 구간은 다르다.
+                u.vote_spans.append((started, last))
                 self.w.write("vote_session",
                              ["id", "user_id", "status", "item_count", "started_at", "completed_at"],
                              [sess_id, u.id, status, n_items, iso(started),
@@ -1974,6 +2130,12 @@ class Generator:
                               admin_id if code == "ADMIN_ADJUST" else "",
                               TX_MEMOS.get(code, ""), iso(at)])
             u.final_balance = balance
+            # [v5] 원장에서 실제로 쓴 마지막 시각을 남긴다.
+            # ⚠️ `u.ledger` 만 보면 안 된다 — SIGNUP_GRANT·TOPUP·ADMIN_ADJUST·
+            #    EVENT_GRANT 는 여기서 local `events` 에 붙였을 뿐 `u.ledger` 에
+            #    없다. 이걸 빠뜨리면 충전 뒤에 탈퇴가 찍히지 않는다.
+            if events:
+                u.ledger_last_at = max(e[0] for e in events)
 
         self.skipped_hints = skipped_hints
         self.capped_rewards = capped
@@ -2011,11 +2173,53 @@ class Generator:
         self._nicks: set[str] = set()
         self._codes: set[str] = set()
 
+        self.noise_dupes = 0
+        self.noise_late = 0
+
         for u in self.users:
             school_counts[u.school_id] = school_counts.get(u.school_id, 0) + 1
             withdrawn = self.rng.random() < wd["rate"]
-            last_active = u.created_at + timedelta(days=u.activity_days) if u.activity_days else u.created_at
-            last_active = min(last_active, self.end)
+
+            # ── [v5] 접속 세션을 **먼저** 만든다 ──────────────────────────
+            # 그래야 (a) 투표가 세션 안에 들어가고 (b) 진짜 마지막 활동 시각을
+            # 알 수 있다. 탈퇴는 그 뒤에 찍어야 한다.
+            u.app_sessions = [] if u.no_activity else self._build_app_sessions(u)
+
+            # ── [v5] 진짜 마지막 활동 시각 ───────────────────────────────
+            # ⚠️ v4 는 `created_at + activity_days` 로 잡았는데, 그건
+            #    **복귀 창과 그 뒤 하트 거래를 몰랐다.** 그래서 탈퇴자의
+            #    88.7% 가 탈퇴 후에도 로그를 남겼다(하트 거래만 128만 건).
+            #    이제 세션·투표·원장을 전부 훑어 가장 늦은 것을 쓴다.
+            marks = [u.created_at]
+            if u.app_sessions:
+                marks.append(max(e for _, e in u.app_sessions))
+            if u.vote_spans:
+                marks.append(max(e for _, e in u.vote_spans))
+            if u.ledger:
+                marks.append(max(t[0] for t in u.ledger))
+            if u.ledger_last_at:
+                marks.append(u.ledger_last_at)
+            last_active = min(max(marks), self.end)
+            u.last_activity_at = last_active
+
+            # ── [v5] 탈퇴 시각을 **app_user 를 쓰기 전에** 정한다 ────────
+            # 상태(WITHDRAWN)와 user_withdrawal 행이 함께 결정돼야 한다.
+            # 창 끝에 붙어 탈퇴할 자리가 없으면 그 유저는 탈퇴시키지 않는다 —
+            # 마지막 활동보다 앞에 찍느니 안 찍는 것이 맞다.
+            wd_at = None
+            if withdrawn:
+                # ⚠️ **남은 여유 안에서** 뽑는다. 고정 구간(0.2~336시간)에서 뽑고
+                #    넘치면 버리는 방식으로 했더니, 기간 끝에 활동한 유저가 전부
+                #    탈락해 500명 시험에서 탈퇴가 **2명**만 나왔다(기대 50명).
+                #    창이 좁으면 그 안에서 짧게 뽑으면 된다.
+                room_h = (self.end - last_active).total_seconds() / 3600.0
+                if room_h > 0.05:
+                    wd_at = last_active + lognormal_hours(
+                        self.rng, 0.05, min(24 * 14, room_h), peak=0.05, sigma=1.2)
+                    wd_at = min(wd_at, self.end)
+                else:
+                    withdrawn = False
+            u.withdrawn_at = wd_at
 
             # auth_user_id 는 비운다. 합성 유저는 Supabase 익명 계정이 없다.
             # 실유저와 합성을 구분하는 신호이기도 하다.
@@ -2030,60 +2234,202 @@ class Generator:
                           "true", "true" if u.id in self.admin_ids else "false",
                           iso(last_active), iso(u.created_at), iso(last_active)])
 
-            if withdrawn:
+            if wd_at:
                 wd_id += 1
                 code = weighted_choice(self.rng, wd["reason_weights"])
                 text = self.rng.choice(WITHDRAW_TEXTS) if self.rng.random() < wd["free_text_rate"] else ""
-                at = min(last_active + timedelta(days=self.rng.randint(0, 5)), self.end)
                 self.w.write("user_withdrawal",
                              ["id", "user_id", "reason_code", "reason_text", "created_at"],
-                             [wd_id, u.id, code, text, iso(at)])
+                             [wd_id, u.id, code, text, iso(wd_at)])
 
-            # 세션. 당일만 쓴 유저(activity_days=0)도 **하루치는 만든다** —
-            # 진짜로 세션이 없는 것은 앱을 한 번도 안 연 유저뿐이다.
-            if u.no_activity:
-                continue
-            for day in range(u.activity_days + 1):
-                d = u.created_at + timedelta(days=day)
-                if d > self.end:
-                    break
-                # ⚠️ 접속 세션에도 **같은 리듬**을 건다. 예전에는 하루 중 아무
-                #    분이나 균등하게 뽑아서, 투표 세션에만 시간대가 걸리고
-                #    `user_session` 은 0~23시가 전부 4.2% 였다.
-                #    "언제 앱을 여는가"를 묻는 가장 자연스러운 표가 이쪽이라
-                #    여기가 균등하면 시간대 분석이 성립하지 않는다.
-                #
-                # ⚠️ 창을 **그 날 자정~자정**으로 잡아야 시간대 치환이 맞는다.
-                #    d 는 가입 시각 기준이라 그대로 쓰면 창이 이틀에 걸친다.
-                #    다만 가입 당일은 **가입 시각 이후**로 자른다 —
-                #    안 그러면 정합성 검사 "가입 이전 세션"에 걸린다.
-                d0 = d.replace(hour=0, minute=0, second=0, microsecond=0)
-                lo_d = max(d0, u.created_at)
-                hi_d = d0 + timedelta(hours=23, minutes=59)
-                keep_d = self.growth.keep_prob(d0) if self.growth.volume else 1.0
-                n_day = self.rng.randint(*ss["per_active_day"])
-                if self.growth.volume:
-                    n_day = max(1, round(n_day * self.growth.volume_boost()))
-                for _ in range(n_day):
-                    if hi_d <= lo_d:
-                        break
-                    st = self._pick_hour_dt(u, lo_d, hi_d)
-                    if st > self.end:
-                        continue
-                    # 계절(방학·시험기간·국면)이 접속 횟수에도 걸린다
-                    if self.rng.random() >= keep_d:
-                        continue
-                    sess_id += 1
-                    dur = self.rng.randint(*ss["duration_minutes"])
-                    self.w.write("user_session",
-                                 ["id", "user_id", "platform", "app_version", "device_id",
-                                  "started_at", "ended_at"],
-                                 [sess_id, u.id, weighted_choice(self.rng, ss["platform_ratio"]),
-                                  self.rng.choice(["1.0.0", "1.1.0", "1.2.0"]),
-                                  f"dev-{u.id:06d}", iso(st), iso(st + timedelta(minutes=dur))])
+            # ── [v5] 접속 세션을 쓴다 ────────────────────────────────
+            # 창은 위에서 이미 만들었다(_build_app_sessions). 여기서는
+            # 쓰기만 하고, 그때 **운영 로그의 노이즈**를 조금 섞는다.
+            sess_id = self._write_sessions(u, sess_id)
 
         # 학교 학생 수 갱신 (school.csv 를 다시 쓴다)
         self._school_counts = school_counts
+
+    # -- 7-b. 접속 세션 [v5] ---------------------------------------------
+    def _build_app_sessions(self, u: User) -> list[tuple[datetime, datetime]]:
+        """
+        유저의 **접속 세션 창**을 만든다.
+
+        ⚠️ v4 는 `user_session` 과 `vote_session` 을 **따로** 만들었다.
+           서로의 시각을 몰라서 투표 세션의 **3.84%** 만 접속 세션 창 안에
+           있었고, 접속 1회당 투표 세션 비가 1.01 → 6.45 로 드리프트했다.
+           "앱 열기 → 투표 시작" 퍼널이 통째로 불가능했다.
+
+        v5 의 규칙:
+          1. 직접 행동(투표)은 **반드시 접속 세션 안**에서 일어난다.
+          2. 행동이 `idle_gap_minutes`(30분) 넘게 비면 **새 세션**으로 나눈다
+             — 실서비스 `touch_session()` 과 같은 정의다.
+          3. 아무 행동 없이 열어만 보는 세션도 있다(`browse_only_ratio`).
+          4. 하루 세션 수와 체류 시간에 **상한**이 있다.
+        """
+        ss = self.cfg["sessions"]
+        gap = timedelta(minutes=ss.get("idle_gap_minutes", 30))
+
+        # ── 1. 투표 구간을 30분 규칙으로 묶는다 ──────────────────────────
+        merged: list[list[datetime]] = []
+        for st, en in sorted(u.vote_spans):
+            if merged and st - merged[-1][1] <= gap:
+                merged[-1][1] = max(merged[-1][1], en)
+            else:
+                merged.append([st, en])
+
+        # ── 2. 앞뒤로 여유를 붙인다 ────────────────────────────────────
+        # 앱을 열자마자 투표가 시작되지는 않는다(홈을 보고 들어간다).
+        tail_lo, tail_hi = ss.get("session_tail_minutes", [0.5, 6])
+        # (시작, 끝, 이 창이 품어야 하는 최소 끝) — 세 번째가 None 이면 열어만 본 세션.
+        # ⚠️ 이 값이 **하루 상한보다 우선**한다. 투표를 품은 창을 잘라내면
+        #    그 투표 세션이 접속 세션 밖으로 튀어나간다(첫 시험에서 5% 가 그랬다).
+        windows: list[list] = []
+        for st, en in merged:
+            pre = lognormal_secs(self.rng, 3, 240, peak=0.2, sigma=0.9)
+            s0 = max(st - pre, u.created_at)
+            e0 = min(en + lognormal_mins(self.rng, tail_lo, tail_hi,
+                                         peak=0.3, sigma=0.8), self.end)
+            windows.append([s0, max(e0, s0), en])
+
+        # ── 3. 아무것도 안 하고 닫는 세션 ──────────────────────────────
+        # 투표만 세면 "열었지만 아무것도 안 한 사람"이 사라진다.
+        # 활동 창 안의 아무 날에나 뿌린다.
+        browse_ratio = ss.get("browse_only_ratio", 0.35)
+        n_browse = round(len(windows) * browse_ratio / max(1 - browse_ratio, 0.05))
+        if not windows:
+            # 투표를 안 하는 유저(미해금·never_votes·친구 부족)도 앱은 연다
+            n_browse = max(1, self.rng.randint(*ss["per_active_day"])
+                           * max(1, (u.activity_days + 1) // 3))
+        lo_all = u.created_at
+        hi_all = min(u.created_at + timedelta(days=u.activity_days + 1), self.end)
+        b_lo, b_hi = ss.get("browse_minutes", [1, 40])
+        for _ in range(int(n_browse)):
+            if hi_all <= lo_all:
+                break
+            st = self._pick_hour_dt(u, lo_all, hi_all)
+            if st > self.end:
+                continue
+            # 계절 × 요일 — 접속 세션에도 같은 리듬이 걸려야 한다
+            keep = self.growth.keep_prob(st) if self.growth.volume else 1.0
+            if self.rng.random() >= keep * self._dow_weight(st):
+                continue
+            dur = lognormal_mins(self.rng, b_lo, b_hi, peak=0.18, sigma=1.0)
+            windows.append([st, min(st + dur, self.end), None])
+
+        # ── 4. 겹치는 창을 합친다 ──────────────────────────────────────
+        # 열어만 본 세션이 투표 세션과 겹칠 수 있다. 겹치면 한 번의 접속이다.
+        windows.sort(key=lambda w: w[0])
+        out: list[list] = []
+        for s0, e0, need in windows:
+            if out and s0 - out[-1][1] <= gap:
+                out[-1][1] = max(out[-1][1], e0)
+                if need and (out[-1][2] is None or need > out[-1][2]):
+                    out[-1][2] = need
+            else:
+                out.append([s0, e0, need])
+
+        # ── 5. 하루 상한 ──────────────────────────────────────────────
+        # ⚠️ **투표를 품은 창은 건드리지 않는다.** 개수를 줄일 때도 길이를
+        #    줄일 때도 마찬가지다. 여기서 자르면 그 투표 세션이 접속 세션
+        #    밖으로 나가 "행동은 세션 안에서만"이 깨진다.
+        # ⚠️ 접속 세션도 **개수로는 안 자른다.** 시간만 본다 —
+        #    하루에 앱에 머물 수 있는 시간을 넘지 않으면 몇 번을 열든 사람이다.
+        cap_h = ss.get("max_active_hours_per_day", 10.0)
+        by_day: dict[object, list[list]] = {}
+        for w in out:
+            by_day.setdefault(w[0].date(), []).append(w)
+        final: list[tuple[datetime, datetime]] = []
+        for lst in by_day.values():
+            lst.sort(key=lambda w: w[0])
+            if cap_h:
+                budget = timedelta(hours=cap_h)
+                kept = []
+                for s0, e0, need in lst:
+                    floor = need or s0          # 투표를 품었으면 그 끝까지는 지킨다
+                    if e0 - s0 > budget:
+                        e0 = max(s0 + budget, floor)
+                    if budget <= timedelta(0) and need is None:
+                        break                   # 예산이 다 떨어지면 열어만 본 세션은 버린다
+                    budget -= (e0 - s0)
+                    kept.append((s0, e0))
+                lst = kept
+            else:
+                lst = [(w[0], w[1]) for w in lst]
+            final.extend(lst)
+        final.sort()
+        return final
+
+    def _write_sessions(self, u: User, start_id: int) -> int:
+        """
+        접속 세션을 쓴다. **실제 운영 로그의 지저분함**을 조금 섞는다.
+
+        ⚠️ 노이즈는 **정합성을 깨지 않는 것만** 넣는다. 같은 세션이 두 번
+           쌓이는 것(재시도·중복 전송)과 종료 기록이 늦게 도착하는 것은
+           검사 26종 어디에도 안 걸린다. 반면 "가입 이전 세션" 같은 역전은
+           검사가 잡으므로 넣지 않는다 — 노이즈와 결함은 다르다.
+        """
+        ss = self.cfg["sessions"]
+        nz = ss.get("noise", {}) or {}
+        dup_rate = nz.get("duplicate_rate", 0.0)
+        dup_max = nz.get("duplicate_max", 2)
+        late_rate = nz.get("late_close_rate", 0.0)
+        late_lo, late_hi = nz.get("late_close_minutes", [5, 90])
+
+        sess_id = start_id
+        platform = weighted_choice(self.rng, ss["platform_ratio"])
+        for s0, e0 in u.app_sessions:
+            if e0 > self.end:
+                e0 = self.end
+            # 종료 기록이 늦게 도착해 끝이 늘어난 세션
+            if self.rng.random() < late_rate:
+                e0 = min(e0 + lognormal_mins(self.rng, late_lo, late_hi,
+                                             peak=0.2, sigma=0.9), self.end)
+                self.noise_late += 1
+            copies = 1
+            if self.rng.random() < dup_rate:
+                copies = self.rng.randint(2, max(2, dup_max))
+                self.noise_dupes += copies - 1
+            for _ in range(copies):
+                sess_id += 1
+                self.w.write("user_session",
+                             ["id", "user_id", "platform", "app_version", "device_id",
+                              "started_at", "ended_at"],
+                             [sess_id, u.id, platform,
+                              self.rng.choice(["1.0.0", "1.1.0", "1.2.0"]),
+                              f"dev-{u.id:06d}", iso(s0), iso(e0)])
+        return sess_id
+
+    def _act_at(self, u: User, lo: datetime, hi: datetime) -> datetime | None:
+        """
+        유저의 **직접 행동** 시각을 고른다. 두 가지를 동시에 지킨다 —
+        (1) 접속 세션 안이어야 하고 (2) 탈퇴 전이어야 한다.
+
+        조건을 만족하는 자리가 없으면 None 이다. 부르는 쪽은 그 행동을
+        **만들지 않는다.** 억지로 끼워 넣으면 둘 중 하나가 깨진다.
+        """
+        if u.withdrawn_at and hi > u.withdrawn_at:
+            hi = u.withdrawn_at
+        if hi <= lo:
+            return None
+        return self._pick_in_session(u, lo, hi)
+
+    def _pick_in_session(self, u: User, lo: datetime,
+                         hi: datetime) -> datetime | None:
+        """
+        `lo`~`hi` 안에서 **접속 세션 안쪽** 시각을 하나 고른다.
+
+        게시판 글·댓글·좋아요도 유저의 직접 행동이므로 세션 밖에 있으면 안 된다.
+        맞는 창이 없으면 None — 부르는 쪽에서 그 행동을 건너뛴다.
+        """
+        cands = [(s, e) for s, e in u.app_sessions if e >= lo and s <= hi]
+        if not cands:
+            return None
+        s0, e0 = self.rng.choice(cands)
+        lo2, hi2 = max(s0, lo), min(e0, hi)
+        if hi2 <= lo2:
+            return lo2
+        return rand_dt(self.rng, lo2, hi2)
 
     # -- 8. 게시판 -----------------------------------------------------
     def gen_board(self):
@@ -2108,9 +2454,17 @@ class Generator:
         by_school_comm: dict[int, list[User]] = {}
         for u in commenters:
             by_school_comm.setdefault(u.school_id, []).append(u)
+        # [v5] 좋아요를 누르는 사람을 **고정 집단**으로 만든다.
+        # ⚠️ v4 는 학교의 활성 유저 **전체**를 후보로 써서 결과적으로
+        #    **95.9% 가 좋아요를 눌렀다.** 실제 커뮤니티는 훨씬 낮고,
+        #    참여 피라미드가 없으면 "관망하는 다수"라는 분석 대상이 사라진다.
+        liker_ratio = b.get("liker_ratio", 0.60)
+        for u in actives:
+            u.is_liker = self.rng.random() < liker_ratio
         by_school_act: dict[int, list[User]] = {}
         for u in actives:
-            by_school_act.setdefault(u.school_id, []).append(u)
+            if u.is_liker:
+                by_school_act.setdefault(u.school_id, []).append(u)
 
         post_id = com_id = pl_id = cl_id = 0
         lo_p, hi_p = b.get("posts_per_author", [1, 25])
@@ -2121,11 +2475,16 @@ class Generator:
             if self.rng.random() < 0.05:                  # 상위 소수가 글의 다수를 만든다
                 n_posts = self.rng.randint(hi_p // 2, hi_p)
             for _ in range(n_posts):
-                created = rand_dt(self.rng, a.created_at, self.end)
+                # [v5] 글쓰기도 **접속 세션 안**에서 일어나고 탈퇴 뒤에는 없다.
+                created = self._act_at(a, a.created_at, self.end)
+                if created is None:
+                    continue
                 post_id += 1
                 pool = [x for x in by_school_comm.get(a.school_id, []) if x.id != a.id]
 
-                # 댓글
+                # 댓글 — ⚠️ **시각을 먼저 확정한다.** post.comment_count 는
+                # 실제 행 수와 일치해야 하는데(정합성 검사), 세션·탈퇴 때문에
+                # 건너뛰는 댓글이 생기므로 개수를 나중에 세야 한다.
                 n_com = 0
                 if self.rng.random() >= b.get("zero_comment_post_ratio", 0.3) and pool:
                     n_com = max(1, int(self.rng.expovariate(
@@ -2134,21 +2493,30 @@ class Generator:
                 com_rows = []
                 seq_of: dict[int, int] = {}
                 for c_author in self.rng.sample(pool, n_com) if n_com else []:
+                    at = self._act_at(c_author, created, self.end)
+                    if at is None:
+                        continue
                     com_id += 1
-                    at = rand_dt(self.rng, created, self.end)
                     # anonymous_seq 는 글 안에서만 유효한 번호다. 같은 사람은 같은 글에서
                     # 같은 번호를 유지해야 대화 맥락이 읽힌다.
                     seq_of.setdefault(c_author.id, len(seq_of) + 1)
                     com_rows.append((com_id, c_author, seq_of[c_author.id], at))
 
-                # 좋아요 — 대부분 몇 개, 드물게 떡상하는 글
+                # 좋아요 — 대부분 몇 개, 드물게 떡상하는 글.
+                # 여기도 시각을 먼저 확정하고 **성사된 것만** 센다.
                 likers = [x for x in by_school_act.get(a.school_id, []) if x.id != a.id]
                 if self.rng.random() < b.get("viral_post_ratio", 0.02):
                     lo, hi = b.get("viral_post_likes", [80, 400])
-                    n_like = min(self.rng.randint(lo, hi), len(likers))
+                    want_like = min(self.rng.randint(lo, hi), len(likers))
                 else:
-                    n_like = min(int(self.rng.expovariate(
+                    want_like = min(int(self.rng.expovariate(
                         1 / max(b.get("post_likes_per_post_mean", 4.0), 0.1))), len(likers))
+                like_rows = []
+                for liker in self.rng.sample(likers, want_like) if want_like else []:
+                    at = self._act_at(liker, created, self.end)
+                    if at is not None:
+                        like_rows.append((liker, at))
+                n_like = len(like_rows)
 
                 self.w.write("post",
                              ["id", "school_id", "category_id", "author_id", "title", "body",
@@ -2166,9 +2534,14 @@ class Generator:
                 written: list[int] = []
                 for cid, c_author, seq, at in sorted(com_rows, key=lambda r: r[3]):
                     c_likers = [x for x in likers if x.id != c_author.id]
-                    n_clike = 0
+                    clike_rows = []
                     if self.rng.random() < b.get("comment_like_ratio", 0.18) and c_likers:
-                        n_clike = min(self.rng.randint(1, 6), len(c_likers))
+                        want = min(self.rng.randint(1, 6), len(c_likers))
+                        for liker in self.rng.sample(c_likers, want):
+                            lat = self._act_at(liker, at, self.end)
+                            if lat is not None:
+                                clike_rows.append((liker, lat))
+                    n_clike = len(clike_rows)
                     self.w.write("post_comment",
                                  ["id", "post_id", "parent_comment_id", "author_id",
                                   "anonymous_seq", "body", "like_count", "status",
@@ -2182,17 +2555,16 @@ class Generator:
                                   iso(at), iso(at)])
                     written.append(cid)
                     self.comments.append((cid, post_id, c_author.id, at))
-                    for liker in self.rng.sample(c_likers, n_clike) if n_clike else []:
+                    for liker, lat in clike_rows:
                         cl_id += 1
                         self.w.write("comment_like",
                                      ["id", "comment_id", "user_id", "created_at"],
-                                     [cl_id, cid, liker.id, iso(rand_dt(self.rng, at, self.end))])
+                                     [cl_id, cid, liker.id, iso(lat)])
 
-                for liker in self.rng.sample(likers, n_like) if n_like else []:
+                for liker, lat in like_rows:
                     pl_id += 1
                     self.w.write("post_like", ["id", "post_id", "user_id", "created_at"],
-                                 [pl_id, post_id, liker.id,
-                                  iso(rand_dt(self.rng, created, self.end))])
+                                 [pl_id, post_id, liker.id, iso(lat)])
 
         # 대댓글 — 이미 쓴 댓글 일부에 부모를 달아준다면 UNIQUE 가 깨지므로
         # 여기서는 만들지 않는다. parent_comment_id 는 빈 채로 둔다.
@@ -2250,7 +2622,7 @@ class Generator:
                 if victim.id == reporter.id:
                     continue
                 tgt_user = victim.id
-                at = rand_dt(self.rng, max(reporter.created_at, victim.created_at), self.end)
+                at = self._act_at(reporter, max(reporter.created_at, victim.created_at), self.end)
             elif ttype == "QUESTION":
                 # ⚠️ v2 는 여기서 그냥 rng.choice 를 썼다 — **완전 균등**이라
                 #    외모 질문(0.439/1천건)과 유머(0.379)가 사실상 같았고,
@@ -2259,18 +2631,20 @@ class Generator:
                 tgt_q = self.rng.choices(
                     self.questions,
                     weights=[q_report_w[q["id"]] for q in self.questions], k=1)[0]["id"]
-                at = rand_dt(self.rng, reporter.created_at, self.end)
+                at = self._act_at(reporter, reporter.created_at, self.end)
             elif ttype == "POST":
                 pid, _sch, author, created = self.rng.choice(self.posts)
                 if author == reporter.id:
                     continue
-                tgt_post, at = pid, rand_dt(self.rng, created, self.end)
+                tgt_post, at = pid, self._act_at(reporter, created, self.end)
             else:
                 cid, _pid, author, created = self.rng.choice(self.comments)
                 if author == reporter.id:
                     continue
-                tgt_com, at = cid, rand_dt(self.rng, created, self.end)
+                tgt_com, at = cid, self._act_at(reporter, created, self.end)
 
+            if at is None:        # 세션 밖이거나 탈퇴 뒤 — 신고를 만들지 않는다
+                continue
             r = self.rng.random()
             reviewed = r < m.get("reviewed_rate", 0.7)
             actioned = reviewed and self.rng.random() < m.get("actioned_rate", 0.25)
@@ -2324,13 +2698,17 @@ class Generator:
                 if other.id == u.id or (u.id, other.id) in seen:
                     continue
                 seen.add((u.id, other.id))
+                # [v5] 차단도 유저의 직접 행동이다 — 세션 안, 탈퇴 전.
+                b_at = self._act_at(u, max(u.created_at, other.created_at), self.end)
+                if b_at is None:
+                    continue
                 blk_id += 1
                 self.w.write("block_record",
                              ["id", "user_id", "blocked_user_id", "reason", "created_at"],
                              [blk_id, u.id, other.id,
                               self.rng.choice(["UNKNOWN_PERSON", "AWKWARD", "IMPERSONATION",
                                                "IRRELEVANT", "TOO_MANY"]),
-                              iso(rand_dt(self.rng, max(u.created_at, other.created_at), self.end))])
+                              iso(b_at)])
 
     # -- 10. 추천 거절 --------------------------------------------------
     def gen_recommend_rejects(self):
@@ -2353,7 +2731,10 @@ class Generator:
                     continue
                 seen.add((u.id, other))
                 rid += 1
-                at = rand_dt(self.rng, max(u.created_at, self.users[other - 1].created_at), self.end)
+                at = self._act_at(u, max(u.created_at, self.users[other - 1].created_at), self.end)
+                if at is None:      # 세션 밖이거나 탈퇴 뒤 — 만들지 않는다
+                    rid -= 1
+                    continue
                 # score 는 항상 0 이다. 추천 점수를 매기던 자리인데 거절만 들어온다.
                 self.w.write("rejected_friend_recommendations",
                              ["id", "user_id", "recommended_user_id", "reason", "score",
@@ -2460,8 +2841,7 @@ class Generator:
                 lo, hi = si.get("notice_read", {}).get("read_ratio", [0.2, 0.6])
                 n_read = int(len(readers) * self.rng.uniform(lo, hi))
                 for r in self.rng.sample(readers, min(n_read, len(readers))):
-                    at = rand_dt(self.rng, max(pub, r.created_at), self.end) \
-                        if max(pub, r.created_at) < self.end else None
+                    at = self._act_at(r, max(pub, r.created_at), self.end)
                     if at is None:
                         continue
                     nr_id += 1
