@@ -44,7 +44,7 @@
 </style>
 
 <h1>합성 데이터를 만들기까지</h1>
-<p class="sub">30개 질문 · 5개 판본 · 3번의 전면 재생성 — 무엇을 정했고, 무엇이 틀렸고, 왜 바꿨는가</p>
+<p class="sub">30개 질문 · <b>9개 판본</b> · 뒤집힌 결정 12건 — 무엇을 정했고, 무엇이 틀렸고, 왜 바꿨는가</p>
 
 <div class="meta">
   <div><b>기간</b> 2026-07-29 (v1 생성) ~ 2026-08-04 (v3 확정 직전)</div>
@@ -55,7 +55,7 @@
        설정 파일은 <b>값</b>만 남기고 <b>기각한 대안</b>은 남기지 않는다</div>
 </div>
 
-<h2>0. 한 장 요약 — 세 번 만들고 두 번 버렸다</h2>
+<h2>0. 한 장 요약 — 아홉 번 만들고 세 번 버렸다</h2>
 
 <table>
   <tr><th style="width:13%">판본</th><th style="width:16%">규모</th><th class="n" style="width:13%">행</th>
@@ -75,15 +75,36 @@
   <tr><td><b>12m v2</b> <span class="dim">8/4</span></td><td>20,000명·12개월</td><td class="n">1억 8,826만</td>
       <td>8건 중 7건 해결. <b>전면 감사</b>에서 새 결함 3건</td></tr>
   <tr><td><b>12m v3</b> <span class="dim">8/4</span></td><td>20,000명·12개월</td><td class="n">1억 8,918만</td>
-      <td>감사 3건 해결 — <b>하루 리듬 · 비투표 유저 · 같은 반 친구</b></td></tr>
+      <td>감사 3건 해결 — <b>하루 리듬 · 비투표 유저 · 같은 반 친구</b>.
+          <b class="bad">접속 세션 결함으로 폐기</b></td></tr>
+  <tr><td><b>12m v4</b> <span class="dim">8/5</span></td><td>20,000명·12개월</td><td class="n">1억 8,922만</td>
+      <td>접속 세션에도 리듬. <b>확정했다가</b> 정밀 EDA 에서
+          <b class="bad">결함 1건 · 경계 5건</b> 발견</td></tr>
+  <tr><td><b>12m v5</b> <span class="dim">8/5</span></td><td>20,000명·12개월</td><td class="n good">1억 2,370만</td>
+      <td><b>확정.</b> 요구사항 7가지 구현 · v4 의 "할 수 없다" 15종 중 <b>9종 해금</b></td></tr>
 </table>
+
+<div class="box">
+  <h4>⚠️ v4 는 "확정"했다가 같은 날 뒤집혔다</h4>
+  <p>정합성 17종·이상치 9종이 전부 0이고 목표 지표도 전부 통과해서 확정했다.
+  그 <b>직후</b> 정밀 EDA 를 돌렸더니 <b>하루에 406.8시간 투표한 유저-일</b>이 나왔다
+  (하루는 24시간이다). 검사 26종 어디에도 "하루에 몇 번까지가 사람인가"를
+  묻는 항목이 없었다.</p>
+  <p><b>교훈은 검사가 아니라 순서다.</b> 확정 전에 정밀 EDA 를 돌렸어야 했다 —
+  검사를 통과하는 것과 그럴듯한 것은 다르다.</p>
+</div>
 
 <div class="box note">
   <h4>이 이력에서 가장 자주 반복된 실패</h4>
-  <p><b>"설정에 값은 있는데 코드가 안 읽는다."</b> 여섯 번 나왔다 —
-  <code>growth</code>(성장 곡선) · <code>schools.tiers</code> · <code>schools.adoption</code> ·
+  <p><b>"설정에 값은 있는데 코드가 안 읽는다."</b> <b>열 번</b> 나왔다 —
+  <code>growth</code> · <code>schools.tiers</code> · <code>schools.adoption</code> ·
   <code>retention.reactivation_rate</code> · <code>popularity.top10_share</code> ·
-  <b>Q23 시간대 리듬</b>.</p>
+  <b>Q23 시간대 리듬</b> · <code>behavior</code> ·
+  <code>sessions.weekend_multiplier</code> · <code>sessions.hour_weights</code> ·
+  <code>sessions.votes_per_app_session</code>.</p>
+  <p>⚠️ <b>마지막 것은 v5 를 만들면서 새로 만든 것이다.</b> 앞의 아홉을 찾아내
+  고치는 그 작업 안에서 <b>같은 함정을 다시 밟았다</b> — 설정에 키를 넣고
+  구현은 다른 방식으로 갔다.</p>
   <p>전부 <b>오류가 나지 않는다.</b> 설정 파일을 읽으면 그 기능이 있는 것처럼 보이고,
   데이터를 다 만들어 분석해 봐야 없다는 것이 드러난다.</p>
 </div>
@@ -421,6 +442,29 @@
       <td><b>틀렸다.</b> 구간별로 갈라 봐야 한다</td>
       <td>가입 지급은 순수 공급이라 줄이면 부족이 악화된다.
           분모를 깎아 지표를 좋게 보이게 하는 것이었다</td></tr>
+  <tr><td><b>v4 확정</b> <span class="dim">v5</span></td>
+      <td>"한계 5건을 고치지 않고 문서화한다"</td>
+      <td><b>같은 날 고쳤다</b></td>
+      <td>확정 직후 나온 것이 <b>경계가 아니라 결함</b>이었다 —
+          하루 406.8시간은 "이 축으로는 답을 못 한다"가 아니라
+          <b>"답이 틀리게 나온다"</b>이다</td></tr>
+  <tr><td><b>하루 상한</b> <span class="dim">v5</span></td>
+      <td>하루 <b>12세션</b>으로 자른다</td>
+      <td><b>시간 예산</b>(투표 6시간/일)</td>
+      <td>개수로 자르니 헤비유저가 통째로 사라져 행이 반토막(9,509만) 나고
+          지목 쏠림이 49%→<b>39%</b>로 주저앉았다. 막아야 하는 것은 "많이 한다"가
+          아니라 <b>하루에 낼 수 없는 시간</b>뿐이었다</td></tr>
+  <tr><td><b>요일 패턴</b> <span class="dim">v5</span></td>
+      <td>월 → 일 <b>우하향</b> (지시)</td>
+      <td><b>V자</b> — 금요일 최저, 주말 회복</td>
+      <td>원본(구 서비스 출석 로그)을 열어 보니 그 모양이 아니었다.
+          우하향으로 넣으면 <b>일요일이 최저</b>가 되어 원본과 반대가 된다</td></tr>
+  <tr><td><b>인기도 alpha</b> <span class="dim">v5</span></td>
+      <td>0.45 <span class="dim">(그 아래는 효과 없음)</span></td>
+      <td><b>1.05</b></td>
+      <td>쏠림의 <b>바닥이 내려갔다.</b> v4 의 48.8%는 인기도가 아니라
+          <b>불가능한 활동 꼬리</b>가 떠받치고 있었다. 꼬리를 자르니 43.7% —
+          이제 <b>매력도</b>로 만들어야 한다</td></tr>
 </table>
 
 <h2 class="pb">7. 행수 가드레일 — 상한이라는 도구 자체가 틀렸다</h2>
@@ -476,6 +520,22 @@
   스프레드가 커지기 때문</b>이다(정원 975명인 학교의 한 반이 77명이 됐다).</p>
   <p>더 내리려면 <b>"소수가 활동 대부분을 만든다"</b>(v1 실측)를 깨야 한다.
   <b>인기도 집중과 활동 집중은 같은 현상의 두 얼굴</b>이라, 목표치를 49%로 고쳤다.</p>
+</div>
+
+<div class="box note">
+  <h4>⚠️ v5 후기 — 그 "바닥"은 고정된 것이 아니었다</h4>
+  <p>8장의 결론은 <b>"쏠림의 바닥은 인기도가 아니라 활동 불균형이 정한다"</b>였다.
+  맞는 진단이었지만 <b>절반만 맞았다.</b></p>
+  <p>v5 가 하루 시간 예산으로 <b>불가능한 활동 꼬리</b>를 잘라내자
+  같은 <code>zipf_alpha 0.45</code> 에서 48.8% → <b>43.7%</b> 로 떨어졌다.
+  바닥을 떠받치던 것이 <b>사람이 아닌 유저들</b>이었기 때문이다 —
+  하루 2,243세션 · 406.8시간을 투표하던 그 꼬리다.</p>
+  <p>그래서 v5 는 <code>zipf_alpha</code> 를 <b>1.05</b> 로 올려 49.8% 를 만든다.
+  같은 49% 라도 <b>출처가 다르다</b> — v4 는 활동 불균형이, v5 는 매력도가 만든다.
+  <b>후자가 원래 의도한 것이다.</b></p>
+  <p><b>교훈 하나가 더 붙는다</b> — "도달 불가"라고 판정한 목표가
+  <b>다른 결함 때문에 그렇게 보였을 수 있다.</b> 바닥을 만드는 것이 무엇인지
+  먼저 묻고, 그것이 <b>정상인지</b>도 물어야 한다.</p>
 </div>
 
 <h2 class="pb">9. Q23 — 잊혀 있다가, 구현하면서 뒤집혔다</h2>
@@ -535,7 +595,8 @@
 <table>
   <tr><th style="width:34%">교훈</th><th>어디서 배웠나</th></tr>
   <tr><td><b>설정에 값이 있어도 코드가 안 읽으면 없는 것이다</b></td>
-      <td><b>7번</b> 반복됐다. 전부 오류가 안 나고, 데이터를 다 만들어 분석해야
+      <td><b>10번</b> 반복됐다. <b>마지막 하나는 앞의 아홉을 고치는 작업 안에서
+          새로 만들었다.</b> 전부 오류가 안 나고, 데이터를 다 만들어 분석해야
           드러난다. → 생성 끝에 <b>목표 대비 실측을 바로 출력</b>하게 고쳤고,
           결국 <b>절 목록을 나열하는 방식 자체를 버렸다</b>(9장)</td></tr>
   <tr><td><b>고치다가 옆을 부순다</b></td>
@@ -573,38 +634,109 @@
   <tr><td><b>분포는 사람이 눈으로 봐야 한다</b></td>
       <td>Q30 게이트 5번. 정합성·커버리지·행수는 기계가 통과시켜도
           <b>곡선이 이상한 데이터를 막지 못한다</b></td></tr>
+  <tr><td><b class="bad">검사를 통과하는 것과 그럴듯한 것은 다르다</b> <span class="dim">v5</span></td>
+      <td>v4 는 정합성 17종·이상치 9종·목표 지표를 <b>전부</b> 통과하고 확정됐다.
+          그 직후 정밀 EDA 에서 <b>하루 406.8시간 투표</b>가 나왔다.
+          <b>"하루에 몇 번까지가 사람인가"는 스키마 제약으로 표현되지 않는다</b> —
+          검사에 없는 질문은 영원히 안 물어진다</td></tr>
+  <tr><td><b>균등분포는 오류가 아니라 침묵이다</b> <span class="dim">v5</span></td>
+      <td>시간 간격 6종이 균등도 1.0 이었다. 오류도 안 나고 검사도 통과한다.
+          <b>가설검정 자체가 안 되는 것</b>이 뒤늦게 드러난다.
+          → <b>변동계수와 균등도로 전 축을 훑는 습관</b>이 생겼다</td></tr>
+  <tr><td><b>상한을 개수로 걸면 분포를 죽인다</b> <span class="dim">v5</span></td>
+      <td>하루 12세션으로 잘랐더니 행이 반토막 나고 쏠림이 39%로 무너졌다.
+          <b>막아야 할 것을 정확히 정의해야 한다</b> — "많이 한다"가 아니라
+          "하루에 낼 수 없는 시간을 쓴다"였다</td></tr>
+  <tr><td><b>두 표가 독립이면 같은 질문에 다른 답이 나온다</b> <span class="dim">v5</span></td>
+      <td>v4 에서 복귀 코호트가 <code>vote_session</code> 으로는 736명,
+          <code>user_session</code> 으로는 <b>0명</b>이었다.
+          <b>어느 표로 재도 같은 답이 나와야</b> 지표를 믿을 수 있다</td></tr>
+  <tr><td><b>라벨과 활동이 독립이면 모델이 안 만들어진다</b> <span class="dim">v5</span></td>
+      <td>v4 는 탈퇴자가 오히려 투표를 <b>더</b> 많이 했다(119.4 vs 115.6).
+          탈퇴가 활동 생성과 무관하게 찍혔기 때문이다.
+          <b>합성 데이터에서 "라벨"을 만들 때는 그 라벨이 피처와 어떻게 얽히는지를
+          같이 설계해야 한다</b></td></tr>
+  <tr><td><b>원본을 열어 보고 지시를 확인한다</b> <span class="dim">v5</span></td>
+      <td>요일 패턴을 "월→일 우하향"으로 지시받았으나 원본은 <b>V자</b>였다
+          (금요일 최저 · 주말 회복). 원본이 명시적으로 반대를 적고 있었다</td></tr>
 </table>
 
-<h2 class="pb">11. 아직 안 한 것</h2>
+<h2 class="pb">11. v4 → v5 — 무엇을 고쳤나</h2>
+
+<p>v4 를 확정한 직후 돌린 정밀 EDA 가 <b>결함 1건 · 경계 5건</b>을 찾았고,
+작업자가 <b>요구사항 7가지</b>를 지정해 v5 를 만들었다.</p>
+
+<table>
+  <tr><th class="n" style="width:4%">#</th><th style="width:24%">요구</th>
+      <th class="n" style="width:15%">v4</th><th class="n" style="width:15%">v5</th><th>측정</th></tr>
+  <tr><td class="n">1</td><td>시간 간격 비균등</td>
+      <td class="n bad">1.01~1.05</td><td class="n good">0.15~0.54</td>
+      <td>균등도(1.0 = 완전 균등) · 5종</td></tr>
+  <tr><td class="n">2</td><td>요일 패턴</td>
+      <td class="n bad">CV 0.024</td><td class="n good">CV 0.18~0.24</td>
+      <td>구 서비스와 <b>순위 7개 일치</b></td></tr>
+  <tr><td class="n">3</td><td>행동은 세션 안에서만</td>
+      <td class="n bad">3.84%</td><td class="n good">99.99%</td>
+      <td>투표 세션이 접속 세션 창 안에</td></tr>
+  <tr><td class="n">4</td><td>세션 로그 노이즈</td>
+      <td class="n dim">없음</td><td class="n good">0.399%</td>
+      <td>중복 행 3,944건</td></tr>
+  <tr><td class="n">5</td><td>탈퇴 후 로그 금지</td>
+      <td class="n bad">9종 발생</td><td class="n good">9종 0</td>
+      <td>v4 는 하트 거래만 <b>128만 건</b></td></tr>
+  <tr><td class="n">6</td><td>투표 시간 일관성</td>
+      <td class="n bad">19.50%</td><td class="n good">0.00%</td>
+      <td>상관 0.0007 → <b>0.7005</b></td></tr>
+  <tr><td class="n">7</td><td>좋아요 유저 60%</td>
+      <td class="n bad">95.9%</td><td class="n good">59.6%</td>
+      <td>활성 유저 기준</td></tr>
+</table>
+
+<h3>v4 에서 "할 수 없다"였던 15종 중 9종이 열렸다</h3>
+<table>
+  <tr><th style="width:38%">열린 것</th><th>근거</th></tr>
+  <tr><td class="good">앱 열기 → 투표 퍼널</td><td>겹침 3.84% → 99.99%</td></tr>
+  <tr><td class="good">체류시간 · 응답속도 분포</td><td>균등도 1.0 → 0.15~0.54</td></tr>
+  <tr><td class="good">이탈(탈퇴) 예측</td><td>탈퇴자 활동이 <b>21% 적다</b>(v4 는 오히려 많았다)</td></tr>
+  <tr><td class="good">요일 효과</td><td>CV 0.024 → 0.18~0.24</td></tr>
+  <tr><td class="good">상위 1% 세그먼트</td><td>하루 최대 51세션 · 7.9시간 — <b>사람 범위</b></td></tr>
+  <tr><td class="good">집중 지표 절대값 인용</td><td>불가능한 꼬리가 없다</td></tr>
+  <tr><td class="good">접속 세션 기준 휴면·복귀</td><td>0명 → <b>748명</b></td></tr>
+  <tr><td class="good">세션 길이와 활동의 관계</td><td>상관 0.0007 → 0.7005</td></tr>
+  <tr><td class="good">중복 로그 정제 연습</td><td>노이즈를 <b>일부러</b> 넣었다</td></tr>
+</table>
+
+<h2 class="pb">11-2. 아직 안 한 것</h2>
 
 <table>
   <tr><th style="width:26%">항목</th><th style="width:14%">출처</th><th>상태</th></tr>
-  <tr><td>시간대·요일 리듬</td><td>Q23 · Q27</td>
-      <td class="good">해소 (v4) — 평일 최고 22시 7.2% / 최저 4시 1.5%</td></tr>
-  <tr><td>계절성의 크기</td><td>Q4</td>
-      <td class="good">해소 (v4) — 시험기간 37%(설정 0.40) · 겨울방학 22%.
-          겨울방학이 낮은 것은 trough 국면이 담당하기 때문이며 의도된 값이다</td></tr>
-  <tr><td>세션 최소 1개 보장</td><td>—</td>
-      <td class="good">해소 (v4) — 비투표는 이제 친구 수 기반 확률로 <b>의도적으로</b> 만든다</td></tr>
-  <tr><td>같은 반 친구</td><td>Q20</td>
-      <td class="good">해소 (v4) — 0~3명 25.7% → 15.9% · CLASS 스코프 33.5%</td></tr>
   <tr><td><b>2차 증분 배치</b></td><td>Q28</td>
       <td class="bad">미실시. 증분 적재의 함정 4개를 실제로 재현해 볼 유일한 방법.
           <b>이제 가장 큰 미이행 항목이다</b></td></tr>
   <tr><td>앱을 생성기에 맞추기</td><td>—</td>
       <td class="warn">투표 보상(앱 5~15 vs 생성기 2~10) · 일일 적립 상한(앱 없음).
-          <b>생성 확정 후 한 번에</b> 하기로 미뤄 둠</td></tr>
-  <tr><td>3국면 MAU 진폭</td><td>Q4</td><td class="dim">저점 대비 회복 2.18배(목표 2.5배)</td></tr>
+          <b>생성이 확정된 지금이 그 시점이다</b></td></tr>
+  <tr><td class="warn">광고 시청시간 로그정규</td><td>v5 누락</td>
+      <td class="warn">시간 간격 <b>7곳 중 한 곳</b>을 빠뜨렸다(균등도 1.005). 생성기 1줄</td></tr>
+  <tr><td class="warn">BAN 이후 활동 차단</td><td>범위 밖</td>
+      <td class="warn">2,693건 · 34명. 요구는 <b>탈퇴</b>였고 제재는 손대지 않았다 —
+          구조가 같으므로 같은 방식으로 고칠 수 있다</td></tr>
+  <tr><td class="dim">시간대 대비 회복</td><td>v5 부작용</td>
+      <td class="dim">5.3배 → 3.1배. 세션을 30분 규칙으로 묶은 결과다 —
+          더 현실적이지만 히트맵 색 대비는 줄었다</td></tr>
+  <tr><td class="dim">죽은 설정 정리</td><td>—</td>
+      <td class="dim"><code>votes_per_app_session</code> · <code>gender_homophily</code> ·
+          <code>stop_voting_at_cap</code> · <code>anomalies.*</code> ·
+          <code>gates.*</code> 등 — 코드가 안 읽는다</td></tr>
+  <tr><td>시간대·요일 리듬</td><td>Q23 · Q27</td>
+      <td class="good">해소 (v5) — 시간대 3.1배 · 요일 순위 원본과 일치</td></tr>
+  <tr><td>계절성의 크기</td><td>Q4</td>
+      <td class="good">해소 (v5) — 평시 대비 방학 42% · trough 28%</td></tr>
+  <tr><td>3국면 MAU 진폭</td><td>Q4</td>
+      <td class="good">해소 (v5) — 저점 1,063 → 회복 4,514 = <b>4.2배</b>(목표 2.5배)</td></tr>
+  <tr><td>같은 반 친구</td><td>Q20</td>
+      <td class="good">해소 — 0~3명 14.7%</td></tr>
 </table>
-
-<div class="box note">
-  <h4>v4 (2026-08-04 저녁) — 감사에서 나온 결함 3건을 고치고 다시 만들었다</h4>
-  <p>12m v2 전면 감사가 시간대 · 비투표 유저 · 같은 반 친구 셋을 지적했고,
-  같은 날 고쳐 <b>1억 8,918만 행</b>을 다시 생성했다(15분 22초).</p>
-  <p>고치는 과정에서 <b>네 개의 함정</b>에 걸렸다 — <code>behavior</code> 절
-  미등록 · 재시도가 계절성 무력화 · <code>seasonality</code> 가 <code>growth</code>
-  밖으로 밀림 · 겨울방학 배수 이중 적용. 전부 10장 교훈에 넣었다.</p>
-</div>
 
 <h2>12. 부록 — 결정이 어디에 살아 있나</h2>
 
@@ -630,7 +762,31 @@
   <tr><td>스키마 불변 (Q10)</td><td>—</td><td><code>no-schema-change-for-synthetic.md</code></td></tr>
   <tr><td>외모 질문 (Q19)</td><td><code>questions.include_appearance</code></td>
       <td>마이그레이션 <code>012_activate_appearance_category.sql</code></td></tr>
+  <tr><td><b>세션 포함관계</b> <span class="dim">v5</span></td>
+      <td><code>sessions.idle_gap_minutes</code> · <code>browse_only_ratio</code> ·
+          <code>max_vote_hours_per_day</code></td>
+      <td><code>_build_app_sessions()</code> · <code>_act_at()</code> ·
+          <code>session-bounded-actions.md</code></td></tr>
+  <tr><td><b>시간 간격 분포</b> <span class="dim">v5</span></td>
+      <td><span class="dim">코드 안 (peak · sigma)</span></td>
+      <td><code>lognormal_span()</code> · <code>lognormal-not-uniform.md</code></td></tr>
+  <tr><td><b>요일 패턴</b> <span class="dim">v5</span></td>
+      <td><code>sessions.use_dow_weights</code> · <code>dow_gamma</code></td>
+      <td><b><code>DOW_WEIGHTS</code> 상수</b>(코드 옆에 둔다) ·
+          <code>dow-from-legacy-attendance.md</code></td></tr>
+  <tr><td><b>탈퇴 종점</b> <span class="dim">v5</span></td><td>—</td>
+      <td><code>u.last_activity_at</code> · <code>u.ledger_last_at</code> ·
+          <code>withdrawal-is-terminal.md</code></td></tr>
 </table>
+
+<div class="box note">
+  <h4>⚠️ 값을 설정에만 두지 않는다</h4>
+  <p>요일 가중치를 <b>코드 옆 상수</b>(<code>DOW_WEIGHTS</code>)로 둔 것은 의도적이다.
+  설정으로는 <b>켜고 끄기만</b> 한다.</p>
+  <p>이 이력에서 <b>열 번</b> 반복된 실패가 "설정에 값은 있는데 코드가 안 읽는다"였고,
+  v5 를 만들면서도 <b>또 한 번</b> 만들었다(<code>votes_per_app_session</code>).
+  값이 설정에만 있으면 언젠가 조용히 죽는다.</p>
+</div>
 
 <div class="box q">
   <h4>이 문서를 어떻게 쓰나</h4>
@@ -642,7 +798,7 @@
 </div>
 
 <footer>
-  ping-v2 · 합성 데이터 결정 이력 · 2026-08-04 작성 ·
-  출처: <code>synthetic-v2-decisions.md</code> 30문답 · EDA 5판본 ·
+  ping-v2 · 합성 데이터 결정 이력 · 2026-08-04 작성 · <b>2026-08-05 v5 까지 갱신</b> ·
+  출처: <code>synthetic-v2-decisions.md</code> 30문답 · EDA 9판본 ·
   <code>docs/decisions/</code> · 커밋 이력
 </footer>
