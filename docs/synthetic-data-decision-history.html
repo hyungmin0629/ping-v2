@@ -109,201 +109,241 @@
   데이터를 다 만들어 분석해 봐야 없다는 것이 드러난다.</p>
 </div>
 
-<h2 class="pb">0-2. 전체 대조표 — 정한 것, 바뀐 것, 지금 값</h2>
+<h2 class="pb">0-2. 전체 원장 — 정한 것과 고친 것 전부</h2>
 
-<p>생성 <b>전에</b> 30문답으로 정한 값과, 아홉 판본을 만들며 <b>실제로 바뀐 값</b>을
-한 자리에 모았다. 이 문서에서 가장 먼저 볼 표다. 개별 경위는 각 장에 있다.</p>
+<p>30문답에서 정한 것, 그리고 아홉 판본을 만들며 발견하고 고친 것을
+<b>시간 순서대로 한 표</b>에 모았다. 이 문서에서 가장 먼저 볼 표이며,
+개별 경위는 각 장에 있다.</p>
 
 <div class="box q">
   <h4>읽는 법</h4>
-  <p><b>이후 변경</b> 칸이 <span class="dim">—</span> 이면 처음 정한 대로 유지됐다는 뜻이다.
-  굵은 판본 표시는 <b>그 판본에서 바뀌었다</b>는 뜻이다.</p>
-  <p>30개의 결말은 셋으로 갈린다 — <b>그대로 지켜진 것 19개</b>,
-  <b>다른 값으로 바뀐 것 9개</b>(Q4·6·9·14·19·21·23·25·30),
-  <b>정하고도 못 한 것 2개</b>(Q22 성별 성향 · Q28 증분 배치).
-  바뀐 9개 중 Q21(인기도)과 Q23(시간대)은 <b>두 번씩</b> 바뀌었다.</p>
+  <p><b>구분</b> — <span class="dim">결정</span> 만들기 전에 정한 것 ·
+     <span class="bad">결함</span> 만들고 나서 발견한 것 ·
+     <span class="good">해결</span> 고쳐서 목표에 든 것 ·
+     <span class="warn">전환</span> 판단 자체가 바뀐 것</p>
+  <p><b>규모</b> — 결정 30건 · 발견한 결함 <b>26건</b> · 그중 해결 <b>23건</b> ·
+     미해결 <b>3건</b>(광고 시청시간 · BAN 이후 활동 · 2차 증분 배치)</p>
 </div>
 
-<h3>A. 규모와 시간</h3>
+<h3>0단계 · 2026-08-03 — 만들기 전에 정한 것 (30문답)</h3>
 <table>
   <tr><th class="n" style="width:4%">Q</th><th style="width:16%">항목</th>
-      <th style="width:24%">2026-08-03 결정</th><th style="width:30%">이후 변경</th>
-      <th>현재 값</th></tr>
+      <th style="width:44%">정한 내용</th><th>결말</th></tr>
   <tr><td class="n">1</td><td>학교 수</td><td>활성 50개. 마스터는 실제 5,725개를 그대로 쓴다</td>
-      <td class="dim">—</td><td><code>active_count: 50</code></td></tr>
-  <tr><td class="n">2</td><td>이용자 수</td><td>20,000명</td>
-      <td class="dim">—</td><td><code>users: 20000</code></td></tr>
-  <tr><td class="n">3</td><td>기간</td><td>웹앱 로그 시작 직전까지 12개월</td>
-      <td class="dim">—</td><td>2025-09-01 ~ 2026-07-23</td></tr>
-  <tr><td class="n">4</td><td><b>성장 곡선</b></td><td>저점에서 회복해 성장하는 형태</td>
-      <td class="warn"><b>v1 — 봄학기형으로 교체.</b> 학교 기반 서비스는 신학기에
-          유입이 몰리고 학기가 진행되며 감소한다</td>
-      <td>6국면 · 3월 스파이크 19.9%</td></tr>
+      <td class="dim">유지</td></tr>
+  <tr><td class="n">2</td><td>이용자 수</td><td>20,000명</td><td class="dim">유지</td></tr>
+  <tr><td class="n">3</td><td>기간</td><td>웹앱 로그 시작 직전까지 12개월</td><td class="dim">유지</td></tr>
+  <tr><td class="n">4</td><td>성장 곡선</td><td>저점에서 회복해 성장하는 형태</td>
+      <td class="warn">12m v1 에서 봄학기형으로 교체</td></tr>
   <tr><td class="n">5</td><td>학교 진입</td><td>순차 확산</td>
-      <td class="dim">—</td><td>큰 학교부터 · 평균 정원 1,013 → 51명</td></tr>
-  <tr><td class="n">6</td><td><b>행수 상한</b></td><td>4,000만 행. 이후 1억으로 상향</td>
-      <td class="bad"><b>v4 — 상한이라는 도구 자체를 폐기.</b> 코드가 읽지 않아
-          아무것도 막지 못했고, 추정값도 틀렸다(8,500만 → 실측 1억 4,126만)</td>
-      <td>쿼리 하드캡 30 GiB/일</td></tr>
+      <td class="bad">12m v1 에서 미구현 발각 → 12m v2 해결</td></tr>
+  <tr><td class="n">6</td><td>행수 상한</td><td>4,000만 행. 이후 1억으로 상향</td>
+      <td class="warn">12m v4 에서 폐기 → 쿼리 하드캡</td></tr>
+  <tr><td class="n">7</td><td>하트 원장 불일치</td><td>재현하지 않고 전면 교정한다</td><td class="dim">유지</td></tr>
+  <tr><td class="n">8</td><td>그 밖의 v1 결함</td><td>추천안대로 교정</td><td class="dim">유지</td></tr>
+  <tr><td class="n">9</td><td>탐지용 이상치</td><td>일부러 심는다</td>
+      <td class="warn">12m v5 에서 운영 로그 노이즈로 성격 변경</td></tr>
+  <tr><td class="n">10</td><td>실유저와의 분리</td><td><code>is_synthetic</code> 로 구분하고 DB 도 분리</td>
+      <td class="dim">유지</td></tr>
+  <tr><td class="n">11</td><td>NULL 허용 66컬럼</td><td>추천안대로 채운다</td><td class="dim">유지 · 340/342</td></tr>
+  <tr><td class="n">12</td><td>자유 텍스트</td><td>템플릿 조합. 닉네임은 실명처럼</td><td class="dim">유지</td></tr>
+  <tr><td class="n">13</td><td>금지 항목</td><td>전화번호·이메일 문자열 금지. 학교명은 NEIS 실명</td>
+      <td class="dim">유지</td></tr>
+  <tr><td class="n">14</td><td>게시판 4표</td><td>글 40% · 댓글 70% · 글당 댓글 2~3 · 좋아요 4</td>
+      <td class="bad">12m v5 에서 <b>좋아요 누르는 사람 비율</b> 누락 발각</td></tr>
+  <tr><td class="n">15</td><td>신고·제재·차단</td><td>추천안대로</td><td class="dim">유지</td></tr>
+  <tr><td class="n">16</td><td>학교 정보 6표</td><td>기존 20개교로 50개교를 합성. NEIS 재호출 없음</td>
+      <td class="dim">유지</td></tr>
+  <tr><td class="n">17</td><td>추천 거절</td><td>일정 비율이 "안 볼래"를 누른다</td><td class="dim">유지</td></tr>
+  <tr><td class="n">18</td><td>1회성 답장</td><td>힌트 없이 4% · 힌트 후 20% · 신고 2%</td><td class="dim">유지</td></tr>
+  <tr><td class="n">19</td><td>질문 구성</td><td>240개. 신고율을 재기 위해 외모·신체 질문 포함</td>
+      <td class="warn">12m v2 에서 실서비스에도 적용으로 확대</td></tr>
+  <tr><td class="n">20</td><td>스코프와 후보 보충</td><td>35/35/30. 모자라면 친구 전체에서 채운다</td>
+      <td class="dim">유지</td></tr>
+  <tr><td class="n">21</td><td>인기도 분포</td><td>상위 10%가 전체 지목의 45%를 받는다</td>
+      <td class="bad">도달 불가 판명 → 49% 상향(v2) → alpha 재조정(v5)</td></tr>
+  <tr><td class="n">22</td><td>성별 지목 성향</td><td>연애 78% 이성 · 우정 65% 동성</td>
+      <td class="bad">미구현 — 코드가 설정을 읽지 않는다</td></tr>
+  <tr><td class="n">23</td><td>투표 시간대</td><td>점심에 최대 봉우리</td>
+      <td class="bad">미구현 발각(v2) → 밤 22시로 뒤집힘(v4)</td></tr>
+  <tr><td class="n">24</td><td>힌트 요금</td><td>누진 200~1,000 은 장벽이 높다. 현행 앱 구조로</td>
+      <td class="dim">유지 · 20 균일 + 이름 100</td></tr>
+  <tr><td class="n">25</td><td>하트 수급</td><td>활성기에는 부족하고 침체기에는 남는다</td>
+      <td class="warn">1m v2 진단 오류 → 1m v3 에서 구간별로 정정</td></tr>
+  <tr><td class="n">26</td><td>결제</td><td>18%가 결제. 헤비 과금 유저 존재</td><td class="dim">유지 · 18.0%</td></tr>
+  <tr><td class="n">27</td><td>시각 저장</td><td>UTC 저장, 표시할 때 KST 변환</td><td class="dim">유지</td></tr>
+  <tr><td class="n">28</td><td>2차 증분 배치</td><td>만든다</td>
+      <td class="bad">미실시 — 아홉 판본 내내 한 번도 안 함</td></tr>
+  <tr><td class="n">29</td><td>재현성</td><td>seed 고정. 기간은 웹앱 로그 직전 1년</td>
+      <td class="dim">유지 · <code>seed 20260803</code></td></tr>
+  <tr><td class="n">30</td><td>완료 판정</td><td>정합성·커버리지·행수·분포 게이트</td>
+      <td class="warn">12m v4 에서 기준 부족 판명 → 정밀 EDA 추가</td></tr>
 </table>
 
-<h3>B. v1 결함의 처리</h3>
+<h3>1단계 · 8/3 — 1개월 샘플 세 판본 (500명)</h3>
 <table>
-  <tr><th class="n" style="width:4%">Q</th><th style="width:16%">항목</th>
-      <th style="width:24%">2026-08-03 결정</th><th style="width:30%">이후 변경</th>
-      <th>현재 값</th></tr>
-  <tr><td class="n">7</td><td>하트 원장 불일치</td><td>재현하지 않고 전면 교정한다</td>
-      <td class="dim">—</td><td>정합성 1·2번 위반 0</td></tr>
-  <tr><td class="n">8</td><td>그 밖의 v1 결함</td><td>추천안대로 교정</td>
-      <td class="dim">—</td><td>정합성 17종 위반 0</td></tr>
-  <tr><td class="n">9</td><td><b>탐지용 이상치</b></td><td>일부러 심는다</td>
-      <td class="warn"><b>v5 — 성격이 바뀌었다.</b> 데이터 오류가 아니라
-          운영 로그의 노이즈(중복 전송)를 넣는 쪽으로 옮겼다</td>
-      <td>세션 중복 행 0.399%.
-          <span class="dim">⚠️ <code>anomalies</code> 설정은 코드가 읽지 않는다</span></td></tr>
-  <tr><td class="n">10</td><td>실유저와의 분리</td><td><code>is_synthetic</code> 로 구분하고 DB 도 분리한다</td>
-      <td class="dim">—</td><td>BigQuery 에서는 <code>_source</code> 로 구분</td></tr>
+  <tr><th style="width:9%">판본</th><th style="width:18%">항목</th><th style="width:8%">구분</th>
+      <th style="width:40%">무슨 일이었나</th><th>어떻게 됐나</th></tr>
+  <tr><td>1m v1</td><td>고립 유저 0명</td><td class="bad">결함</td>
+      <td>친구 관계가 <b>양방향</b>이라 "친구를 적게 만들 사람"으로 정해도 남들이 골라서 붙는다.
+          게이트 퍼널이 통째로 사라졌다</td>
+      <td class="good">남의 후보 풀에서도 뺀다(<code>locked_hard</code>)</td></tr>
+  <tr><td>1m v1</td><td>활동량 12배 과다</td><td class="bad">결함</td>
+      <td>세션 수가 <b>기간과 무관</b>했다. 1개월 샘플이 12개월치 활동을 압축해 담았고
+          힌트 구매자가 99.8%가 됐다</td>
+      <td class="good">기간에 비례시키고 잔존 구간별 빈도를 준다</td></tr>
+  <tr><td>1m v1</td><td>하트가 남아돈다</td><td class="bad">결함</td>
+      <td>소비/적립 12.8%. 잔액 중앙값 2,377 — 힌트 118개를 살 수 있다.
+          결제 전환이 데이터로 설명되지 않는다</td>
+      <td class="good">요금·보상 재조정</td></tr>
+  <tr><td>1m v1</td><td>인기도 멱법칙 없음</td><td class="bad">결함</td>
+      <td>후보를 무작위로만 뽑고 인기도 가중치를 안 넣었다. 18.4%(목표 45%)</td>
+      <td class="good">학급 단위 Zipf 가중치 도입</td></tr>
+  <tr><td>1m v2</td><td><b>하트 진단이 뒤집혔다</b></td><td class="warn">전환</td>
+      <td>소비율이 12.8% → 7.5%로 더 낮아졌는데, v1 은 <b>남아돌아서</b>이고
+          v2 는 <b>모자라서</b>다. 구매 시도의 37%가 잔액 부족으로 무산됐다</td>
+      <td class="good">같은 숫자가 정반대를 뜻할 수 있다는 것을 확인</td></tr>
+  <tr><td>1m v2</td><td>가입 지급 인하 제안</td><td class="bad">결함</td>
+      <td>"가입 지급 300을 낮추자"는 결론이 <b>틀렸다.</b> 가입 지급은 순수 공급이라
+          줄이면 부족이 악화된다. 분모를 깎아 지표를 좋게 보이게 하는 제안이었다</td>
+      <td class="good">1m v3 에서 구간별 분석으로 정정</td></tr>
+  <tr><td>1m v3</td><td>페르소나 도입</td><td class="dim">결정</td>
+      <td>6유형을 두되 <b>결과에 6덩어리가 또렷하면 실패</b>로 봤다.
+          혼합 86명 · 트레잇 교차 37명 · 무배정 18명으로 흐렸다</td>
+      <td class="good">6개 지표 전부 상위 10%에 6~7개 유형이 섞임</td></tr>
+  <tr><td>1m v3</td><td>확률 배수가 평균을 샌다</td><td class="bad">결함</td>
+      <td>트레잇 평균이 1.0이어도 오즈비 변환이 <b>볼록</b>해서 평균이 당겨진다.
+          열람률이 55.5% → 39.2%로 샜다</td>
+      <td class="good">보정 계수를 이분법으로 풀어 캐시(<code>pchance</code>)</td></tr>
+  <tr><td>1m v3</td><td><b>우측 절단</b></td><td class="warn">전환</td>
+      <td>열람률 41.8%가 모델 오류가 아니었다. 기간 끝 3일치는 열람 시각이 관측 창을
+          넘어가 미열람으로 기록된다. 3일을 빼면 53.9%</td>
+      <td class="good">결함이 아님. <b>실데이터에도 있는 현상</b>으로 기록</td></tr>
 </table>
 
-<h3>C. 컬럼과 텍스트</h3>
+<h3>2단계 · 8/4 — 12개월 v1 · v2 (20,000명)</h3>
 <table>
-  <tr><th class="n" style="width:4%">Q</th><th style="width:16%">항목</th>
-      <th style="width:24%">2026-08-03 결정</th><th style="width:30%">이후 변경</th>
-      <th>현재 값</th></tr>
-  <tr><td class="n">11</td><td>NULL 허용 66컬럼</td><td>추천안대로 채운다</td>
-      <td class="dim">—</td><td>342컬럼 중 340개</td></tr>
-  <tr><td class="n">12</td><td>자유 텍스트</td><td>템플릿 조합으로 만들되 닉네임은 실명처럼</td>
-      <td class="dim">—</td><td>형용사 + 명사 + 숫자</td></tr>
-  <tr><td class="n">13</td><td>금지 항목</td>
-      <td>전화번호·이메일 문자열은 만들지 않는다. 학교명은 NEIS 실명을 쓰고,
-          신고 사유의 욕설은 허용한다</td>
-      <td class="dim">—</td><td>동일</td></tr>
+  <tr><th style="width:9%">판본</th><th style="width:18%">항목</th><th style="width:8%">구분</th>
+      <th style="width:40%">무슨 일이었나</th><th>어떻게 됐나</th></tr>
+  <tr><td>12m v1</td><td>성장 곡선 미구현</td><td class="bad">결함</td>
+      <td><code>growth</code> 설정은 있는데 <b>첫 국면만</b> 읽고 나머지 넷을 버렸다.
+          12개월을 돌려도 3국면이 안 나왔다</td>
+      <td class="good">가입·활동 <b>두 갈래</b>로 건다</td></tr>
+  <tr><td>12m v1</td><td>인기도 집중 과다</td><td class="bad">결함</td>
+      <td>64.2%(목표 45%). 파라미터 미조정</td><td class="good">v2 에서 48.1%</td></tr>
+  <tr><td>12m v1</td><td>민감 질문 구분 없음</td><td class="bad">결함</td>
+      <td>신고율 1.16배(목표 2배+). 신고 대상을 균등 추첨해서
+          <code>is_sensitive</code> 가 의미를 못 가졌다</td>
+      <td class="good">v2 에서 3.4배</td></tr>
+  <tr><td>12m v1</td><td>완료율 두 측정 불일치</td><td class="bad">결함</td>
+      <td>98.6% vs 84.6%. 이탈로 줄어든 문항 수를 분모로 써서
+          1문항만 받고 나간 세션이 "완료"로 찍혔다</td>
+      <td class="good">v2 에서 0.4%p</td></tr>
+  <tr><td>12m v1</td><td>학교 순차 진입 없음</td><td class="bad">결함</td>
+      <td>설정은 있는데 코드가 안 읽어 <b>50개교가 전부 첫날</b> 열렸다</td>
+      <td class="good">v2 에서 계층별 순차</td></tr>
+  <tr><td>12m v1</td><td>복귀 코호트 없음</td><td class="bad">결함</td>
+      <td><code>reactivation_rate</code> 를 코드가 안 읽어 <b>0명</b>.
+          "한 번 떠나면 영영 안 돌아온다"는 데이터가 나왔다</td>
+      <td class="good">v2 에서 636명</td></tr>
+  <tr><td>12m v1</td><td>코호트 M1→M2 절벽</td><td class="bad">결함</td>
+      <td>26% → 4%(6.8배). 잔존 구간에 한 달과 장기 사이가 비어 있었다</td>
+      <td class="good">v2 에서 2.8배 · 30~89일 구간 신설</td></tr>
+  <tr><td>12m v1</td><td>계절성 약함</td><td class="bad">결함</td>
+      <td>0.66배(목표 0.30). 구조적 문제</td>
+      <td class="warn">v2 에서 0.58 — 부분 해결</td></tr>
+  <tr><td>12m v2</td><td>시간대·요일 패턴 없음</td><td class="bad">결함</td>
+      <td>0~23시가 전부 4.2%. <b>Q23 이 애초에 구현된 적이 없었다</b> —
+          세션 시각을 균등 추첨하고 있었다</td>
+      <td class="good">v3·v4 에서 해결</td></tr>
+  <tr><td>12m v2</td><td>해금하고 투표 0회</td><td class="bad">결함</td>
+      <td>2,704명(14.6%). 계절성 물량 모드의 부작용 —
+          세션이 1개뿐인 유저는 그 하나가 솎이면 0이 된다</td>
+      <td class="good">v3 에서 창마다 최소 1개 보장 · 의도적 비투표는 따로 설계</td></tr>
+  <tr><td>12m v2</td><td>같은 반 친구 미달</td><td class="bad">결함</td>
+      <td>14.1%(설정 25%). 학급을 정원에서 유도하며 636 → 1,208개가 되어
+          확률이 떨어졌다 — <b>한 곳을 고치니 다른 곳이 움직였다</b></td>
+      <td class="good">v3·v4 에서 0~3명 14.7%</td></tr>
 </table>
 
-<h3>D. 생성기가 없던 14개 표</h3>
+<h3>3단계 · 8/4~8/5 — 12개월 v3 · v4 · v5</h3>
 <table>
-  <tr><th class="n" style="width:4%">Q</th><th style="width:16%">항목</th>
-      <th style="width:24%">2026-08-03 결정</th><th style="width:30%">이후 변경</th>
-      <th>현재 값</th></tr>
-  <tr><td class="n">14</td><td><b>게시판 4표</b></td>
-      <td>글 40% · 댓글 70% · 글당 댓글 2~3개 · 좋아요 4개.
-          좋아요가 압도적인 글도 존재</td>
-      <td class="warn"><b>v5 — 항목이 하나 빠져 있었다.</b> 좋아요를 <b>누르는 사람</b>의
-          비율을 정하지 않아 활성 유저 95.9%가 눌렀고, "관망하는 다수"가 사라졌다</td>
-      <td><code>liker_ratio: 0.60</code> · 실측 59.6%</td></tr>
-  <tr><td class="n">15</td><td>신고·제재·차단</td><td>추천안대로</td>
-      <td class="dim">—</td><td>신고 31,068 · 제재 2,210 · 차단 747</td></tr>
-  <tr><td class="n">16</td><td>학교 정보 6표</td>
-      <td>기존 20개교 데이터로 50개교를 합성한다. NEIS 를 다시 부르지 않는다</td>
-      <td class="dim">—</td><td>50개교 전부 커버</td></tr>
-  <tr><td class="n">17</td><td>추천 거절</td><td>일정 비율이 "안 볼래"를 누른다</td>
-      <td class="dim">—</td><td>5,763건</td></tr>
-  <tr><td class="n">18</td><td>1회성 답장</td>
-      <td>힌트 없이 4% · 힌트 구매 후 20% · 신고 2%</td>
-      <td class="dim">—</td><td>전체 답장률 5.1%</td></tr>
-</table>
-
-<h3>E. 질문과 투표</h3>
-<table>
-  <tr><th class="n" style="width:4%">Q</th><th style="width:16%">항목</th>
-      <th style="width:24%">2026-08-03 결정</th><th style="width:30%">이후 변경</th>
-      <th>현재 값</th></tr>
-  <tr><td class="n">19</td><td><b>질문 구성</b></td>
-      <td>240개. 신고율을 재기 위해 외모·신체 질문도 포함한다</td>
-      <td class="warn"><b>v2 — 적용 범위를 넓혔다.</b> 합성뿐 아니라 실서비스에서도 켰다.
-          출제되지 않으면 신고율을 잴 수 없기 때문이다</td>
-      <td>240개 중 민감 15개 · 신고율 <b>3.8배</b></td></tr>
-  <tr><td class="n">20</td><td>스코프와 후보 보충</td>
-      <td>35/35/30. 후보가 모자라면 친구 전체에서 채운다</td>
-      <td class="dim">—</td><td>34.7 / 32.6 / 32.6 · 보충 18.0%</td></tr>
-  <tr><td class="n">21</td><td><b>인기도 분포</b></td><td>상위 10%가 전체 지목의 45%를 받는다</td>
-      <td class="bad"><b>v2 — 45%는 도달 불가로 판명, 49%로 상향.</b><br>
-          <b>v5 — 쏠림의 바닥이 내려가</b> <code>zipf_alpha</code> 를 0.45 → 1.05 로 재조정</td>
-      <td>실측 <b>49.8%</b> · 지니 0.662</td></tr>
-  <tr><td class="n">22</td><td><b>성별 지목 성향</b></td>
-      <td>연애 질문은 78% 이성, 우정 질문은 65% 동성</td>
-      <td class="bad"><b>미구현.</b> <code>gender_homophily</code> 를 코드가 읽지 않는다</td>
-      <td class="bad">지목이 인구 비중과 같다 — 동성 선호가 없다</td></tr>
-  <tr><td class="n">23</td><td><b>투표 시간대</b></td><td>점심에 최대 봉우리</td>
-      <td class="bad"><b>v4 — 구현하며 뒤집혔다.</b> 학생은 하교 후에 쓰므로 밤이 최고다.<br>
-          <b>v5 — 세션 병합으로</b> 대비가 5.3배에서 3.1배로 완만해졌다</td>
-      <td>최고 21시 · 최저 4시 · <b>3.1배</b></td></tr>
-</table>
-
-<h3>F. 하트 경제</h3>
-<table>
-  <tr><th class="n" style="width:4%">Q</th><th style="width:16%">항목</th>
-      <th style="width:24%">2026-08-03 결정</th><th style="width:30%">이후 변경</th>
-      <th>현재 값</th></tr>
-  <tr><td class="n">24</td><td><b>힌트 요금</b></td>
-      <td>누진 200~1,000은 진입 장벽이 높다. 현행 앱 구조로 바꾼다</td>
-      <td class="dim">—</td><td>기본 20 균일 · 이름 100</td></tr>
-  <tr><td class="n">25</td><td><b>하트 수급</b></td><td>활성기에는 부족하고 침체기에는 남는다</td>
-      <td class="warn"><b>1m v2 — 진단이 틀렸다.</b> "가입 지급을 낮추자"는 분모를 깎는
-          제안이었다. 구간별로 갈라 봐야 한다</td>
-      <td>소비율 47.9% · 잔액 중앙값 448</td></tr>
-  <tr><td class="n">26</td><td>결제</td><td>18%가 결제하고 헤비 과금 유저가 존재한다</td>
-      <td class="dim">—</td><td>18.0% · 상위 10%가 매출 70.4%</td></tr>
-</table>
-
-<h3>G. 파이프라인과 판정</h3>
-<table>
-  <tr><th class="n" style="width:4%">Q</th><th style="width:16%">항목</th>
-      <th style="width:24%">2026-08-03 결정</th><th style="width:30%">이후 변경</th>
-      <th>현재 값</th></tr>
-  <tr><td class="n">27</td><td>시각 저장</td><td>UTC 로 저장하고 표시할 때 KST 로 바꾼다</td>
-      <td class="dim">—</td><td>UTC 저장 · <b>집계 시 변환 필수</b></td></tr>
-  <tr><td class="n">28</td><td><b>2차 증분 배치</b></td><td>만든다</td>
-      <td class="bad"><b>미실시.</b> 아홉 판본을 만드는 동안 한 번도 하지 않았다</td>
-      <td class="bad">가장 큰 미이행 항목</td></tr>
-  <tr><td class="n">29</td><td>재현성</td><td>seed 를 고정한다. 기간은 웹앱 로그 직전 1년</td>
-      <td class="dim">—</td><td><code>seed 20260803</code></td></tr>
-  <tr><td class="n">30</td><td><b>완료 판정</b></td>
-      <td>정합성 · 커버리지 · 행수 · 분포 게이트를 통과하면 완료</td>
-      <td class="warn"><b>v4 — 기준이 부족했다.</b> 게이트를 모두 통과하고도
-          하루 406.8시간 투표가 남아 있었다</td>
-      <td>17종 + 9종 + <b>정밀 EDA</b></td></tr>
-</table>
-
-<h2>0-3. 30문답이 묻지 않은 것</h2>
-
-<p>위 30개는 모두 <b>무엇을 얼마나 만들 것인가</b>를 물었다.
-<b>그것이 시간 위에서 어떤 모양인가</b>는 한 번도 묻지 않았고,
-그 축들이 v4·v5 에서 결함으로 드러났다.</p>
-
-<table>
-  <tr><th style="width:22%">빠진 축</th><th style="width:38%">언제 어떻게 드러났나</th>
-      <th>어떻게 처리했나</th></tr>
-  <tr><td><b>시간 간격의 분포</b></td>
-      <td>v4 정밀 EDA. 체류시간·응답속도·열람지연 등 6종이 <b>완전 균등분포</b>였다.
-          오류가 나지 않아 검사로는 잡히지 않는다</td>
-      <td><b>v5</b> — 로그정규로 교체. 균등도 1.0 → 0.15~0.54</td></tr>
-  <tr><td><b>행동과 세션의 관계</b></td>
-      <td>v4 정밀 EDA. 투표 세션의 <b>3.84%</b> 만 접속 세션 창 안에 있었다.
-          두 표를 따로 만들었기 때문이다</td>
-      <td><b>v5</b> — 30분 규칙으로 묶어 세션을 유도. 99.99%</td></tr>
-  <tr><td><b>탈퇴 이후의 활동</b></td>
-      <td>v4 정밀 EDA. 탈퇴자의 <b>88.7%</b> 가 탈퇴 후에도 하트를 썼다.
-          탈퇴가 활동과 무관하게 찍혔다</td>
-      <td><b>v5</b> — 마지막 활동 뒤에 탈퇴를 찍는다. 9종 전부 0</td></tr>
-  <tr><td><b>하루에 가능한 활동량</b></td>
-      <td>v4 정밀 EDA. 하루 <b>406.8시간</b> 투표한 유저-일이 있었다.
-          "하루에 몇 번까지가 사람인가"는 스키마 제약으로 표현되지 않는다</td>
-      <td><b>v5</b> — 시간 예산 6시간/일. 24시간 초과 0</td></tr>
-  <tr><td><b>요일 리듬</b></td>
-      <td>v4 정밀 EDA. 변동계수 0.024 로 <b>요일 효과가 없었다</b>.
-          설정에 값은 있었으나 코드가 읽지 않았다</td>
-      <td><b>v5</b> — 구 서비스 출석 로그를 따라간다. 순위 7개 일치</td></tr>
+  <tr><th style="width:9%">판본</th><th style="width:18%">항목</th><th style="width:8%">구분</th>
+      <th style="width:40%">무슨 일이었나</th><th>어떻게 됐나</th></tr>
+  <tr><td>12m v3</td><td>감사 3건 해결</td><td class="good">해결</td>
+      <td>하루 리듬 · 비투표 유저 · 같은 반 친구</td>
+      <td class="bad">그러나 <b>접속 세션 결함으로 폐기</b></td></tr>
+  <tr><td>12m v3</td><td>접속 세션이 균등</td><td class="bad">결함</td>
+      <td>투표 세션에만 시간대를 걸었다. <code>user_session</code> 은 하루 중 아무 분이나
+          균등 추첨 — <b>"언제 앱을 여는가"를 묻는 표가 그것인데</b></td>
+      <td class="good">v4 에서 해결 · 5.3배</td></tr>
+  <tr><td>12m v4</td><td>확정 판정</td><td class="warn">전환</td>
+      <td>정합성 17종·이상치 9종·목표 지표를 <b>전부 통과</b>해 확정했다.
+          그 직후 정밀 EDA 를 돌렸다</td>
+      <td class="bad">결함 1건 · 경계 5건 발견 → 확정 철회</td></tr>
+  <tr><td>12m v4</td><td><b>하루 406.8시간 투표</b></td><td class="bad">결함</td>
+      <td>하루 세션 수에 상한이 없어 최다 <b>2,243세션</b>,
+          24시간 초과 유저-일이 1,251일(67명). 검사 26종 어디에도
+          "하루에 몇 번까지가 사람인가"를 묻는 항목이 없었다</td>
+      <td class="good">v5 시간 예산(6시간/일) · 24시간 초과 0</td></tr>
+  <tr><td>12m v4</td><td>시간 간격이 전부 균등</td><td class="bad">결함</td>
+      <td>체류시간·응답속도·열람지연 등 6종의 균등도가 <b>1.0</b>.
+          오류가 안 나고 검사도 통과하지만 분포 분석이 통째로 불가능했다</td>
+      <td class="good">v5 로그정규 · 균등도 0.15~0.54</td></tr>
+  <tr><td>12m v4</td><td>두 세션 표가 독립</td><td class="bad">결함</td>
+      <td>투표 세션의 <b>3.84%</b> 만 접속 세션 창 안에 있었다.
+          접속 1회당 투표 세션 비가 1.01 → 6.45 로 드리프트</td>
+      <td class="good">v5 30분 규칙으로 유도 · 99.99%</td></tr>
+  <tr><td>12m v4</td><td>탈퇴가 라벨일 뿐</td><td class="bad">결함</td>
+      <td>탈퇴자의 <b>88.7%</b> 가 탈퇴 후에도 하트를 썼다(128만 건).
+          탈퇴자가 오히려 투표를 더 많이 해 <b>이탈 예측이 불가능</b>했다</td>
+      <td class="good">v5 마지막 활동 뒤로 · 9종 전부 0</td></tr>
+  <tr><td>12m v4</td><td>요일 효과 없음</td><td class="bad">결함</td>
+      <td>변동계수 0.024. <code>weekend_multiplier</code> 설정은 있는데 코드가 안 읽었다</td>
+      <td class="good">v5 구 서비스 실측 반영 · 순위 7개 일치</td></tr>
+  <tr><td>12m v4</td><td>좋아요 96%</td><td class="bad">결함</td>
+      <td>누르는 사람 비율을 정한 적이 없어 활성 유저 <b>95.9%</b> 가 눌렀다.
+          "관망하는 다수"가 사라졌다</td>
+      <td class="good">v5 <code>liker_ratio: 0.60</code> · 59.6%</td></tr>
+  <tr><td>12m v4</td><td>세션 종료가 문항과 무관</td><td class="bad">결함</td>
+      <td>완료 세션의 <b>19.5%</b> 가 마지막 문항보다 먼저 끝났다.
+          세션 길이와 문항 소요시간의 상관이 0.0007</td>
+      <td class="good">v5 문항에서 유도 · 상관 0.7005</td></tr>
+  <tr><td>12m v5</td><td>하루 상한을 개수로</td><td class="warn">전환</td>
+      <td>12세션으로 잘랐더니 헤비유저가 통째로 사라져 행이 반토막(9,509만) 나고
+          지목 쏠림이 <b>39%</b> 로 주저앉았다 — 결함이 아니라 분포를 죽인 것</td>
+      <td class="good">시간 예산으로 교체 · 1억 2,370만 · 49.8%</td></tr>
+  <tr><td>12m v5</td><td>요일 지시와 원본 불일치</td><td class="warn">전환</td>
+      <td>"월→일 우하향"으로 지시받았으나 원본(구 서비스 출석 로그)은
+          <b>V자</b>였다 — 금요일 최저 · 주말 회복</td>
+      <td class="good">원본을 따랐다 · 순위 7개 일치</td></tr>
+  <tr><td>12m v5</td><td>인기도 바닥이 내려감</td><td class="warn">전환</td>
+      <td>v4 의 48.8%는 인기도가 아니라 <b>불가능한 활동 꼬리</b>가 떠받치고 있었다.
+          꼬리를 자르니 43.7%</td>
+      <td class="good"><code>zipf_alpha</code> 0.45 → 1.05 · 49.8%</td></tr>
+  <tr><td>12m v5</td><td>시간대 대비 약화</td><td class="warn">전환</td>
+      <td>세션을 30분 규칙으로 묶으니 저녁 봉우리가 낮아져 5.3배 → <b>3.1배</b></td>
+      <td class="dim">더 현실적인 모양이라 수용. 목표를 3배로 조정</td></tr>
+  <tr><td>12m v5</td><td class="warn">광고 시청시간</td><td class="bad">미해결</td>
+      <td>시간 간격 <b>7곳 중 한 곳</b>을 빠뜨렸다. 균등도 1.005</td>
+      <td class="bad">다음 판본 · 생성기 1줄</td></tr>
+  <tr><td>12m v5</td><td class="warn">BAN 이후 활동</td><td class="bad">미해결</td>
+      <td>2,693건 · 34명. 요구는 <b>탈퇴</b>였고 제재는 범위 밖이라 손대지 않았다</td>
+      <td class="bad">탈퇴와 같은 방식으로 고칠 수 있다</td></tr>
+  <tr><td>12m v5</td><td class="warn">죽은 설정 신규 발생</td><td class="bad">결함</td>
+      <td><code>votes_per_app_session</code> 을 설정에 넣고 구현은 다른 방식으로 갔다.
+          <b>앞의 아홉을 고치는 작업 안에서 같은 함정을 다시 밟았다</b></td>
+      <td class="bad">정리 대상</td></tr>
 </table>
 
 <div class="box note">
-  <h4>여기서 얻을 것</h4>
-  <p>30문답은 <b>규모 · 비율 · 구성</b>을 빠짐없이 다뤘다. 빠진 것은
-  <b>시간축의 형태</b>였다 — 얼마나 걸리는가, 무엇 안에서 일어나는가,
-  언제 끝나는가, 하루에 얼마나 가능한가.</p>
-  <p>같은 문답을 다시 설계한다면 항목마다
-  <b>"이 값의 분포는 어떤 모양인가"</b>와
-  <b>"이 행동은 무엇 안에서 일어나는가"</b>를 함께 물어야 한다.</p>
+  <h4>이 원장이 보여주는 것</h4>
+  <p><b>26건의 결함 중 11건이 "설정에 값은 있는데 코드가 안 읽는다"였다.</b>
+  학교 순차 진입 · 복귀 코호트 · 성장 곡선 · 시간대 · 요일 · 성별 성향 등이
+  모두 같은 유형이다. 전부 오류가 나지 않아 <b>데이터를 다 만들어 분석해야</b> 드러났다.</p>
+  <p>나머지 15건은 <b>시간축의 형태</b>에 몰려 있다 — 얼마나 걸리는가,
+  무엇 안에서 일어나는가, 언제 끝나는가, 하루에 얼마나 가능한가.
+  30문답은 <b>규모와 비율</b>은 빠짐없이 물었지만 이 축은 한 번도 묻지 않았다.</p>
 </div>
 
 <h2 class="pb">1. 출발점 — 왜 합성 데이터인가</h2>
