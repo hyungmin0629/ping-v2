@@ -304,6 +304,11 @@ docker run -d --name pgtest -e POSTGRES_PASSWORD=test -e POSTGRES_DB=pingv2 -p 5
 **합성 v5 가 들어 있다**(2026-08-06). 실유저와 합쳐 **1억 2,373만 행 · 8.74 GiB** —
 저장 무료 한도(10 GiB) 안이다. 실유저만 보려면 `WHERE _source = 'supabase'`.
 
+팀원 4명이 **BigQuery 관리자**로 붙어 있다(2026-08-06). 접속 방법과 팀원에게
+그대로 건넬 쿼리 규칙은 [[ops-bigquery-team-access]].
+⚠️ **키 파일(`credentials.json`)은 팀원에게 주지 않는다** — 각자 자기 Gmail 계정에
+권한이 있고, 코드에서도 `gcloud auth application-default login` 으로 붙는다.
+
 ⚠️ **증분 적재는 조용히 틀린다.** 실제로 걸린 함정 넷 —
 `_source` 없는 조인 · 컬럼 추가 후 워터마크 정지 · 지운 행의 유령 ·
 과거 시각 백필. 파이프라인을 건드리기 전에 [[ops-bigquery]] 를 읽는다.

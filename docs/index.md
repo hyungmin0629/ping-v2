@@ -143,10 +143,11 @@ _아직 없다._
 - [[withdrawal-is-terminal|탈퇴는 종점이다 — 그 뒤로 어떤 로그도 남기지 않는다]] — 세션·투표·원장을 전부 훑어 가장 늦은 것을 찾은 다음 그 뒤에 놓는다.
 - [[withdrawal-user-id|탈퇴 기록에 유저 식별자를 넣는다]] — 누가 탈퇴했는지 특정할 수 없었다. 탈퇴 사유를 유저 속성과 교차분석하는 게 원천 봉쇄됐다.
 
-## 운영 참조 <sub>`docs/ops` · 6</sub>
+## 운영 참조 <sub>`docs/ops` · 7</sub>
 
 실제로 그 작업을 할 때 필요한 값과 절차.
 
+- [[ops-bigquery-team-access|BigQuery 팀 접속 안내]] — 혼동하기 쉬운 지점이라 갈라 둔다.
 - [[ops-bigquery|BigQuery 적재]] — 다음 증설은 계산하고 시작한다. 결제가 붙어 있어 넘으면 막히지 않고 과금된다 —
 - [[ops-local-testing|혼자 시험하기 (더미 친구)]] — 투표는 친구가 5명이어야 열리고 문항마다 후보가 4명 필요하다. 창을 다섯 개 띄울 수
 - [[ops-rebuild|DB 를 처음부터 다시 만들기]] — python db/apply.py --target supabase          # DDL + migrations
@@ -201,4 +202,4 @@ _아직 없다._
 
 ---
 
-문서 147개 · `python db/wiki_index.py` 로 갱신
+문서 148개 · `python db/wiki_index.py` 로 갱신
