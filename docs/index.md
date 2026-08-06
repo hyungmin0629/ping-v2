@@ -152,7 +152,7 @@ _아직 없다._
 - [[ops-local-testing|혼자 시험하기 (더미 친구)]] — 투표는 친구가 5명이어야 열리고 문항마다 후보가 4명 필요하다. 창을 다섯 개 띄울 수
 - [[ops-rebuild|DB 를 처음부터 다시 만들기]] — python db/apply.py --target supabase          # DDL + migrations
 - [[ops-school-data|조직·학교 데이터]] — 이름은 테스트 조직이지만 급식·시간표·학사일정은 서울고등학교의 공개 데이터를 쓴다.
-- [[ops-synthetic-data|합성 데이터 만들기]] — python generator/generate.py --config synthetic-v2.yaml ...
+- [[ops-synthetic-data|합성 데이터 만들기]] — 설정 주석에 주장으로만 있던 것을 전체 규모로 확인했다 — 2만 명·12개월을 다시
 - [[ops-webapp|웹앱 (web/)]] — 프로덕션 빌드는 정상이지만 로컬에서 확인이 불가능하므로, 동적 라우트 대신
 
 ## 테이블 <sub>`docs/tables` · 40</sub>

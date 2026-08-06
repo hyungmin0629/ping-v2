@@ -254,6 +254,61 @@ BAN 코호트는 시각으로 자를 것.
 
 ---
 
+## 로컬에서 쓰려면 — 덤프를 받지 말고 직접 만든다
+
+**합성 데이터는 재현된다.** 설정에 시드가 박혀 있어(`generator/config/synthetic-v2.yaml`
+의 `meta.seed` = `20260803`) **같은 명령이면 비트 단위로 같은 CSV** 가 나온다.
+그래서 11GB 짜리 덤프를 주고받을 이유가 없다 — 저장소만 있으면 각자 만든다.
+
+**2026-08-06 에 전체 규모로 확인했다.** 다시 만든 CSV 33개를 지금 BigQuery 에
+올라가 있는 것과 sha256 으로 대조해 **전부 일치**했다. 팀원이 만든 데이터와
+BigQuery 의 데이터가 같은 것임이 보장된다.
+
+```
+python generator/generate.py --config synthetic-v2.yaml
+```
+
+**생성 14분**(실측) · CSV 11GB. 규모(2만 명·12개월·학교 50개)는 설정 파일에
+있으므로 **옵션을 줄 필요가 없다.** ⚠️ `--config` 를 빼면 옛 분포(26표)가 나온다.
+
+### PG 적재는 **선택**이다
+
+`generate.py` 는 데이터베이스를 전혀 쓰지 않는다. CSV 만 만들고 끝난다.
+
+| 하려는 것 | 로컬 PG |
+|---|---|
+| BigQuery 에서 SQL·분석 | **불필요** |
+| CSV 를 pandas 로 읽어 분석 | **불필요** |
+| 로컬에서 SQL 연습 (쿼리 비용 0) | 필요 |
+| 정합성 검사 17종 돌려보기 | 필요 |
+
+### PG 에 넣을 때만 — 선행 조건 셋
+
+```
+docker run -d --name pgtest -e POSTGRES_PASSWORD=test \
+  -e POSTGRES_DB=pingv2 -p 5433:5432 postgres:16   # 없을 때만. 있으면 docker start pgtest
+python db/apply.py --target local                   # 스키마. 빈 DB 에는 부을 표가 없다
+python generator/load.py --truncate
+```
+
+**`.env` 는 필요 없다.** 코드에 기본값(`localhost:5433`·`pingv2`·`postgres`/`test`)이
+있어 위 `docker run` 그대로면 붙는다. 계정이 필요한 것은 Supabase·BigQuery 쪽뿐이다.
+
+⚠️ **CSV 를 손으로 `\copy` 하지 않는다.** `load.py` 는 COPY 만 하는 것이 아니다 —
+부모→자식 FK 순서로 넣고, 적재 중 인덱스를 뗐다 붙이고, 끝나면 둘을 이어서 돌린다.
+
+| | 건너뛰면 |
+|---|---|
+| `95_resync_sequences.sql` | 이후 가입이 **PK 충돌**로 실패한다 |
+| `96_backfill_updated_at.sql` | 12개월치가 **적재한 날 하루로 뭉친다** |
+
+**둘 다 오류 없이 조용히 틀린다.**
+
+디스크는 CSV 11GB + DB 20GB 로 **약 31GB** 가 필요하다. 적재까지 끝냈으면
+CSV 는 지워도 된다 — 언제든 같은 것을 다시 만들 수 있다.
+
+---
+
 ## ⚠️ 팀원에게 주지 않는 것
 
 - **`data/personas.json`** — 합성 데이터의 **정답지**(페르소나 라벨)다.
