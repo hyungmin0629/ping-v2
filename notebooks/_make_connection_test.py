@@ -81,13 +81,37 @@ md("""
 **여기서 걸러야 할 것이 있다.** 아래가 `서비스 계정` 으로 나오면 누군가에게 받은
 **키 파일을 쓰고 있다는 뜻**이다. 그러면 모든 쿼리가 그 계정이 한 것으로 기록돼
 누가 무엇을 했는지 사라진다. `사용자 계정` 이 나와야 정상이다.
+
+> ⚠️ **VS Code 는 프로젝트의 `.env` 를 자동으로 읽어 노트북 환경에 넣는다.**
+> 이 저장소의 `.env` 에는 적재용 서비스 계정 키를 가리키는
+> `GOOGLE_APPLICATION_CREDENTIALS` 가 들어 있어서, 그대로 두면 **본인 계정 대신
+> 그 키가 잡힌다.** 아래 셀이 그 변수를 이 노트북 안에서만 치우고 시작한다
+> (`.env` 파일 자체는 건드리지 않는다 — 적재 파이프라인은 그 값이 필요하다).
 """)
 
 code("""
-creds, detected_project = google.auth.default()
-kind = type(creds).__module__
+import os
 
-if "service_account" in kind:
+# 분석은 '내 계정'으로 한다. VS Code 가 .env 에서 넣어준 키 경로를 치운다.
+# 이 노트북 안에서만 유효하고, .env 파일과 적재 파이프라인에는 영향이 없다.
+dropped = os.environ.pop("GOOGLE_APPLICATION_CREDENTIALS", None)
+if dropped:
+    print(f"[i] 환경변수에 키 경로가 있어 치웠다: {dropped}")
+    print("    (.env 파일은 그대로다. 적재 파이프라인은 계속 그 키를 쓴다)")
+    print()
+
+try:
+    creds, detected_project = google.auth.default()
+except Exception as e:
+    print("[!] 자격증명을 찾지 못했다.")
+    print(f"    {type(e).__name__}: {e}")
+    print()
+    print("    터미널에서 아래 두 줄을 실행하고 커널을 다시 시작한다:")
+    print("      gcloud auth application-default login")
+    print("      gcloud auth application-default set-quota-project ping-v2-503916")
+    raise SystemExit
+
+if "service_account" in type(creds).__module__:
     print("[!] 서비스 계정 (키 파일)")
     print("    ", getattr(creds, "service_account_email", "?"))
     print()
@@ -272,6 +296,7 @@ md("""
 | `gcloud` 를 못 찾음 | 설치 후 터미널을 **새로 열어야** 한다 |
 | `NotFound: Dataset ... raw` | 리전이 다르다. `location="asia-northeast3"` 인지 확인 |
 | 위 1번이 `서비스 계정` 으로 나옴 | 키 파일을 쓰고 있다. ②③ 을 실행하고 커널 재시작 |
+| `File ./credentials.json was not found` | VS Code 가 `.env` 에서 넣은 키 경로인데 그 파일이 없다. **1번 셀을 먼저 실행**하면 치워진다 |
 | `to_dataframe()` 에서 dtype 오류 | `pip install db-dtypes` |
 """)
 

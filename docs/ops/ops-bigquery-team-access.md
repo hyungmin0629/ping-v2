@@ -100,6 +100,31 @@ df = bq.query("""
 > ⚠️ 이 저장소의 `pipeline/` 스크립트는 다르다. 그쪽은 Airflow 가 무인으로 돌아야
 > 해서 서비스 계정 키를 쓴다. **분석에는 그 경로를 쓰지 않는다.**
 
+### ⚠️ VS Code 에서 노트북을 열면 `.env` 가 인증을 가로챈다
+
+**VS Code 는 프로젝트 폴더의 `.env` 를 자동으로 읽어 노트북 환경에 넣는다**
+(`python.envFile` 의 기본값이 `${workspaceFolder}/.env` 다). 그런데 이 저장소의
+`.env` 에는 적재용 키를 가리키는 줄이 있다.
+
+```
+GOOGLE_APPLICATION_CREDENTIALS=./credentials.json
+```
+
+`google.auth.default()` 는 **이 환경변수를 본인 계정보다 먼저** 본다. 그래서
+인증을 제대로 해뒀어도 **서비스 계정으로 붙어 버린다.** 키를 안 받은 팀원은
+더 나쁘다 — `File ./credentials.json was not found` 라는 엉뚱한 오류가 난다.
+
+**해결은 노트북 안에서 그 변수만 치우는 것이다.** `.env` 파일은 건드리지 않는다
+— 적재 파이프라인에는 그 값이 필요하다.
+
+```python
+import os
+os.environ.pop("GOOGLE_APPLICATION_CREDENTIALS", None)
+```
+
+`00-bigquery-connection-test.ipynb` 의 1번 셀이 이미 이렇게 한다.
+**직접 만든 노트북에서는 맨 위에 이 두 줄을 넣는다.**
+
 ---
 
 ## 3. Looker Studio · BI 도구
