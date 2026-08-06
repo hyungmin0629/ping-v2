@@ -17,6 +17,15 @@ python-dotenv==1.2.2        # .env 읽기
 PyYAML==6.0.1               # 합성 데이터 분포 파라미터, 적재 매니페스트
 google-cloud-bigquery==3.27.0   # P4 BigQuery 적재
 
+# 분석 (2026-08-06 추가) — 합성 v5 가 BigQuery 에 올라가 분석 단계로 들어갔다.
+# notebooks/ 의 노트북이 이것들을 쓴다. 적재 파이프라인은 안 쓰므로,
+# Airflow 컨테이너에는 넣지 않는다(airflow/requirements.txt 는 그대로).
+pandas==3.0.5                        # 쿼리 결과를 데이터프레임으로
+db-dtypes==1.7.1                     # to_dataframe() 의 DATE·NUMERIC 변환에 필요
+google-cloud-bigquery-storage==2.39.0  # to_dataframe() 을 빠르게 받는 경로
+matplotlib==3.11.1                   # 그래프
+ipykernel==7.3.0                     # VS Code·주피터에서 이 환경을 커널로 쓰기 위해
+
 
 # ---------------------------------------------------------------------
 # 앞으로 단계별로 추가될 것 (지금은 설치하지 않는다)
@@ -29,8 +38,8 @@ google-cloud-bigquery==3.27.0   # P4 BigQuery 적재
 #   google-cloud-storage, pyarrow — GCS 를 경유하지 않고 JSON 으로 바로 올린다.
 #   이 규모(실유저 3.5만 행)에서는 중간 저장소가 이득 없이 설정만 늘린다.
 #
-# 데이터 분석이 필요해지면:
-#   pandas, numpy
+# (데이터 분석용 pandas 는 2026-08-06 에 위로 옮겼다. numpy 는 pandas 가
+#  끌고 오므로 따로 적지 않는다.)
 #
 # ⚠️ Airflow 는 여기 넣지 않는다. 의존성 충돌이 잦아 Docker 로 따로 띄우고
 #    airflow/requirements.txt 를 쓴다.
