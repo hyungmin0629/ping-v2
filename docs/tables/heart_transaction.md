@@ -37,7 +37,7 @@ tags: [테이블, 하트]
 
 **UNIQUE** — `hint_purchase_id · 단, (hint_purchase_id IS NOT NULL)` · `purchase_id · 단, (purchase_id IS NOT NULL)` · `ad_impression_id · 단, (ad_impression_id IS NOT NULL)`
 
-## 얽힌 결정 8개
+## 얽힌 결정 9개
 
 - [[client-write-minimal|클라이언트에 쓰기 권한을 거의 주지 않는다]]
 - [[drop-admin-user|admin_user 를 없애고 app_user.is_admin 하나로 접는다]]
@@ -45,6 +45,7 @@ tags: [테이블, 하트]
 - [[heart-balance-after|모든 하트 증감에 `balance_after`를 기록]]
 - [[heart-economy-rebalance|하트 경제를 다시 잡는다 — v1 실측을 버린다]]
 - [[heart-unify-point|하트와 포인트를 하나로 통합]]
+- [[partition-ordered-extract|파티션 테이블로 부을 때는 파티션 컬럼 순서로 꺼낸다]]
 - [[remove-circular-fk|순환 FK를 제거하는 방향으로 스키마 정리]]
 - [[signup-single-rpc|가입은 RPC 하나로만 한다]]
 

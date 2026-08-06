@@ -2,7 +2,7 @@
 title: vote_candidate
 domain: 질문과 투표
 kind: activity
-rows: 2880
+rows: 2920
 tags: [테이블, 질문과 투표]
 ---
 
@@ -11,7 +11,7 @@ tags: [테이블, 질문과 투표]
 > 생성물이다. `python db/wiki_tables.py` 가 DDL·결정·검사·정책에서 모아 만든다.
 > **손으로 고치지 않는다** — 고칠 것이 있으면 원본을 고친다.
 
-**질문과 투표** · 활동 — 사람이 쓰면 쌓인다 · 실데이터 **2,880행**
+**질문과 투표** · 활동 — 사람이 쓰면 쌓인다 · 실데이터 **2,920행**
 
 ## 왜 이렇게 생겼나
 
@@ -31,12 +31,13 @@ tags: [테이블, 질문과 투표]
 
 **UNIQUE** — `vote_item_id, shuffle_round, slot` · `vote_item_id · 단, is_chosen`
 
-## 얽힌 결정 7개
+## 얽힌 결정 8개
 
 - [[backfill-updated-at|대량 적재 후 `updated_at` 을 각 행의 원래 시각으로 되돌린다]]
 - [[bulk-load-batch-rows|합성 대량 적재는 배치를 20만 행으로 키운다]]
 - [[candidate-rows-kept|후보 4명을 행으로 저장하고 셔플 전후를 모두 남긴다]]
 - [[generator-emits-updated-at|`updated_at` 을 생성기가 직접 싣는다 — 백필 UPDATE 가 3시간을 먹었다]]
+- [[partition-ordered-extract|파티션 테이블로 부을 때는 파티션 컬럼 순서로 꺼낸다]]
 - [[remove-circular-fk|순환 FK를 제거하는 방향으로 스키마 정리]]
 - [[row-cap-to-query-cap|행수 상한을 버리고 쿼리 하드캡으로 바꾼다]]
 - [[watermark-updated-at|증분 워터마크를 `updated_at` 하나로 통일한다]]

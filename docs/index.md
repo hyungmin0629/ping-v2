@@ -55,7 +55,7 @@ API 스펙 등 바깥에서 온 문서.
 
 _아직 없다._
 
-## 결정 <sub>`docs/decisions` · 82</sub>
+## 결정 <sub>`docs/decisions` · 83</sub>
 
 왜 그렇게 했는지. 하나가 한 노드다.
 
@@ -108,6 +108,7 @@ _아직 없다._
 - [[open-named-board|자유게시판을 연다 — 글도 댓글도 닉네임으로]] — 쓰지 않고 nullable 로 바꿨다(마이그레이션 005).
 - [[org-borrows-school-info|테스트 조직은 이름을 유지하고 실제 학교의 정보를 빌려 쓴다]] — 급식·시간표·학사일정은 서울고등학교(표준학교코드 7010083)의 공개 데이터를 쓴다.
 - [[pad-candidates-keep-scope|후보가 모자라면 스코프를 낮추지 않고 다른 친구로 채운다]] — 다른 사람으로 빈 자리를 채운다. 채운 인원 수는 vote_item.padded_count 에
+- [[partition-ordered-extract|파티션 테이블로 부을 때는 파티션 컬럼 순서로 꺼낸다]] — 파티션이 걸린 표(tables.yaml 의 incremental, 파티션은 updated_at)에만 해당한다.
 - [[popularity-floor-is-activity|인기도 45%는 도달할 수 없다 — 바닥은 활동 불균형이다]] — 45%는 파라미터로 도달할 수 없다는 것이 실측으로 드러났다.
 - [[profile-edit-rpc|프로필 수정도 RPC 하나로 — 직접 UPDATE 권한 회수]] — 가입은 complete_onboarding() 이 닉네임 2~20자, 성별 필수, 학급 존재를
 - [[purge-synthetic-data|합성 데이터를 전부 지운다 — 낡아서]] — Supabase 는 손대지 않았다. 애초에 합성이 0행이었다 — 더미 친구는 진작에 정리됐다.
@@ -146,7 +147,7 @@ _아직 없다._
 
 실제로 그 작업을 할 때 필요한 값과 절차.
 
-- [[ops-bigquery|BigQuery 적재]] — 다만 결제가 붙어 있으면 한도를 넘을 때 막히지 않고 과금된다. 예산 알림을 걸어둔다.
+- [[ops-bigquery|BigQuery 적재]] — 다음 증설은 계산하고 시작한다. 결제가 붙어 있어 넘으면 막히지 않고 과금된다 —
 - [[ops-local-testing|혼자 시험하기 (더미 친구)]] — 투표는 친구가 5명이어야 열리고 문항마다 후보가 4명 필요하다. 창을 다섯 개 띄울 수
 - [[ops-rebuild|DB 를 처음부터 다시 만들기]] — python db/apply.py --target supabase          # DDL + migrations
 - [[ops-school-data|조직·학교 데이터]] — 이름은 테스트 조직이지만 급식·시간표·학사일정은 서울고등학교의 공개 데이터를 쓴다.
@@ -200,4 +201,4 @@ _아직 없다._
 
 ---
 
-문서 146개 · `python db/wiki_index.py` 로 갱신
+문서 147개 · `python db/wiki_index.py` 로 갱신

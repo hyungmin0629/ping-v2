@@ -36,9 +36,10 @@ tags: [테이블, 질문과 투표]
 
 **이 표를 참조하는 표** — [[hint_purchase]]
 
-## 얽힌 결정 3개
+## 얽힌 결정 4개
 
 - [[one-time-reply|1회성 답장을 연다 — 차단 화면 없이]]
+- [[partition-ordered-extract|파티션 테이블로 부을 때는 파티션 컬럼 순서로 꺼낸다]]
 - [[voter-identity-view-only|투표자 신원은 뷰로만 노출한다]]
 - [[watermark-updated-at|증분 워터마크를 `updated_at` 하나로 통일한다]]
 

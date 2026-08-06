@@ -2,7 +2,7 @@
 title: vote_item
 domain: 질문과 투표
 kind: activity
-rows: 700
+rows: 710
 tags: [테이블, 질문과 투표]
 ---
 
@@ -11,7 +11,7 @@ tags: [테이블, 질문과 투표]
 > 생성물이다. `python db/wiki_tables.py` 가 DDL·결정·검사·정책에서 모아 만든다.
 > **손으로 고치지 않는다** — 고칠 것이 있으면 원본을 고친다.
 
-**질문과 투표** · 활동 — 사람이 쓰면 쌓인다 · 실데이터 **700행**
+**질문과 투표** · 활동 — 사람이 쓰면 쌓인다 · 실데이터 **710행**
 
 ## 왜 이렇게 생겼나
 
@@ -37,7 +37,7 @@ tags: [테이블, 질문과 투표]
 
 **이 표를 참조하는 표** — [[heart_transaction]] · [[vote_candidate]] · [[vote_received]] · [[vote_shuffle]]
 
-## 얽힌 결정 10개
+## 얽힌 결정 11개
 
 - [[backfill-updated-at|대량 적재 후 `updated_at` 을 각 행의 원래 시각으로 되돌린다]]
 - [[expired-session-status|중도 이탈 세션은 EXPIRED 로 적는다 — 완료율이 98.6%로 보이던 이유]]
@@ -46,6 +46,7 @@ tags: [테이블, 질문과 투표]
 - [[local-db-via-apply|로컬 DB 는 `apply.py` 로만 만든다]]
 - [[lower-scope-when-short|후보가 4명이 안 되면 스코프를 낮추고, 그래도 안 되면 질문을 내지 않는다]]
 - [[pad-candidates-keep-scope|후보가 모자라면 스코프를 낮추지 않고 다른 친구로 채운다]]
+- [[partition-ordered-extract|파티션 테이블로 부을 때는 파티션 컬럼 순서로 꺼낸다]]
 - [[purge-synthetic-data|합성 데이터를 전부 지운다 — 낡아서]]
 - [[remove-circular-fk|순환 FK를 제거하는 방향으로 스키마 정리]]
 - [[session-bounded-actions|유저의 직접 행동은 접속 세션 안에서만 일어난다 — v5]]

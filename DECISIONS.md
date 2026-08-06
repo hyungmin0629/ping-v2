@@ -108,6 +108,7 @@ DDL과 스크립트가 진실이다.
 - `2026-08-04` [[row-cap-to-query-cap|행수 상한을 버리고 쿼리 하드캡으로 바꾼다]]
 - `2026-08-04` [[generator-emits-updated-at|`updated_at` 을 생성기가 직접 싣는다]]
 - `2026-08-06` [[bulk-load-batch-rows|합성 대량 적재는 배치를 20만 행으로 키운다]]
+- `2026-08-06` [[partition-ordered-extract|파티션 테이블로 부을 때는 파티션 컬럼 순서로 꺼낸다]]
 
 ## 인프라
 
