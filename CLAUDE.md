@@ -275,7 +275,7 @@ DELETE/UPDATE 가 있으면 실패한다. 새 RPC 를 쓸 때 `WHERE true` 를 �
 
 | 용도 | 위치 | 비고 |
 |---|---|---|
-| 합성 데이터 DB | 로컬 Docker `pgtest` (포트 5433) | **지금 없다.** 만들 때 `postgres:16`, DB `pingv2`, 계정 `postgres`/`test` |
+| 합성 데이터 DB | 로컬 Docker `pgtest` (포트 5433) | **v5 가 들어 있다**(1억 2,370만 행). 평소 정지 상태라 `docker start pgtest` 로 깨운다 |
 | 실유저 DB | Supabase | 구축·운영 중. 접속은 Session pooler 로만 |
 | 구 서비스 분석 DB | Docker `mysql` (포트 3307) | `final`/`hackle`. **읽기만** |
 

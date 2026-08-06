@@ -107,6 +107,7 @@ DDL과 스크립트가 진실이다.
 - `2026-08-03` ~~[[row-guardrail-measured|행수 가드레일을 실측으로 다시 잡는다]]~~ → [[row-cap-to-query-cap]]
 - `2026-08-04` [[row-cap-to-query-cap|행수 상한을 버리고 쿼리 하드캡으로 바꾼다]]
 - `2026-08-04` [[generator-emits-updated-at|`updated_at` 을 생성기가 직접 싣는다]]
+- `2026-08-06` [[bulk-load-batch-rows|합성 대량 적재는 배치를 20만 행으로 키운다]]
 
 ## 인프라
 

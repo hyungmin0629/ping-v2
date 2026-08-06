@@ -30,8 +30,9 @@ tags: [테이블, 유저]
 | `ended_at` | timestamptz |  |  |
 | `updated_at` | timestamptz | NOT NULL |  |
 
-## 얽힌 결정 3개
+## 얽힌 결정 4개
 
+- [[bulk-load-batch-rows|합성 대량 적재는 배치를 20만 행으로 키운다]]
 - [[daily-rhythm-night-peak|하루 리듬을 붙인다 — 최대 봉우리는 점심이 아니라 밤 22시다]]
 - [[generator-emits-updated-at|`updated_at` 을 생성기가 직접 싣는다 — 백필 UPDATE 가 3시간을 먹었다]]
 - [[session-bounded-actions|유저의 직접 행동은 접속 세션 안에서만 일어난다 — v5]]

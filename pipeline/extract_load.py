@@ -39,6 +39,12 @@ ROOT = Path(__file__).resolve().parent.parent
 MANIFEST = Path(__file__).resolve().parent / "tables.yaml"
 
 # 한 번에 BigQuery 로 올리는 행 수. 786만 행을 한 덩어리로 만들면 메모리가 터진다.
+#
+# `--batch-rows` 로 키울 수 있다. 키우는 이유는 속도가 아니라 **적재 작업 수**다 —
+# BigQuery 는 **테이블당 하루 1,500건**까지만 받는데, 합성 1억 2,370만 행을
+# 5만씩 끊으면 vote_candidate 하나가 1,342건이다. 한 번 실패하면 그날은 다시
+# 못 돌린다. 20만으로 키우면 336건이라 재시도 여유가 생긴다.
+# 대신 한 덩어리가 통째로 메모리에 올라가므로 무한정 키우지는 않는다.
 BATCH_ROWS = 50_000
 
 STATE_TABLE = "_load_state"
@@ -481,6 +487,8 @@ def load_table(
 
 # ---------------------------------------------------------------------
 def main() -> int:
+    global BATCH_ROWS
+
     try:
         sys.stdout.reconfigure(encoding="utf-8")
     except AttributeError:
@@ -493,7 +501,13 @@ def main() -> int:
     ap.add_argument("--dry-run", action="store_true", help="BigQuery 에 쓰지 않고 대상만 보여준다")
     ap.add_argument("--no-mark-deleted", action="store_true",
                     help="원천에서 사라진 행에 _deleted_at 을 찍지 않는다")
+    ap.add_argument("--batch-rows", type=int, default=BATCH_ROWS,
+                    help=f"한 적재 작업에 올리는 행 수 (기본 {BATCH_ROWS:,})")
     args = ap.parse_args()
+
+    if args.batch_rows < 1:
+        sys.exit("--batch-rows 는 1 이상이어야 합니다")
+    BATCH_ROWS = args.batch_rows
 
     load_dotenv(ROOT / ".env")
     plan = load_manifest()

@@ -55,7 +55,7 @@ API 스펙 등 바깥에서 온 문서.
 
 _아직 없다._
 
-## 결정 <sub>`docs/decisions` · 81</sub>
+## 결정 <sub>`docs/decisions` · 82</sub>
 
 왜 그렇게 했는지. 하나가 한 노드다.
 
@@ -69,6 +69,7 @@ _아직 없다._
 - [[bigquery-direct-no-gcs|BigQuery 에 GCS 를 경유하지 않고 직접 올린다]] — . GCS_BUCKET 은 비워 둔다.
 - [[bigquery-source-column|실유저와 합성 데이터를 같은 BigQuery 테이블에 `_source` 로 섞는다]] — 테이블 하나다. 적재할 때 _source 컬럼을 붙이고, 키를 (_source, id) 로 쓴다.
 - [[board-school-scope|게시판 범위는 학교, 카테고리는 하나]] — 끌어온다. 카테고리는 시드에 5개가 있지만 자유게시판 하나만 연다.
+- [[bulk-load-batch-rows|합성 대량 적재는 배치를 20만 행으로 키운다]] — 합성 데이터(--source local) 전량 적재에서만 20만을 쓴다.
 - [[candidate-rows-kept|후보 4명을 행으로 저장하고 셔플 전후를 모두 남긴다]] — 또 "어떤 후보였을 때 셔플을 눌렀는가"는 광고 수익과 직결되는 분석인데 데이터가 없으면 못 본다.
 - [[class-size-for-class-scope|같은 반 친구는 비율이 아니라 **수**가 기준이다 — 4명이 있어야 투표가 된다]] — 상한 35), 같은 반에서 친구를 고르는 비율도 올린다(same_class_ratio
 - [[client-write-minimal|클라이언트에 쓰기 권한을 거의 주지 않는다]] — 클라이언트가 직접 INSERT/UPDATE 하지 못하게 막는다. 나중에 RPC 함수로 처리한다.
@@ -199,4 +200,4 @@ _아직 없다._
 
 ---
 
-문서 145개 · `python db/wiki_index.py` 로 갱신
+문서 146개 · `python db/wiki_index.py` 로 갱신
