@@ -326,7 +326,7 @@ docker run -d --name pgtest -e POSTGRES_PASSWORD=test -e POSTGRES_DB=pingv2 -p 5
 마이그레이션이 들어간 뒤라 그 데이터로 분석하면 틀린 답이 나온다.
 보관 가치가 0이 아니라 마이너스였다([[purge-synthetic-data]]).
 
-그 뒤 생성기를 고쳐 다시 만들었고, **2026-08-05 현재 v4** 다.
+그 뒤 생성기를 고쳐 다시 만들었다.
 
 | | |
 |---|---|
@@ -337,6 +337,7 @@ docker run -d --name pgtest -e POSTGRES_PASSWORD=test -e POSTGRES_DB=pingv2 -p 5
 **2026-08-05 현재 v5 다** — 20,000명 · 12개월 · **1억 2,370만 행**.
 정합성 17종 · 이상치 9종 위반 0, 목표 지표 전부 달성
 ([검수 리포트](EDA-final-12m-v5.pdf) · 23쪽).
+**2026-08-06 에 BigQuery `raw` 로 전량 올렸다** — 40개 표 대조 일치.
 
 v4 를 같은 날 확정했다가 **정밀 EDA 에서 결함 1건 · 경계 5건**이 나와 v5 를 만들었다.
 행이 35% 적은 것은 **줄어든 것이 아니라 없어야 했던 것이 빠진 것**이다 —
@@ -607,8 +608,9 @@ git show pre-wiki:DECISIONS.md > /tmp/before.md   # 그때 파일을 꺼내 본�
 
 - ⚠️ **생성물은 손으로 고치지 않는다.** 고쳐도 다음 생성 때 날아간다.
   `docs/index.md`(`wiki_index.py`) · `docs/tables/`(`wiki_tables.py`) ·
-  `docs/erd.md`·`erd.json`(`erd.py`). 고칠 것이 있으면 **원본**을 고친다 —
-  표 설명은 DDL 주석, 빈 표 사유는 `db/erd.py` 의 `EMPTY_REASON`.
+  `docs/erd.md`·`erd.json`(`erd.py`) · `notebooks/*.ipynb`(`notebooks/_make_*.py`).
+  고칠 것이 있으면 **원본**을 고친다 — 표 설명은 DDL 주석,
+  빈 표 사유는 `db/erd.py` 의 `EMPTY_REASON`.
 - 문서 간 참조는 이중 대괄호 위키 링크 형식. **옵시디언 볼트로 열린다** —
   `docs/decisions/` 와 `docs/ops/` 가 노드고, frontmatter 가 속성이다.
   참조는 되도록 **개별 노드**를 가리킨다. 색인만 가리키면 그래프가 별 모양이 된다.
