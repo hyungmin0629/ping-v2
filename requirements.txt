@@ -25,6 +25,7 @@ db-dtypes==1.7.1                     # to_dataframe() 의 DATE·NUMERIC 변환�
 google-cloud-bigquery-storage==2.39.0  # to_dataframe() 을 빠르게 받는 경로
 matplotlib==3.11.1                   # 그래프
 ipykernel==7.3.0                     # VS Code·주피터에서 이 환경을 커널로 쓰기 위해
+nbformat==5.10.4                     # notebooks/_make_*.py 가 .ipynb 를 만들 때
 
 
 # ---------------------------------------------------------------------

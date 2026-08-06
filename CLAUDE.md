@@ -80,7 +80,34 @@ A 갈래(로컬 합성 데이터)와 계정이 필요한 B 갈래를 나눠 적�
 **W8 학교 정보도 일부다** — 급식·학사일정은 붙였고 **시간표·공지 화면이 없다.**
 
 
+## 파이썬 환경 — `.venv` 하나만 쓴다
+
+**아래 모든 명령은 `.venv` 에서 돈다**(2026-08-06 확정). `requirements.txt` 가
+진실이고 버전은 전부 핀으로 고정돼 있다.
+
+```
+python -m venv .venv               # 없을 때만
+.venv\Scripts\python.exe -m pip install -r requirements.txt
+```
+
+명령은 `.venv\Scripts\python.exe <스크립트>` 로 부른다(Git Bash 에서는
+`./.venv/Scripts/python.exe`). 활성화해 뒀다면 그냥 `python` 이어도 된다.
+
+⚠️ **그냥 `python` 을 치면 anaconda base 가 잡힌다.** 거기에도 같은 패키지가
+깔려 있어 **오류 없이 돌아가는데 버전이 다르다**(base 는 bigquery 3.31·pandas 2.2,
+`.venv` 는 3.27·3.0). 2026-08-06 까지 실제로 두 환경이 섞여 있었다.
+"내 PC 에선 됐는데"가 나오는 전형적인 경로다.
+
+**패키지를 새로 쓰면 `requirements.txt` 에 핀으로 박는다.** 안 박으면 다음 사람의
+`.venv` 에 없다 — `nbformat` 이 실제로 그랬다(base 에만 있어서 안 보였다).
+쓰지 않는 패키지는 적지 않는다는 원칙은 그대로다.
+
+⚠️ **Airflow 는 여기 넣지 않는다.** 의존성 충돌이 잦아 Docker 로 따로 띄우고
+`airflow/requirements.txt` 를 쓴다.
+
 ## 스크립트
+
+**전부 `.venv` 로 실행한다**(위 절 참조. 아래 표는 `python` 으로 줄여 적는다).
 
 | 명령 | 하는 일 |
 |---|---|
