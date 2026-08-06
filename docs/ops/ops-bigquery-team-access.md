@@ -55,6 +55,10 @@ tags: [운영, 참조, 팀]
 
 ## 2. 파이썬 · 주피터에서 — 키 대신 본인 계정 인증
 
+> **`notebooks/00-bigquery-connection-test.ipynb` 를 열어 위에서 아래로 실행하면
+> 아래 내용이 그대로 확인된다.** 인증이 됐는지, **키 파일을 쓰고 있는 건 아닌지**,
+> 쿼리가 도는지까지 스스로 진단한다. 전부 돌려도 0.19 GiB 다.
+
 각자 자기 PC 에서 **한 번만** 하면 된다.
 
 **① gcloud CLI 설치** — <https://cloud.google.com/sdk/docs/install>
