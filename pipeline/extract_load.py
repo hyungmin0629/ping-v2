@@ -452,6 +452,18 @@ def load_table(
         # 첫 적재이거나 full 이다. 스냅샷 시각까지 전부 가져온다.
         sql = f'SELECT {", ".join(chr(34) + c + chr(34) for c in colnames)} FROM public."{table}"'
         params = None
+        # ⚠️ 파티션 컬럼 순서로 꺼낸다. 성능이 아니라 **한도** 때문이다.
+        #
+        # BigQuery 는 파티션 테이블 하나에 **하루 4,000회**의 파티션 수정만 받는다.
+        # 적재 작업 하나가 N개 파티션에 걸치면 N회를 먹는다. 저장 순서대로 꺼내면
+        # 20만 행 한 덩어리가 30일치에 흩어져 작업당 30회씩 나가고, 6,708만 행짜리
+        # vote_candidate 는 131건 만에 한도가 찬다 — 2026-08-06 에 실제로 막혔다.
+        #
+        # 파티션 컬럼으로 정렬해 꺼내면 한 덩어리가 하루치 안에 들어가 1~2회로 떨어진다.
+        # (일 20만 행 규모라 20만 배치와 거의 일치한다.) `updated_at` 에는
+        # 인덱스가 있어 정렬 비용도 들지 않는다.
+        if mode == "incremental":
+            sql += f' ORDER BY "{spec["watermark"]}"'
 
     # 추출은 서버 커서로 흘려 읽는다(테이블마다 새로 연다).
     with conn.cursor(name=f"x_{table}") as cur:
@@ -497,6 +509,9 @@ def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--source", choices=["supabase", "local"], required=True)
     ap.add_argument("--table", help="이 테이블 하나만")
+    ap.add_argument("--exclude", default="",
+                    help="이 테이블은 빼고 (쉼표로 여러 개). 한도에 걸린 표를 "
+                         "건너뛰고 나머지를 마저 올릴 때 쓴다")
     ap.add_argument("--full-refresh", action="store_true", help="워터마크를 무시하고 처음부터")
     ap.add_argument("--dry-run", action="store_true", help="BigQuery 에 쓰지 않고 대상만 보여준다")
     ap.add_argument("--no-mark-deleted", action="store_true",
@@ -516,6 +531,14 @@ def main() -> int:
         if args.table not in plan:
             sys.exit(f"{args.table} 은 tables.yaml 에 없습니다")
         plan = {args.table: plan[args.table]}
+
+    skip = {t.strip() for t in args.exclude.split(",") if t.strip()}
+    unknown = skip - set(plan)
+    if unknown:
+        sys.exit(f"--exclude 에 없는 테이블: {', '.join(sorted(unknown))}")
+    if skip:
+        plan = {k: v for k, v in plan.items() if k not in skip}
+        print(f"  건너뜀  {', '.join(sorted(skip))}")
 
     if args.dry_run:
         for name, spec in plan.items():
