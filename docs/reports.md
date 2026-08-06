@@ -41,8 +41,9 @@ HTML 이 원본이고 PDF 는 산출물이다. 고칠 때는 **HTML 을 고치�
 
 | 리포트 | 무엇을 담았나 |
 |---|---|
+| [종합 보고서](PROJECT-REPORT.pdf) **입문용** | **프로젝트를 모르는 사람에게 처음부터 끝까지.** 24쪽 · 12장.<br>구 서비스에서 발견한 결함 → 스키마 → 웹앱(왜 만들었나) → 파이프라인 → 합성 데이터 → 위키화의 명분 → 실패 기록 → 남은 일 → 용어. **처음 온 사람에게 이걸 먼저 준다** |
 | [파이프라인 전체 그림](pipeline-overview.pdf) | 저장소 셋(Supabase · 로컬 · BigQuery)이 어떻게 갈라지고 만나는가. **id 충돌 함정** |
-| [프로젝트 여정](PROJECT-JOURNEY.pdf) | 전체 흐름 |
+| [프로젝트 여정](PROJECT-JOURNEY.pdf) | 2026-07-31 시점의 경과. **합성 데이터 생성 직전까지**의 스냅샷이라 종합 보고서와 겹치지 않는다 |
 | [위키 리포트](WIKI-REPORT.pdf) | 문서 구조 |
 | [설계서](design-spec.pdf) | [[design-spec]] 의 PDF 판 |
 | [팀 계획](TEAM-PLAN.pdf) | [[TEAM-PLAN]] 의 PDF 판 |
@@ -58,6 +59,7 @@ HTML 이 원본이고 PDF 는 산출물이다. 고칠 때는 **HTML 을 고치�
 
 | 묻는 것 | 볼 것 |
 |---|---|
+| "이 프로젝트가 뭐 하는 거지?" | [종합 보고서](PROJECT-REPORT.pdf) — 사전 지식 없이 읽힌다 |
 | "이 값이 왜 이렇게 정해졌지?" | [결정 이력](synthetic-data-decision-history.pdf) |
 | "이 데이터 써도 되나?" | [12개월 v2 감사](EDA-final-12m-v2.pdf) 0장과 15장 |
 | "실데이터랑 합성이 어떻게 다르지?" | [파이프라인 전체 그림](pipeline-overview.pdf) |
