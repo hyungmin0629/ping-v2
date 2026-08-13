@@ -15,7 +15,7 @@ tags: [테이블, 기준 정보]
 
 ## 왜 이렇게 생겼나
 
-구 스키마에는 학교 이름 컬럼이 아예 없었다. 마스킹된 이름을 저장한다. neis_school_code 는 NEIS 공개 API 연동 키.
+구 스키마에는 학교 이름 컬럼이 아예 없었다. 마스킹된 이름을 저장한다. neis_school_code 는 NEIS 공개 API 연동 키. ⚠️ **이 컬럼 하나로는 API 를 부를 수 없다.** 급식·시간표·학사일정 API 는 시도교육청코드 + 표준학교코드를 **한 쌍**으로 요구한다. 짝이 되는 neis_office_code 를 마이그레이션 001 이 붙인다 — 아래 정의에는 없다. 지역명으로 유추하면 안 된다. 소재지와 관할 교육청이 다른 학교가 있고, 틀린 값으로 부르면 오류가 아니라 **조용히 빈 결과**가 온다. ⚠️ info_school_id 도 마이그레이션 002 가 붙인다. 실제 학교가 아닌 조직 (클로즈드 테스트의 "코드잇 DA 14기")이 다른 학교의 급식·학사일정을 빌려 쓰게 하는 자리다. 부를 때는 coalesce(info_school_id, id) 를 쓴다.
 
 ## 컬럼
 
@@ -36,9 +36,10 @@ tags: [테이블, 기준 정보]
 
 **이 표를 참조하는 표** — [[grade_class]] · [[meal_plan]] · [[post]] · [[school]] · [[school_event]] · [[school_notice]]
 
-## 얽힌 결정 3개
+## 얽힌 결정 4개
 
 - [[backfill-updated-at|대량 적재 후 `updated_at` 을 각 행의 원래 시각으로 되돌린다]]
+- [[ddl-comments-rot-with-migrations|DDL 주석은 마이그레이션 뒤에 낡는다 — 파일이 아니라 순서가 진실이다]]
 - [[org-borrows-school-info|테스트 조직은 이름을 유지하고 실제 학교의 정보를 빌려 쓴다]]
 - [[watermark-updated-at|증분 워터마크를 `updated_at` 하나로 통일한다]]
 

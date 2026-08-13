@@ -41,12 +41,13 @@ tags: [테이블, 유저]
 
 **이 표를 참조하는 표** — [[ad_impression]] · [[block_record]] · [[comment_like]] · [[friend_request]] · [[friendship]] · [[heart_purchase]] · [[heart_transaction]] · [[hint_purchase]] · [[post]] · [[post_comment]] · [[post_like]] · [[question]] · [[question_request]] · [[rejected_friend_recommendations]] · [[report]] · [[sanction]] · [[school_notice]] · [[school_notice_read]] · [[user_session]] · [[user_withdrawal]] · [[vote_candidate]] · [[vote_item]] · [[vote_received]] · [[vote_session]]
 
-## 얽힌 결정 11개
+## 얽힌 결정 12개
 
 - [[anonymous-auth-no-pii|개인정보를 일절 받지 않는 익명 인증]]
 - [[backfill-updated-at|대량 적재 후 `updated_at` 을 각 행의 원래 시각으로 되돌린다]]
 - [[bigquery-source-column|실유저와 합성 데이터를 같은 BigQuery 테이블에 `_source` 로 섞는다]]
 - [[client-write-minimal|클라이언트에 쓰기 권한을 거의 주지 않는다]]
+- [[core-metrics-v1|핵심 지표를 10개로 고정하고, 마트를 거기서 역산한다]]
 - [[drop-admin-user|admin_user 를 없애고 app_user.is_admin 하나로 접는다]]
 - [[friend-invite-code-two-step|친구 맺기는 초대 코드로만, 요청·수락 2단계로]]
 - [[gender-at-onboarding|성별을 온보딩에서 받는다]]

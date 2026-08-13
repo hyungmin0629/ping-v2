@@ -15,7 +15,7 @@ tags: [테이블, 질문과 투표]
 
 ## 왜 이렇게 생겼나
 
-스킵 컬럼이 없다. 스킵 기능을 폐지했기 때문이다. candidate_scope 는 출제 시점의 스코프 스냅샷이다. 질문의 scope 가 나중에 바뀌어도 과거 투표의 해석이 흔들리지 않도록 복사해 둔다.
+스킵 컬럼이 없다. 스킵 기능을 폐지했기 때문이다. candidate_scope 는 출제 시점의 스코프 스냅샷이다. 질문의 scope 가 나중에 바뀌어도 과거 투표의 해석이 흔들리지 않도록 복사해 둔다. ⚠️ padded_count 를 마이그레이션 003 이 붙인다 — 아래 정의에는 없다. 후보가 4명이 안 될 때 스코프를 낮추지 않고 **친구 중 다른 사람으로 채우기** 때문에, CLASS 질문에 타반 후보가 섞일 수 있다. 그 수를 남긴 값이다. ⚠️ 분석에서 이 값을 안 보면 규칙 위반과 구분되지 않는다.
 
 ## 컬럼
 
@@ -37,9 +37,10 @@ tags: [테이블, 질문과 투표]
 
 **이 표를 참조하는 표** — [[heart_transaction]] · [[vote_candidate]] · [[vote_received]] · [[vote_shuffle]]
 
-## 얽힌 결정 11개
+## 얽힌 결정 12개
 
 - [[backfill-updated-at|대량 적재 후 `updated_at` 을 각 행의 원래 시각으로 되돌린다]]
+- [[ddl-comments-rot-with-migrations|DDL 주석은 마이그레이션 뒤에 낡는다 — 파일이 아니라 순서가 진실이다]]
 - [[expired-session-status|중도 이탈 세션은 EXPIRED 로 적는다 — 완료율이 98.6%로 보이던 이유]]
 - [[generator-emits-updated-at|`updated_at` 을 생성기가 직접 싣는다 — 백필 UPDATE 가 3시간을 먹었다]]
 - [[join-requires-source|두 원천의 id 가 겹친다 — 조인에 `_source` 를 강제한다]]

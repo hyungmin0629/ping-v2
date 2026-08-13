@@ -38,8 +38,9 @@ tags: [테이블, 신고와 제재]
 
 **이 표를 참조하는 표** — [[sanction]]
 
-## 얽힌 결정 3개
+## 얽힌 결정 4개
 
+- [[core-metrics-v1|핵심 지표를 10개로 고정하고, 마트를 거기서 역산한다]]
 - [[drop-admin-user|admin_user 를 없애고 app_user.is_admin 하나로 접는다]]
 - [[one-time-reply|1회성 답장을 연다 — 차단 화면 없이]]
 - [[report-first-block-later|신고는 게시판과 함께, 차단은 뒤로]]

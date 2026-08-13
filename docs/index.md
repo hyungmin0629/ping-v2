@@ -55,7 +55,7 @@ API 스펙 등 바깥에서 온 문서.
 
 _아직 없다._
 
-## 결정 <sub>`docs/decisions` · 83</sub>
+## 결정 <sub>`docs/decisions` · 85</sub>
 
 왜 그렇게 했는지. 하나가 한 노드다.
 
@@ -75,7 +75,9 @@ _아직 없다._
 - [[client-write-minimal|클라이언트에 쓰기 권한을 거의 주지 않는다]] — 클라이언트가 직접 INSERT/UPDATE 하지 못하게 막는다. 나중에 RPC 함수로 처리한다.
 - [[closed-test-adults|성인 지인 대상 클로즈드 테스트로 한정]] — 필요하고, 외모 관련 투표와 익명 게시판을 미성년자에게 열면서 모니터링이 없으면 감당할 수 없다.
 - [[confirm-v4-with-known-limits|합성 데이터 v4 를 확정한다 — 한계 5건을 고치지 않고 문서화한다]] — 확정 직전에 돌린 정밀 EDA 에서 결함 1건 · 경계 5건이 나왔지만,
+- [[core-metrics-v1|핵심 지표를 10개로 고정하고, 마트를 거기서 역산한다]] — "이걸로 뭘 볼까"를 묻지 않는다. 지표가 표의 그레인을 정한다.
 - [[daily-rhythm-night-peak|하루 리듬을 붙인다 — 최대 봉우리는 점심이 아니라 밤 22시다]] — 12~13시 최대 봉우리"를 밤 22~23시로 바꾼다.
+- [[ddl-comments-rot-with-migrations|DDL 주석은 마이그레이션 뒤에 낡는다 — 파일이 아니라 순서가 진실이다]] — 말했다. 그 요금제는 W14(마이그레이션 006)가 반년 전에 없앤 것이고, 현행은
 - [[dow-from-legacy-attendance|요일 패턴은 구 서비스 출석 로그를 따라간다 — 우하향이 아니라 V자]] — (raw/legacy-analysis/08_attendance_feature.md §2)을 그대로 옮긴다.
 - [[drop-admin-user|admin_user 를 없애고 app_user.is_admin 하나로 접는다]] — 유지할 근거가 "언젠가 운영 화면을 만들면"뿐이었다. 그 언젠가가 이 프로젝트의
 - [[events-on-meal-calendar|학사일정을 급식 달력에 얹는다 — 따로 만들지 않고]] — 날짜 칸 아래 점이 그날 일정이고, 달력 아래에 그 달 일정이 통째로 나온다.
@@ -143,10 +145,11 @@ _아직 없다._
 - [[withdrawal-is-terminal|탈퇴는 종점이다 — 그 뒤로 어떤 로그도 남기지 않는다]] — 세션·투표·원장을 전부 훑어 가장 늦은 것을 찾은 다음 그 뒤에 놓는다.
 - [[withdrawal-user-id|탈퇴 기록에 유저 식별자를 넣는다]] — 누가 탈퇴했는지 특정할 수 없었다. 탈퇴 사유를 유저 속성과 교차분석하는 게 원천 봉쇄됐다.
 
-## 운영 참조 <sub>`docs/ops` · 7</sub>
+## 운영 참조 <sub>`docs/ops` · 8</sub>
 
 실제로 그 작업을 할 때 필요한 값과 절차.
 
+- [[ops-analysis-conventions|분석 쿼리 표준 — 노트북 4개에서 굳어진 규칙]] — 다시 쓰지 않아도 되게 만든다.
 - [[ops-bigquery-team-access|BigQuery 팀 접속 안내]] — 혼동하기 쉬운 지점이라 갈라 둔다.
 - [[ops-bigquery|BigQuery 적재]] — 다음 증설은 계산하고 시작한다. 결제가 붙어 있어 넘으면 막히지 않고 과금된다 —
 - [[ops-local-testing|혼자 시험하기 (더미 친구)]] — 투표는 친구가 5명이어야 열리고 문항마다 후보가 4명 필요하다. 창을 다섯 개 띄울 수
@@ -171,11 +174,11 @@ _아직 없다._
 - [[heart_purchase|heart_purchase]] — 성공/실패를 한 테이블에 status 로 통합한다. 구 스키마는 별도 테이블이었고 실패 로깅이 2023-09에 조용히 끊겨 그 이후로는 실패
 - [[heart_transaction|heart_transaction]] — 이 프로젝트에서 가장 중요한 테이블. 구 스키마의 원장은 순합계가 201만인데 유저 잔액 총합은 20억이었다. 가입 지급과 충전이 원장에 남
 - [[heart_transaction_type|heart_transaction_type]] — 구 스키마는 delta_point 값만 보고 의미를 역추론해야 했다 (5~15 = 투표 적립, -300 = 힌트 구매 ... 전부 추측이었다
-- [[hint_purchase|hint_purchase]] — 구 데이터에서 확인된 누진 요금(200 → 300 → 500 → 1000)을 step 으로 명시화한다. 하트 차감은 heart_transac
+- [[hint_purchase|hint_purchase]] — ⚠️ 아래 정의는 최초 설계이고, W14(마이그레이션 006·007)가 갈아치웠다. 이 파일만 읽으면 죽은 요금제를 현행으로 오해한다. 현행
 - [[meal_menu_item|meal_menu_item]] — 메뉴를 한 덩어리 텍스트가 아니라 요리 단위로 분리한다. "인기 급식 메뉴" 분석과 알레르기 필터가 가능해진다.
 - [[meal_plan|meal_plan]] — 학교·날짜·끼니에 UNIQUE. 같은 날 중복 급식이 들어오는 것을 DB가 막는다.
 - [[post|post]] — 생성기가 만든다.
-- [[post_comment|post_comment]] — anonymous_seq: 글 안에서만 유효한 익명 번호(익명1, 익명2 ...). 같은 사람은 같은 글에서 같은 번호를 유지해 대화 맥락이
+- [[post_comment|post_comment]] — ⚠️ anonymous_seq 는 마이그레이션 005 가 nullable 로 바꿨고, 지금은 안 쓴다. 닉네임 게시판이라 익명 번호를 채울 
 - [[post_like|post_like]] — 생성기가 만든다.
 - [[question|question]] — scope: CLASS / SCHOOL / GLOBAL. 세 스코프 모두 "친구" 안에서의 범위이며, GLOBAL 도 전체 가입자가 아니라 
 - [[question_category|question_category]] — 구 스키마에는 카테고리가 없어 "외모/신체 질문이 신고 상위 5개를 독점"한다는 사실을 사후 수동 분류로만 확인할 수 있었다. is_sens
@@ -186,7 +189,7 @@ _아직 없다._
 - [[report_reason|report_reason]] — 생성기가 만든다.
 - [[sanction|sanction]] — triggered_by_report_id 로 근거 신고를 명시한다. 이 연결이 구 시스템에는 아예 없었다.
 - [[sanction_policy|sanction_policy]] — 임계값을 코드가 아니라 데이터로 정의한다. 구 시스템은 피신고 10회 이상 116명 중 제재된 사람이 0명이었고, 253회 신고받은 유저도 
-- [[school|school]] — 구 스키마에는 학교 이름 컬럼이 아예 없었다. 마스킹된 이름을 저장한다. neis_school_code 는 NEIS 공개 API 연동 키.
+- [[school|school]] — 구 스키마에는 학교 이름 컬럼이 아예 없었다. 마스킹된 이름을 저장한다. neis_school_code 는 NEIS 공개 API 연동 키. 
 - [[school_event|school_event]] — 시작·종료일을 분리해 기간 일정을 지원한다. grade_scope 가 NULL 이면 전교 대상, 값이 있으면 해당 학년만 해당한다.
 - [[school_notice|school_notice]] — 생성기가 만든다.
 - [[school_notice_read|school_notice_read]] — 어떤 공지가 실제로 읽히는지 측정해 알림 정책을 조정한다.
@@ -195,11 +198,11 @@ _아직 없다._
 - [[user_withdrawal|user_withdrawal]] — 구 스키마 최대 결함의 해소 지점. accounts_userwithdraw 는 70,764건(가입자의 10.5%)이었지만 유저 식별자가 없어
 - [[vote_candidate|vote_candidate]] — 구 스키마는 세트↔피스 관계를 JSON 배열로만 들고 있었다. 행으로 저장한다. shuffle_round: 0 = 최초 후보, 1 = 셔플 
 - [[vote_item|vote_item]] — 스킵 컬럼이 없다. 스킵 기능을 폐지했기 때문이다. candidate_scope 는 출제 시점의 스코프 스냅샷이다. 질문의 scope 가 나
-- [[vote_received|vote_received]] — 생성기가 만든다.
+- [[vote_received|vote_received]] — ⚠️ 아래 정의에 없는 컬럼이 마이그레이션으로 셋 붙었다: reply_text · replied_at   008. 나를 뽑은 사람에게 보내는
 - [[vote_session|vote_session]] — 생성기가 만든다.
 - [[vote_shuffle|vote_shuffle]] — vote_item_id 에 UNIQUE → DB 차원에서 1회 제한을 강제한다. ad_impression_id 가 NOT NULL → 광고 
 - [[withdrawal_reason|withdrawal_reason]] — 생성기가 만든다.
 
 ---
 
-문서 148개 · `python db/wiki_index.py` 로 갱신
+문서 151개 · `python db/wiki_index.py` 로 갱신
