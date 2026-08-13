@@ -32,10 +32,9 @@ tags: [테이블, 질문과 투표]
 
 **이 표를 참조하는 표** — [[question]] · [[question_request]]
 
-## 얽힌 결정 2개
+## 얽힌 결정 1개
 
 - [[appearance-questions-for-report-rate|외모·신체 질문을 연다 — 민감 질문이 없으면 신고율을 못 잰다]]
-- [[core-metrics-v1|핵심 지표를 10개로 고정하고, 마트를 거기서 역산한다]]
 
 ## 이 표를 다루는 정책·RPC
 

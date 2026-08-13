@@ -37,10 +37,9 @@ tags: [테이블, 하트]
 
 **UNIQUE** — `hint_purchase_id · 단, (hint_purchase_id IS NOT NULL)` · `purchase_id · 단, (purchase_id IS NOT NULL)` · `ad_impression_id · 단, (ad_impression_id IS NOT NULL)`
 
-## 얽힌 결정 10개
+## 얽힌 결정 9개
 
 - [[client-write-minimal|클라이언트에 쓰기 권한을 거의 주지 않는다]]
-- [[core-metrics-v1|핵심 지표를 10개로 고정하고, 마트를 거기서 역산한다]]
 - [[drop-admin-user|admin_user 를 없애고 app_user.is_admin 하나로 접는다]]
 - [[generator-emits-updated-at|`updated_at` 을 생성기가 직접 싣는다 — 백필 UPDATE 가 3시간을 먹었다]]
 - [[heart-balance-after|모든 하트 증감에 `balance_after`를 기록]]

@@ -40,9 +40,8 @@ tags: [테이블, 질문과 투표]
 
 **이 표를 참조하는 표** — [[hint_purchase]]
 
-## 얽힌 결정 6개
+## 얽힌 결정 5개
 
-- [[core-metrics-v1|핵심 지표를 10개로 고정하고, 마트를 거기서 역산한다]]
 - [[ddl-comments-rot-with-migrations|DDL 주석은 마이그레이션 뒤에 낡는다 — 파일이 아니라 순서가 진실이다]]
 - [[one-time-reply|1회성 답장을 연다 — 차단 화면 없이]]
 - [[partition-ordered-extract|파티션 테이블로 부을 때는 파티션 컬럼 순서로 꺼낸다]]

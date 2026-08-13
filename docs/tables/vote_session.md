@@ -27,9 +27,8 @@ tags: [테이블, 질문과 투표]
 
 **이 표를 참조하는 표** — [[vote_item]]
 
-## 얽힌 결정 5개
+## 얽힌 결정 4개
 
-- [[core-metrics-v1|핵심 지표를 10개로 고정하고, 마트를 거기서 역산한다]]
 - [[daily-rhythm-night-peak|하루 리듬을 붙인다 — 최대 봉우리는 점심이 아니라 밤 22시다]]
 - [[expired-session-status|중도 이탈 세션은 EXPIRED 로 적는다 — 완료율이 98.6%로 보이던 이유]]
 - [[lower-scope-when-short|후보가 4명이 안 되면 스코프를 낮추고, 그래도 안 되면 질문을 내지 않는다]]

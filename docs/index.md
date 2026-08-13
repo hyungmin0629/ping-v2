@@ -55,7 +55,7 @@ API 스펙 등 바깥에서 온 문서.
 
 _아직 없다._
 
-## 결정 <sub>`docs/decisions` · 85</sub>
+## 결정 <sub>`docs/decisions` · 84</sub>
 
 왜 그렇게 했는지. 하나가 한 노드다.
 
@@ -75,7 +75,6 @@ _아직 없다._
 - [[client-write-minimal|클라이언트에 쓰기 권한을 거의 주지 않는다]] — 클라이언트가 직접 INSERT/UPDATE 하지 못하게 막는다. 나중에 RPC 함수로 처리한다.
 - [[closed-test-adults|성인 지인 대상 클로즈드 테스트로 한정]] — 필요하고, 외모 관련 투표와 익명 게시판을 미성년자에게 열면서 모니터링이 없으면 감당할 수 없다.
 - [[confirm-v4-with-known-limits|합성 데이터 v4 를 확정한다 — 한계 5건을 고치지 않고 문서화한다]] — 확정 직전에 돌린 정밀 EDA 에서 결함 1건 · 경계 5건이 나왔지만,
-- [[core-metrics-v1|핵심 지표를 10개로 고정하고, 마트를 거기서 역산한다]] — "이걸로 뭘 볼까"를 묻지 않는다. 지표가 표의 그레인을 정한다.
 - [[daily-rhythm-night-peak|하루 리듬을 붙인다 — 최대 봉우리는 점심이 아니라 밤 22시다]] — 12~13시 최대 봉우리"를 밤 22~23시로 바꾼다.
 - [[ddl-comments-rot-with-migrations|DDL 주석은 마이그레이션 뒤에 낡는다 — 파일이 아니라 순서가 진실이다]] — 말했다. 그 요금제는 W14(마이그레이션 006)가 반년 전에 없앤 것이고, 현행은
 - [[dow-from-legacy-attendance|요일 패턴은 구 서비스 출석 로그를 따라간다 — 우하향이 아니라 V자]] — (raw/legacy-analysis/08_attendance_feature.md §2)을 그대로 옮긴다.
@@ -205,4 +204,4 @@ _아직 없다._
 
 ---
 
-문서 151개 · `python db/wiki_index.py` 로 갱신
+문서 150개 · `python db/wiki_index.py` 로 갱신
