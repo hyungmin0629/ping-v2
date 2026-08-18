@@ -27,7 +27,7 @@ WITH users AS (
 reports AS (
   SELECT
     r.reported_at, r.report_date, r.reviewed_at, r.is_closed,
-    u.source, u.sido, u.school_type, u.grade, u.gender
+    u.source, u.sido, u.sido_iso, u.school_type, u.grade, u.gender
   FROM `{{stg}}.stg_report` AS r
   JOIN users AS u ON u.user_key = r.reporter_key
   WHERE r.reported_at < u.valid_until
@@ -48,7 +48,7 @@ snapshot AS (
   SELECT
     w.week_start,
     TIMESTAMP(DATE_ADD(w.week_start, INTERVAL 7 DAY), 'Asia/Seoul') AS as_of_ts,
-    r.source, r.sido, r.school_type, r.grade, r.gender,
+    r.source, r.sido, r.sido_iso, r.school_type, r.grade, r.gender,
     r.reported_at, r.reviewed_at, r.report_date
   FROM weeks AS w
   JOIN reports AS r
@@ -57,7 +57,7 @@ snapshot AS (
 
 SELECT
   week_start                                        AS metric_date,
-  source, sido, school_type, grade, gender,
+  source, sido, sido_iso, school_type, grade, gender,
 
   -- 그 시점에 아직 안 본 건
   COUNTIF(reviewed_at IS NULL OR reviewed_at >= as_of_ts)              AS pending_count,
@@ -77,4 +77,4 @@ SELECT
   COUNTIF(DATE_TRUNC(report_date, WEEK(MONDAY)) = week_start)          AS reported_in_week
 
 FROM snapshot
-GROUP BY metric_date, source, sido, school_type, grade, gender
+GROUP BY metric_date, source, sido, sido_iso, school_type, grade, gender

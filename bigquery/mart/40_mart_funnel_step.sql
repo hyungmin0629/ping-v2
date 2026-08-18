@@ -47,7 +47,7 @@ user_steps AS (
   SELECT
     'user_journey'                                   AS funnel_name,
     'users'                                          AS unit,
-    m.metric_date, m.source, m.sido, m.school_type, m.grade, m.gender,
+    m.metric_date, m.source, m.sido, m.sido_iso, m.school_type, m.grade, m.gender,
     s.step_no, s.step_label, s.hit
   FROM `{{mart}}.mart_user` AS m
   CROSS JOIN UNNEST([
@@ -66,7 +66,7 @@ user_steps AS (
 recv AS (
   SELECT
     r.vote_received_key, r.received_date, r.is_read, r.read_at,
-    u.source, u.sido, u.school_type, u.grade, u.gender
+    u.source, u.sido, u.sido_iso, u.school_type, u.grade, u.gender
   FROM `{{stg}}.stg_vote_received` AS r
   JOIN users AS u ON u.user_key = r.receiver_key
   WHERE r.received_at < u.valid_until
@@ -92,7 +92,7 @@ received_steps AS (
     'vote_received'                                  AS funnel_name,
     'events'                                         AS unit,
     r.received_date                                  AS metric_date,
-    r.source, r.sido, r.school_type, r.grade, r.gender,
+    r.source, r.sido, r.sido_iso, r.school_type, r.grade, r.gender,
     s.step_no, s.step_label, s.hit
   FROM recv AS r
   LEFT JOIN hint_per_received AS h ON h.vote_received_key = r.vote_received_key
@@ -118,10 +118,10 @@ SELECT
   step_no,
   step_label,
   metric_date,
-  source, sido, school_type, grade, gender,
+  source, sido, sido_iso, school_type, grade, gender,
   COUNTIF(hit)  AS value,   -- 그 단계에 도달한 수
   COUNT(*)      AS base     -- 같은 칸의 모수. 비율은 보는 쪽이 만든다
 FROM both
 WHERE metric_date IS NOT NULL
 GROUP BY funnel_name, unit, step_no, step_label, metric_date,
-         source, sido, school_type, grade, gender
+         source, sido, sido_iso, school_type, grade, gender

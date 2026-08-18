@@ -106,6 +106,7 @@ SELECT
   e.d                                                AS metric_date,
   u.source,
   u.sido,
+  u.sido_iso,
   u.school_type,
   u.grade,
   u.gender,
@@ -133,4 +134,4 @@ SELECT
 FROM events AS e
 JOIN users AS u ON u.user_key = e.user_key
 WHERE e.d IS NOT NULL
-GROUP BY metric_date, source, sido, school_type, grade, gender
+GROUP BY metric_date, source, sido, sido_iso, school_type, grade, gender

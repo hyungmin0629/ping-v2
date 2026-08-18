@@ -30,7 +30,7 @@ SELECT
   r.report_key,
   r.report_date                                             AS metric_date,
 
-  u.source, u.sido, u.school_type, u.grade, u.gender,
+  u.source, u.sido, u.sido_iso, u.school_type, u.grade, u.gender,
 
   r.reason_code,
   r.reason_label,

@@ -64,6 +64,39 @@ SELECT
   r.sido,
   r.sigungu,
 
+  -- ⚠️ **지도를 그리려면 이름이 아니라 코드가 필요하다.** 루커 스튜디오는 필드
+  --    타입이 '지역 ID'(Region ID)일 때 ISO-3166-2 값을 받는다. 한글 정식명으로는
+  --    매칭이 붙지 않고, 특히 **`강원특별자치도`처럼 최근 개편된 이름은 확실히 실패한다.**
+  --    이름 매칭에 기대지 않으려고 코드를 컬럼으로 못 박는다.
+  --
+  --    옛 이름도 함께 받는다 — 원천이 언제 개편명으로 바뀌었는지에 이 컬럼이
+  --    흔들리면 안 된다(강원도/전라북도/제주도).
+  --    ⚠️ 못 알아본 값은 **NULL 로 남긴다.** 틀린 코드를 넣으면 엉뚱한 지역이
+  --       칠해지고 아무도 눈치채지 못한다. NULL 은 지도에서 빠져 눈에 띈다.
+  CASE r.sido
+    WHEN '서울특별시'     THEN 'KR-11'
+    WHEN '부산광역시'     THEN 'KR-26'
+    WHEN '대구광역시'     THEN 'KR-27'
+    WHEN '인천광역시'     THEN 'KR-28'
+    WHEN '광주광역시'     THEN 'KR-29'
+    WHEN '대전광역시'     THEN 'KR-30'
+    WHEN '울산광역시'     THEN 'KR-31'
+    WHEN '세종특별자치시' THEN 'KR-50'
+    WHEN '경기도'         THEN 'KR-41'
+    WHEN '강원특별자치도' THEN 'KR-42'
+    WHEN '강원도'         THEN 'KR-42'
+    WHEN '충청북도'       THEN 'KR-43'
+    WHEN '충청남도'       THEN 'KR-44'
+    WHEN '전북특별자치도' THEN 'KR-45'
+    WHEN '전라북도'       THEN 'KR-45'
+    WHEN '전라남도'       THEN 'KR-46'
+    WHEN '경상북도'       THEN 'KR-47'
+    WHEN '경상남도'       THEN 'KR-48'
+    WHEN '제주특별자치도' THEN 'KR-49'
+    WHEN '제주도'         THEN 'KR-49'
+    ELSE NULL
+  END                                                 AS sido_iso,
+
   -- 현재 상태
   u.heart_balance,
   u.friend_count,

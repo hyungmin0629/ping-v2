@@ -149,6 +149,7 @@ SELECT
   -- 차원 (여덟 표 전부 같은 이름을 쓴다)
   u.source,
   u.sido,
+  u.sido_iso,
   u.school_type,
   u.grade,
   u.gender,

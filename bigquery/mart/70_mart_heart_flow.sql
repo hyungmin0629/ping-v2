@@ -25,7 +25,7 @@ WITH users AS (
 
 SELECT
   t.tx_date                                   AS metric_date,
-  u.source, u.sido, u.school_type, u.grade, u.gender,
+  u.source, u.sido, u.sido_iso, u.school_type, u.grade, u.gender,
 
   t.type_code,
   t.type_label,
@@ -49,7 +49,7 @@ JOIN users AS u ON u.user_key = t.user_key
 LEFT JOIN `{{stg}}.stg_hint_purchase` AS h
   ON h.hint_purchase_id = t.hint_purchase_id AND h.source = t.source
 WHERE t.created_at < u.valid_until
-GROUP BY metric_date, source, sido, school_type, grade, gender,
+GROUP BY metric_date, source, sido, sido_iso, school_type, grade, gender,
          type_code, type_label, is_credit, hint_type, flow_label
 
 -- ⚠️ **사람 수를 여기 두지 않았다.** "하트를 쓴 사람 수"를 칸마다 미리 세면

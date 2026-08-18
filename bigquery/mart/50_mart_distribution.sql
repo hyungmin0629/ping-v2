@@ -31,6 +31,7 @@ session_items AS (
     v.vote_session_key,
     ANY_VALUE(u.source)      AS source,
     ANY_VALUE(u.sido)        AS sido,
+    ANY_VALUE(u.sido_iso)    AS sido_iso,
     ANY_VALUE(u.school_type) AS school_type,
     ANY_VALUE(u.grade)       AS grade,
     ANY_VALUE(u.gender)      AS gender,
@@ -51,13 +52,13 @@ item_reach AS (
     FORMAT('%d문항', n)                    AS bucket_label,
     CAST(NULL AS STRING)                   AS sub_bucket,
     s.d                                    AS metric_date,
-    s.source, s.sido, s.school_type, s.grade, s.gender,
+    s.source, s.sido, s.sido_iso, s.school_type, s.grade, s.gender,
     COUNTIF(s.items_served >= n)           AS value,
     COUNT(*)                               AS base
   FROM session_items AS s
   CROSS JOIN UNNEST(GENERATE_ARRAY(1, 10)) AS n
   GROUP BY dist_name, bucket_no, bucket_label, metric_date,
-           s.source, s.sido, s.school_type, s.grade, s.gender
+           s.source, s.sido, s.sido_iso, s.school_type, s.grade, s.gender
 ),
 
 -- [2] 열람 → 첫 힌트 지연 ----------------------------------------------
@@ -67,7 +68,7 @@ first_hint AS (
   SELECT
     r.vote_received_key,
     r.read_date                                     AS d,
-    u.source, u.sido, u.school_type, u.grade, u.gender,
+    u.source, u.sido, u.sido_iso, u.school_type, u.grade, u.gender,
     TIMESTAMP_DIFF(MIN(h.created_at), r.read_at, HOUR) AS wait_hours
   FROM `{{stg}}.stg_vote_received` AS r
   JOIN users AS u ON u.user_key = r.receiver_key
@@ -75,7 +76,7 @@ first_hint AS (
     ON h.vote_received_key = r.vote_received_key AND h.created_at >= r.read_at
   WHERE r.is_read AND r.received_at < u.valid_until
   GROUP BY r.vote_received_key, r.read_date, r.read_at,
-           u.source, u.sido, u.school_type, u.grade, u.gender
+           u.source, u.sido, u.sido_iso, u.school_type, u.grade, u.gender
 ),
 
 hint_delay AS (
@@ -97,12 +98,12 @@ hint_delay AS (
     END                                             AS bucket_label,
     CAST(NULL AS STRING)                            AS sub_bucket,
     d                                               AS metric_date,
-    source, sido, school_type, grade, gender,
+    source, sido, sido_iso, school_type, grade, gender,
     COUNT(*)                                        AS value,
     COUNT(*)                                        AS base
   FROM first_hint
   GROUP BY dist_name, bucket_no, bucket_label, metric_date,
-           source, sido, school_type, grade, gender
+           source, sido, sido_iso, school_type, grade, gender
 ),
 
 -- [3] 힌트 종류 --------------------------------------------------------
@@ -123,14 +124,14 @@ hint_kind AS (
     END                                             AS bucket_label,
     IF(h.is_ad_hint, '광고', '하트')                AS sub_bucket,
     h.hint_date                                     AS metric_date,
-    u.source, u.sido, u.school_type, u.grade, u.gender,
+    u.source, u.sido, u.sido_iso, u.school_type, u.grade, u.gender,
     COUNT(*)                                        AS value,
     COUNT(*)                                        AS base
   FROM `{{stg}}.stg_hint_purchase` AS h
   JOIN users AS u ON u.user_key = h.user_key
   WHERE h.created_at < u.valid_until
   GROUP BY dist_name, bucket_no, bucket_label, sub_bucket, metric_date,
-           u.source, u.sido, u.school_type, u.grade, u.gender
+           u.source, u.sido, u.sido_iso, u.school_type, u.grade, u.gender
 )
 
 SELECT * FROM item_reach  WHERE metric_date IS NOT NULL
