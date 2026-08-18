@@ -110,8 +110,9 @@ ping-v2/
 │   ├── plugins/
 │   └── requirements.txt   # Airflow 컨테이너 추가 패키지
 ├── bigquery/
-│   ├── staging/           # stg 변환 SQL
-│   └── mart/              # mart 집계 SQL
+│   ├── build.py           # stg·mart 를 파일 번호 순서로 실행
+│   ├── staging/           # stg 뷰 10개 — 번호가 실행 순서
+│   └── mart/              # mart 표 8개 — 대시보드가 읽는 층
 ├── qa/
 │   ├── checks/            # 품질 검사 정의
 │   └── reports/           # 검사 결과 (git 제외)
@@ -171,6 +172,25 @@ python pipeline/verify_load.py  --source supabase     # 행 수 대조
 docker compose -f airflow/docker-compose.yml up -d    # http://localhost:8080
 ```
 
+## 품질 검증과 stg / mart (P5·P6)
+
+```bash
+python qa/quality_check.py --source supabase --estimate   # 스캔량만 먼저
+python qa/quality_check.py --source supabase              # 430항목 · 위반 0이어야 한다
+python bigquery/build.py --layer stg                      # 뷰 10개 (저장 0)
+python bigquery/build.py --layer mart                     # 표 8개 (약 7.3 GiB 스캔)
+```
+
+**데이터가 갱신되면 도는 네 줄**은 적재 → 대조 → 품질 → `--layer mart` 다.
+`stg` 는 뷰라 다시 만들 필요가 없고, `mart` 는 **테이블이라 안 구우면 오류 없이
+옛 숫자가 뜬다.**
+
+- 분석은 `raw` 가 아니라 **`stg`** 에서 시작한다 — `_source` 누락·지운 행·
+  시간대 함정이 뷰 안에 이미 막혀 있다
+- 대시보드는 **`mart` 만** 연결한다. `raw` 를 붙이면 화면을 그릴 때마다
+  1억 2천만 행을 읽는다
+- 절차와 주간 규칙 넷은 [[ops-p5-p7]], 그레인의 이유는 [[mart-grain-for-weekly-filter]]
+
 ### 합성 데이터를 다시 만들 때
 
 생성기를 고쳐 데이터를 새로 만들어도 **실유저 데이터는 건드리지 않는다.**
@@ -201,30 +221,33 @@ python pipeline/verify_load.py  --source local                  # 행 수 대조
 
 ## 진행 상태
 
-### 지금 하고 있는 것 — 합성 데이터 v2 (2026-08-03)
+### 지금 하고 있는 것 — 대시보드 (2026-08-18)
 
-40표 342컬럼을 전부 채우는 합성 데이터를 만드는 중이다. 절차는
-[[ops-synthetic-data]], 팀이 정한 값은 [[synthetic-v2-decisions]].
+**P6 까지 끝났다.** raw → stg → mart 가 서 있고, 남은 것은 루커 스튜디오에
+`mart` 를 연결하는 일뿐이다. 절차는 [[ops-p5-p7]].
 
-| | 상태 |
+| 층 | 상태 |
 |---|---|
-| 생성기 | **40표 전부 생성** · 342컬럼 중 338개 채움 · 정합성 17종 통과 |
-| 유저 모델 | **페르소나 6유형** — 다만 유형이 또렷하게 갈리지 않게 흐렸다 |
-| 규모 단계 | 1단계(500명·1개월) 통과 → **2단계(2,000명·3개월) 차례** |
-| 판본 기록 | `docs/EDA-sample-1m-v{1,2,3}.pdf` — 같은 항목으로 세 번 뽑아 비교 |
+| `raw` | 40표 · 1억 2,373만 행 · 8.74 GiB. 품질검사 **430/430 통과** |
+| `stg` | **뷰 10개** (저장 0). 대시보드 때문에 넷이 늘었다 — [[stg-views-for-dashboard]] |
+| `mart` | **표 8개 · 495 MiB.** 주간 필터와 전주 대비까지 검증 — [[mart-grain-for-weekly-filter]] |
+| 루커 | **아직 안 붙였다.** [스케치](https://claude.ai/code/artifact/cf24c619-a001-4880-a901-6ec0ea412aca)만 있다 |
 
 **남은 것**
 
-- 3국면 성장 곡선 — 1개월 샘플로는 확인 불가. 12개월 생성 때 검증
-- 세션 중도 이탈 — 완료율 98.6%로 목표(78%)에 못 미친다
-- ⚠️ **앱과 어긋난 곳 2개** — 투표 보상, 일일 적립 상한.
-  **앱을 생성기에 맞추기로 했으나 생성 시험이 끝난 뒤 한 번에 한다.**
-  목록은 [[app-follows-generator]]
+- **P7** — 루커에 `mart` 만 연결한다. `raw` 를 연결하면 화면을 그릴 때마다
+  1억 2천만 행을 읽는다
+- **P3 DAG 화** — NEIS 수집이 아직 손으로 돈다
+- ⚠️ **앱과 생성기가 어긋난 곳 3개** — 투표 보상 · 일일 적립 상한 ·
+  **이름 공개 시 `reveal_status` 미갱신**([[synthetic-reveal-status-not-updated]]).
+  **다음 판본에서 한 번에 고친다** — [[app-follows-generator]]
+- ⚠️ 스케치의 '이름 공개 구매 6,701명'은 **재현되지 않는 숫자다**.
+  루커에 붙일 때 마트 값으로 고친다
 
 ---
 
-두 트랙으로 나뉘어 있고, **웹앱이 우선**이다. 파이프라인은 실유저 데이터가 생긴 뒤 잇는다.
-왜 이 순서인지는 [DECISIONS.md](DECISIONS.md)의 "웹앱을 최우선 트랙으로 재편" 참조.
+웹앱 트랙은 W19 까지 끝났고, **지금 움직이는 것은 파이프라인 트랙**이다.
+웹앱을 먼저 세운 이유는 [DECISIONS.md](DECISIONS.md)의 "웹앱을 최우선 트랙으로 재편" 참조.
 
 **웹앱 트랙**
 
@@ -264,8 +287,13 @@ python pipeline/verify_load.py  --source local                  # 행 수 대조
 | P2 | Postgres 적재 | **완료** — 순서 정의 40표. 95·96 자동 실행 |
 | P3 | NEIS 수집 | 학교·학급·급식·**학사일정 완료** · DAG 화는 남음 |
 | P4 | BigQuery 적재 DAG | **완료** — 40테이블 · 행 수 대조 통과.
-  ⚠️ **합성 v5 는 아직 안 올렸다.** 지금 raw 는 실유저 36,268행뿐.
-  올리면 약 13.9 GiB(월 135원 수준) |
-| P5 | 품질 검증 | |
-| P6 | stg / mart | |
-| P7 | 대시보드 | |
+  합성 v5 를 2026-08-06 에 전량 올렸다 — 실유저와 합쳐 **1억 2,373만 행 · 8.74 GiB**.
+  ⚠️ 갱신은 손으로 돈다. 한 번 12일 멈춰 있었다 |
+| P5 | 품질 검증 | **완료 (2026-08-18)** — `qa/quality_check.py` **430/430 통과** ·
+  두 원천 다. 한 번에 11.7 GiB 스캔. 리포트는 `qa/reports/` |
+| P6 | stg / mart | **완료 (2026-08-18)** — stg **뷰 10개**(저장 0) ·
+  mart **표 8개**(495 MiB). 그레인은 주간 필터가 정했다 —
+  비율을 굽지 않고 distinct 를 사전 집계하지 않는다([[mart-grain-for-weekly-filter]]).
+  주간 값이 stg 직접 집계와 일치하는 것까지 확인했다 |
+| P7 | 대시보드 | **다음 차례** — 루커에 `mart` 만 연결한다.
+  ⚠️ `user_journey` 퍼널은 단조 감소하지 않으니 **막대 묶음**으로 그린다 |
