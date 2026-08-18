@@ -144,7 +144,7 @@ _아직 없다._
 - [[withdrawal-is-terminal|탈퇴는 종점이다 — 그 뒤로 어떤 로그도 남기지 않는다]] — 세션·투표·원장을 전부 훑어 가장 늦은 것을 찾은 다음 그 뒤에 놓는다.
 - [[withdrawal-user-id|탈퇴 기록에 유저 식별자를 넣는다]] — 누가 탈퇴했는지 특정할 수 없었다. 탈퇴 사유를 유저 속성과 교차분석하는 게 원천 봉쇄됐다.
 
-## 운영 참조 <sub>`docs/ops` · 8</sub>
+## 운영 참조 <sub>`docs/ops` · 9</sub>
 
 실제로 그 작업을 할 때 필요한 값과 절차.
 
@@ -152,6 +152,7 @@ _아직 없다._
 - [[ops-bigquery-team-access|BigQuery 팀 접속 안내]] — 혼동하기 쉬운 지점이라 갈라 둔다.
 - [[ops-bigquery|BigQuery 적재]] — 다음 증설은 계산하고 시작한다. 결제가 붙어 있어 넘으면 막히지 않고 과금된다 —
 - [[ops-local-testing|혼자 시험하기 (더미 친구)]] — 투표는 친구가 5명이어야 열리고 문항마다 후보가 4명 필요하다. 창을 다섯 개 띄울 수
+- [[ops-p5-p7|P5~P7 시작하기 — 품질검증 · stg/mart · 대시보드]] — EDA까지 끝난 상태에서 다음 네 가지를 어떤 순서로, 어떤 명령으로
 - [[ops-rebuild|DB 를 처음부터 다시 만들기]] — python db/apply.py --target supabase          # DDL + migrations
 - [[ops-school-data|조직·학교 데이터]] — 이름은 테스트 조직이지만 급식·시간표·학사일정은 서울고등학교의 공개 데이터를 쓴다.
 - [[ops-synthetic-data|합성 데이터 만들기]] — 설정 주석에 주장으로만 있던 것을 전체 규모로 확인했다 — 2만 명·12개월을 다시
@@ -204,4 +205,4 @@ _아직 없다._
 
 ---
 
-문서 150개 · `python db/wiki_index.py` 로 갱신
+문서 151개 · `python db/wiki_index.py` 로 갱신
