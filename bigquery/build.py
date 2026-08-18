@@ -5,6 +5,9 @@ stg / mart 빌드 (P6).
 순서가 있는 이유는 mart 가 stg 를 읽고, stg 안에서도 뒤 파일이 앞 뷰를 참조하기
 때문이다. 그래서 파일 이름에 `10_` `20_` 같은 번호를 붙인다.
 
+**`_` 로 시작하는 파일은 건너뛴다.** 예시나 초안을 폴더에 두면서도 실수로
+만들어지지 않게 하려는 것이다 — `bigquery/mart/_example_mart_user.sql` 이 그것이다.
+
 두 층의 성격이 다르다.
 
   staging  **뷰**로 만든다. 저장 용량이 0 이다 — raw 가 이미 8.74 GiB 라
@@ -100,6 +103,8 @@ def main() -> int:
     files: list[tuple[str, Path]] = []
     for layer in order:
         for path in sorted(LAYERS[layer].glob("*.sql")):
+            if path.name.startswith("_"):
+                continue  # 예시·초안. 폴더에 두되 실행하지는 않는다
             if args.only and args.only not in path.stem:
                 continue
             files.append((layer, path))
