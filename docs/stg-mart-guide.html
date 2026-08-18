@@ -1,0 +1,770 @@
+<meta charset="utf-8">
+<title>창고에서 반찬통까지 — 품질검증 · 스테이징 · 마트 안내서</title>
+<style>
+  @page { size: A4; margin: 18mm 16mm; }
+  * { box-sizing: border-box; }
+  body { font-family: "Malgun Gothic", "맑은 고딕", -apple-system, sans-serif;
+         font-size: 10.5pt; line-height: 1.65; color: #1a1a1a; margin: 0; }
+  h1 { font-size: 20pt; margin: 0 0 4px; letter-spacing: -0.5px; }
+  h2 { font-size: 13.5pt; margin: 26px 0 10px; padding-bottom: 5px;
+       border-bottom: 2px solid #1a1a1a; page-break-after: avoid; }
+  h3 { font-size: 11.5pt; margin: 18px 0 7px; page-break-after: avoid; }
+  h4 { font-size: 10.5pt; margin: 14px 0 5px; page-break-after: avoid; }
+  p { margin: 7px 0; }
+  .sub { color: #666; font-size: 9.5pt; margin: 0 0 14px; }
+  .meta { border: 1px solid #ddd; background: #fafafa; padding: 10px 14px;
+          font-size: 9pt; color: #444; margin-bottom: 22px; }
+  .meta b { color: #1a1a1a; } .meta div { margin: 2px 0; }
+  table { border-collapse: collapse; width: 100%; margin: 10px 0 16px; font-size: 9.5pt; }
+  th, td { border: 1px solid #d8d8d8; padding: 5px 9px; text-align: left; vertical-align: top; }
+  th { background: #f2f2f2; font-weight: 600; }
+  td.n, th.n { text-align: right; font-variant-numeric: tabular-nums; }
+  tr { page-break-inside: avoid; }
+  .bad { color: #b3261e; font-weight: 600; }
+  .good { color: #1b6b3a; font-weight: 600; }
+  .warn { color: #8a6d1f; font-weight: 600; }
+  .dim { color: #777; }
+  .box { border-left: 4px solid #b3261e; background: #fdf3f2;
+         padding: 10px 14px; margin: 12px 0; page-break-inside: avoid; }
+  .box.ok { border-left-color: #1b6b3a; background: #f1f8f3; }
+  .box.note { border-left-color: #8a6d1f; background: #fdfaef; }
+  .box.plain { border-left-color: #4a6a8a; background: #f4f7fa; }
+  .box h4 { margin: 0 0 5px; font-size: 10.5pt; } .box p { margin: 5px 0; }
+  ol, ul { margin: 7px 0 7px 20px; padding: 0; } li { margin: 4px 0; }
+  code { font-family: Consolas, monospace; font-size: 9pt;
+         background: #f0f0f0; padding: 1px 4px; border-radius: 2px; }
+  pre { font-family: Consolas, monospace; font-size: 8.7pt; line-height: 1.5;
+        background: #f7f7f7; border: 1px solid #e2e2e2; border-left: 3px solid #999;
+        padding: 9px 11px; margin: 9px 0; white-space: pre-wrap;
+        page-break-inside: avoid; }
+  pre .c { color: #6a8a5a; }
+  .pb { page-break-before: always; }
+  footer { margin-top: 28px; padding-top: 8px; border-top: 1px solid #ddd;
+           font-size: 8.5pt; color: #777; }
+  .flow { border: 1px solid #ddd; background: #fcfcfc; padding: 16px 14px;
+          margin: 14px 0; page-break-inside: avoid; }
+  .store { border: 2px solid #1a1a1a; padding: 8px 12px; background: #fff; display: block; }
+  .store .nm { font-weight: 700; font-size: 10.5pt; }
+  .store .dt { font-size: 9pt; color: #555; margin-top: 2px; }
+  .arrow { text-align: center; font-size: 9pt; color: #555; margin: 6px 0; }
+  .tag { display: inline-block; font-size: 8.5pt; padding: 1px 6px;
+         border-radius: 3px; background: #eee; color: #444; margin-left: 4px; }
+  .toc { border: 1px solid #ddd; padding: 12px 16px; background: #fafafa;
+         font-size: 9.5pt; margin-bottom: 20px; }
+  .toc div { margin: 3px 0; }
+  .toc b { display: inline-block; width: 26px; color: #555; }
+</style>
+
+<h1>창고에서 반찬통까지</h1>
+<p class="sub">품질검증(P5) · 스테이징(P6-1) · 마트(P6-2) — BigQuery 를 처음 보는 사람을 위한 안내서</p>
+
+<div class="meta">
+  <div><b>작성</b> 2026-08-18 · <code>docs/</code> 위키(2층) 소속 · 원본은 <code>docs/stg-mart-guide.html</code></div>
+  <div><b>읽는 사람</b> BigQuery 를 써 본 적 없고 <b>"스테이징"이 무엇인지 모르는</b> 팀원</div>
+  <div><b>수치</b> 추정이 아니라 <b>실제로 질의해서</b> 얻은 값이다. 확인 시점 2026-08-18</div>
+  <div><b>범위</b> 데이터가 BigQuery 에 들어온 뒤부터 대시보드 직전까지. 그 앞은 <code>pipeline-overview.pdf</code></div>
+</div>
+
+<div class="toc">
+  <div><b>0</b> 다섯 단어만 먼저 — 데이터셋 · 표 · 뷰 · 스캔량 · 파티션</div>
+  <div><b>1</b> 데이터는 어떻게 들어오나 (P4 적재)</div>
+  <div><b>2</b> P5 품질검증 — 온 것을 믿어도 되나</div>
+  <div><b>3</b> <b>스테이징이 무엇인가</b> — 이 문서의 핵심</div>
+  <div><b>4</b> SQL 을 왜 그렇게 썼나 — 실제 코드 넷</div>
+  <div><b>5</b> 마트가 무엇인가 — 주간 규칙 넷</div>
+  <div><b>6</b> 무슨 결정을 했고 왜 그렇게 했나</div>
+  <div><b>7</b> 맞는지 어떻게 확인했나</div>
+  <div><b>8</b> 만들다가 드러난 것 둘</div>
+  <div><b>9</b> 앞으로 — Airflow 계획</div>
+  <div><b>10</b> 돈과 한도</div>
+  <div><b>11</b> 용어집 · 명령 요약</div>
+</div>
+
+<h2>한 장 요약</h2>
+
+<p><b>데이터를 세 번 옮겨 담는다.</b> 같은 데이터를 세 번 쓰는 게 아니라,
+<b>목적이 다른 세 층</b>을 만든 것이다.</p>
+
+<div class="flow">
+  <div class="store">
+    <div class="nm">① <code>raw</code> — 원본 그대로</div>
+    <div class="dt">40개 표 · <b>1억 2,373만 행 · 8.74 GiB</b> · 제약도 정리도 없다 · 파이프라인만 읽는다</div>
+  </div>
+  <div class="arrow">↓ <b>P5</b> 품질검증 — 온 것을 믿어도 되나 (430항목)</div>
+  <div class="store">
+    <div class="nm">② <code>stg</code> — 실수를 구조적으로 막은 층 <span class="tag">뷰 10개 · 저장 0</span></div>
+    <div class="dt">사람이 매번 기억해서 걸어야 했던 조건을 <b>미리 걸어 둔</b> 층. 분석은 여기서 시작한다</div>
+  </div>
+  <div class="arrow">↓ <b>P6-2</b> 지표를 미리 계산</div>
+  <div class="store">
+    <div class="nm">③ <code>mart</code> — 대시보드가 읽는 층 <span class="tag">표 8개 · 495 MiB</span></div>
+    <div class="dt">1억 2천만 행을 미리 접어 둔 결과. 화면은 여기만 본다</div>
+  </div>
+  <div class="arrow">↓ <b>P7</b> 루커 스튜디오 <span class="dim">(아직 안 붙였다)</span></div>
+</div>
+
+<div class="box ok">
+  <h4>왜 굳이 세 층인가 — 한 문장</h4>
+  <p><b>raw 를 직접 보면 조용히 틀리고, 매번 다시 계산하면 비싸기 때문이다.</b>
+  stg 는 "틀리지 않게" 하는 층이고, mart 는 "빠르고 싸게" 하는 층이다.
+  둘은 서로 다른 문제를 푼다.</p>
+</div>
+
+<h2 class="pb">0. 다섯 단어만 먼저</h2>
+
+<p>BigQuery 를 안 써 봤다면 이 다섯 개만 알면 이 문서를 읽을 수 있다.</p>
+
+<table>
+  <tr><th style="width:15%">말</th><th style="width:30%">쉬운 비유</th><th>정확히는</th></tr>
+  <tr>
+    <td><b>데이터셋</b></td>
+    <td>폴더</td>
+    <td>표를 담는 칸. 우리는 <code>raw</code> · <code>stg</code> · <code>mart</code> 셋을 쓴다</td>
+  </tr>
+  <tr>
+    <td><b>표</b>(테이블)</td>
+    <td>엑셀 시트</td>
+    <td>데이터가 <b>실제로 저장</b>돼 있다. 만들 때 계산이 끝나고, 이후에는 읽기만 한다</td>
+  </tr>
+  <tr>
+    <td><b>뷰</b>(view)</td>
+    <td>저장해 둔 <b>질문</b></td>
+    <td><b>데이터를 갖고 있지 않다.</b> "이렇게 꺼내라"는 문장만 저장된 것이라,
+        읽을 때마다 원본에서 다시 꺼낸다. 그래서 <b>저장 용량이 0</b>이고 항상 최신이다</td>
+  </tr>
+  <tr>
+    <td><b>스캔량</b></td>
+    <td>수도 계량기</td>
+    <td>BigQuery 는 <b>읽은 데이터 양으로 돈을 받는다.</b> 표를 많이 만들어 두는 것보다
+        <b>큰 표를 자주 읽는 것</b>이 비싸다. 월 1 TiB 까지 무료</td>
+  </tr>
+  <tr>
+    <td><b>파티션 · 클러스터</b></td>
+    <td>서랍 칸막이 · 칸 안 정렬</td>
+    <td>날짜로 서랍을 나눠 두면(<code>PARTITION BY</code>) "6월 첫 주"를 볼 때
+        6월 서랍만 연다. 스캔량이 줄어 그대로 돈이 준다</td>
+  </tr>
+</table>
+
+<div class="box note">
+  <h4>여기서 오는 오해 하나</h4>
+  <p>"표를 많이 만들면 돈이 많이 나오지 않나?" — <b>아니다.</b> 저장은 10 GiB 까지 무료이고
+  우리 마트 8개는 합쳐 <b>495 MiB</b>다. 반대로 <b>대시보드가 raw 를 직접 보면</b> 화면을
+  새로 그릴 때마다 1억 2천만 행을 읽는다. <b>마트를 만드는 이유가 바로 돈</b>이다.</p>
+</div>
+
+<h3><code>--dry-run</code> — 켜기 전에 계량기부터 본다</h3>
+
+<p>이 프로젝트의 모든 BigQuery 명령에는 <code>--dry-run</code>(또는 <code>--estimate</code>)이 있다.
+<b>실행하지 않고 "이 쿼리는 몇 GiB 를 읽을 것이다"만 알려준다.</b> 공짜다.
+습관으로 만들어 두면 실수로 큰돈을 쓰지 않는다.</p>
+
+<pre><span class="c"># 문법과 스캔량만 본다 — 아무것도 만들지 않는다</span>
+python bigquery/build.py --layer stg --dry-run</pre>
+
+<h2 class="pb">1. 데이터는 어떻게 들어오나 (P4 적재)</h2>
+
+<p>세 층 이야기를 하기 전에, <b>①번 층이 어떻게 채워지는지</b>를 먼저 알아야 한다.
+여기서 생긴 성질이 stg 가 존재하는 이유가 되기 때문이다.</p>
+
+<h3>1.1 두 곳에서 와서 한 표에 담긴다</h3>
+
+<table>
+  <tr><th style="width:22%">원천</th><th style="width:14%"><code>_source</code></th><th>무엇</th></tr>
+  <tr><td>Supabase</td><td><code>supabase</code></td><td><b>실유저</b> — 지인 23명이 실제로 쓴 흔적</td></tr>
+  <tr><td>로컬 Postgres</td><td><code>local</code></td><td><b>합성 데이터</b> — 지어낸 20,000명 · 12개월</td></tr>
+</table>
+
+<p>둘은 <b>같은 표</b>로 들어간다. 그런데 양쪽 다 id 가 1번부터 시작한다 —
+즉 <b>실유저 3번</b>과 <b>합성 3번</b>이 한 표 안에 같이 있다.
+그래서 적재할 때 <code>_source</code> 컬럼을 붙이고 <b>키를 <code>(_source, id)</code> 쌍</b>으로 쓴다.</p>
+
+<div class="box">
+  <h4>이 설계가 만드는 함정 — stg 가 태어난 이유</h4>
+  <p>분석할 때 <code>JOIN ... USING(id)</code> 처럼 <b><code>_source</code> 를 빠뜨리면</b>
+  실유저의 투표에 합성 유저의 프로필이 붙는다. <b>오류는 나지 않는다.</b> 숫자만 커진다.</p>
+  <p>실측 — <code>vote_item × app_user</code> 를 두 방식으로 세어 봤다:
+  <code>_source</code> 없이 <b>13,459,564행</b>, 넣고 <b>13,445,278행</b>.
+  <b>14,286행이 소리 없이 부풀었다.</b></p>
+</div>
+
+<h3>1.2 증분 적재 — 바뀐 것만 가져온다</h3>
+
+<p>매번 1억 행을 다시 올릴 수는 없다. 그래서 표마다 <b>워터마크</b>(마지막으로 가져온 시각)를
+기록해 두고, <b>그보다 새로 바뀐 행만</b> 가져온다. 기준 컬럼은 <code>updated_at</code> 하나로 통일했다.</p>
+
+<table>
+  <tr><th style="width:22%">성질</th><th>왜 그렇게 했나</th></tr>
+  <tr>
+    <td>지운 행도 남긴다</td>
+    <td>원천에서 삭제돼도 BigQuery 에서는 지우지 않고 <code>_deleted_at</code> 에 시각만 찍는다.
+        <b>raw 는 이력을 잃지 않는다</b>는 원칙. 대신 분석할 때 <code>_deleted_at IS NULL</code> 이
+        거의 항상 필요해진다 — <b>이것도 stg 가 대신 걸어 준다</b></td>
+  </tr>
+  <tr>
+    <td>적재 자체는 무료다</td>
+    <td>배치 로드 잡을 쓴다. 스트리밍이었으면 GB 당 과금이었을 것이다</td>
+  </tr>
+  <tr>
+    <td>파티션 순서로 꺼낸다</td>
+    <td>파티션 표는 <b>하루 4,000회의 파티션 수정</b>만 받는데, 적재 한 덩어리가 수십 일치에
+        흩어지면 그 한도를 금방 먹는다. 실제로 <code>vote_candidate</code> 2,620만 행에서 막혔다.
+        그래서 <b>날짜 순서로 정렬해 꺼낸다</b></td>
+  </tr>
+</table>
+
+<div class="box note">
+  <h4>증분은 조용히 틀린다 — 실제로 12일 멈춰 있었다</h4>
+  <p>2026-08-18 에 확인하니 BigQuery 의 워터마크가 <b>8월 6일에 멈춰</b> 있었다.
+  Supabase 에는 8월 13일까지의 투표가 있었는데도 <b>아무 오류도 나지 않았다.</b>
+  쿼리는 잘 돌았고 답도 나왔다 — 그냥 12일치가 없는 답이었다.
+  그래서 적재 뒤에 <b>행 수를 세어 대조</b>하고(<code>verify_load.py</code>),
+  품질검사가 <b>워터마크가 언제 것인지</b>를 함께 찍는다.</p>
+</div>
+
+<h2 class="pb">2. P5 품질검증 — 온 것을 믿어도 되나</h2>
+
+<p>이름이 비슷한 두 검사가 있는데 <b>묻는 것이 다르다.</b> 이 구분이 P5 의 전부다.</p>
+
+<table>
+  <tr><th style="width:32%">무엇</th><th>묻는 것</th></tr>
+  <tr><td><code>verify_load.py</code></td><td>원천의 행이 <b>다 왔나</b> (개수를 센다)</td></tr>
+  <tr><td><code>qa/quality_check.py</code></td><td>온 행을 <b>믿어도 되나</b> (내용을 본다)</td></tr>
+</table>
+
+<h3>2.1 왜 검사가 여기 있나</h3>
+
+<p><b>raw 층은 일부러 제약이 없다.</b> 적재기가 모든 컬럼을 NULL 허용으로 만들고 외래키도 걸지 않는다.
+원천 스키마가 조금 달라져도 적재가 통째로 죽지 않게 하려는 선택이다.
+<b>그 대신 검증을 적재 시점이 아니라 이 단계에 몰아 두었다.</b></p>
+
+<h3>2.2 검사 430개는 손으로 적지 않았다</h3>
+
+<p><b>살아 있는 스키마(<code>docs/erd.json</code>)를 읽어 표마다 자동으로 만든다.</b>
+표가 늘면 검사도 저절로 는다 — 사람이 검사 추가를 잊어서 생기는 구멍이 없다.</p>
+
+<table>
+  <tr><th style="width:20%">구분</th><th style="width:12%" class="n">개수</th><th>보는 것</th></tr>
+  <tr><td>유일성</td><td class="n">40</td><td><code>(_source, id)</code> 가 중복되지 않는가</td></tr>
+  <tr><td>필수값</td><td class="n">276</td><td>원천이 NOT NULL 인 컬럼에 NULL 이 없는가</td></tr>
+  <tr><td>참조</td><td class="n">75</td><td>부모 없는 자식 행이 없는가 (<b>같은 <code>_source</code> 안에서만</b>)</td></tr>
+  <tr><td>시각</td><td class="n">39</td><td>미래 시각 · 뒤집힌 순서(<code>voted_at &lt; served_at</code> 등)</td></tr>
+  <tr><td>적재 상태</td><td class="n">—</td><td>워터마크가 언제 것인가 (정보)</td></tr>
+  <tr><th>합계</th><th class="n">430</th><th class="good">두 원천 다 통과 (2026-08-18)</th></tr>
+</table>
+
+<p>한 번 도는 데 <b>11.7 GiB</b> 를 읽는다. 월 무료 한도의 1.1% 라 매일 돌려도 한 달 34% 다.</p>
+
+<h3>2.3 언제 다시 도나</h3>
+<ul>
+  <li>적재를 돌린 뒤</li>
+  <li><b>스키마를 바꾼 뒤</b> — 컬럼을 추가하면 <code>updated_at</code> 이 안 움직여 증분이 못 잡고,
+      그 컬럼이 통째로 NULL 로 남는다. <b>"필수값" 검사가 그것을 잡는다</b></li>
+</ul>
+
+<h2 class="pb">3. 스테이징이 무엇인가</h2>
+
+<div class="box plain">
+  <h4>한 문장</h4>
+  <p><b>스테이징(<code>stg</code>)은 "raw 를 그대로 쓰지 못하게 만드는 층"이다.</b>
+  분석할 때마다 사람이 기억해서 걸어야 했던 조건들을 <b>미리 걸어 둔 것</b>이고,
+  기억에 기대던 규칙을 <b>구조로 바꾼 것</b>이다.</p>
+</div>
+
+<h3>3.1 주방으로 비유하면</h3>
+
+<table>
+  <tr><th style="width:14%">층</th><th style="width:22%">주방</th><th>뜻</th></tr>
+  <tr><td><code>raw</code></td><td><b>창고</b></td>
+      <td>배달 온 그대로. 흙 묻은 채소, 안 쓸 것도 섞여 있다. 버리는 것 없이 다 쌓아 둔다</td></tr>
+  <tr><td><code>stg</code></td><td><b>손질대</b></td>
+      <td>씻고 다듬어 놓은 상태. <b>요리는 아직 아니다.</b> 무엇을 만들든 여기서 시작한다</td></tr>
+  <tr><td><code>mart</code></td><td><b>반찬통</b></td>
+      <td>이미 만들어 담아 둔 것. 꺼내면 바로 먹는다. 대신 <b>미리 정한 반찬만</b> 있다</td></tr>
+</table>
+
+<p>손질대가 없으면 요리할 때마다 창고에서 흙 묻은 채로 꺼내 씻어야 한다.
+<b>바쁠 때 한 번 안 씻으면 그대로 상에 올라간다</b> — 그게 지금까지의 문제였다.</p>
+
+<h3>3.2 stg 가 막는 실수 여섯 가지</h3>
+
+<p>전부 <b>실제로 물렸던</b> 것들이다. 공통점은 <b>오류가 나지 않고 숫자만 틀린다</b>는 것.</p>
+
+<table>
+  <tr><th style="width:34%">막는 실수</th><th>어떻게 막나</th></tr>
+  <tr>
+    <td>두 원천의 id 가 겹친다</td>
+    <td><b>대리키</b> <code>user_key = 'local-123'</code> 를 만든다. 원천이 다르면 키가 달라
+        <code>USING(id)</code> 로 잇는 것이 <b>불가능해진다</b></td>
+  </tr>
+  <tr>
+    <td>지운 행의 유령</td>
+    <td><code>_deleted_at IS NULL</code> 을 뷰 안에서 <b>한 번만</b> 건다</td>
+  </tr>
+  <tr>
+    <td>시간대가 9시간 밀린다</td>
+    <td>저장은 UTC 다. <code>signup_date</code> 처럼 <b>한국 날짜를 미리 계산</b>해 싣는다.
+        안 바꾸면 밤 10시가 낮 1시로 보인다</td>
+  </tr>
+  <tr>
+    <td>광고로 연 무료 힌트가 '구매'로 세어진다</td>
+    <td><code>is_paid_hint</code> · <code>is_ad_hint</code> 로 <b>갈라 둔다.</b>
+        하트를 낸 것과 광고를 본 것은 다른 사건이다</td>
+  </tr>
+  <tr>
+    <td>스텁 충전이 매출로 세어진다</td>
+    <td>MVP 의 충전 버튼은 돈이 안 오간다. <code>is_revenue</code> 하나로 못 박는다</td>
+  </tr>
+  <tr>
+    <td>제재당한 유저를 통째로 빼면 과거까지 사라진다</td>
+    <td>유저가 아니라 <b>시각</b>으로 자른다 — <code>valid_until</code>.
+        합성 데이터에는 제재 뒤에도 투표하는 유저가 34명 있다</td>
+  </tr>
+</table>
+
+<h3>3.3 왜 표가 아니라 뷰인가</h3>
+
+<p>stg 는 <b>전부 뷰</b>다(저장 0). 이유는 둘이다.</p>
+<ol>
+  <li><b>저장 여유가 없다.</b> raw 가 이미 8.74 GiB 라 무료 10 GiB 중 남은 게 1 GiB 남짓이다.
+      stg 를 표로 구우면 그 여유가 사라진다.</li>
+  <li><b>읽는 쪽이 적다.</b> stg 를 읽는 것은 mart 와 분석자뿐이다. 하루에 수십 번 읽히는
+      대시보드와 달라서, 읽을 때마다 다시 계산해도 비용이 작다.</li>
+</ol>
+
+<p>덤으로 <b>항상 최신</b>이다. raw 에 새 행이 들어오면 stg 는 <b>다시 만들 필요가 없다</b> —
+뷰는 데이터를 갖고 있지 않기 때문이다. 반대로 <b>mart 는 반드시 다시 구워야 한다.</b></p>
+
+<h3>3.4 지금 있는 뷰 10개</h3>
+
+<table>
+  <tr><th style="width:32%">뷰</th><th>한 행이 뜻하는 것</th></tr>
+  <tr><td><code>stg_user</code></td><td>유저 한 명 (+ 소속 · 지역 · 탈퇴 · 제재 · <code>valid_until</code>)</td></tr>
+  <tr><td><code>stg_user_session</code></td><td>앱 접속 한 번 (+ 체류시간 · 중복 로그 표시)</td></tr>
+  <tr><td><code>stg_vote_session</code></td><td>투표 한 판 (+ 완료 여부)</td></tr>
+  <tr><td><code>stg_vote_item</code></td><td>출제된 질문 한 개</td></tr>
+  <tr><td><code>stg_vote_received</code></td><td><b>받은 투표 한 건</b> (+ 열람 · 공개 단계)</td></tr>
+  <tr><td><code>stg_hint_purchase</code></td><td>힌트를 연 기록 (+ 유료/광고 구분)</td></tr>
+  <tr><td><code>stg_heart_transaction</code></td><td>하트 원장 한 줄 (+ 적립/소비 분리)</td></tr>
+  <tr><td><code>stg_heart_purchase</code></td><td>충전 시도 (+ 스텁/매출 구분)</td></tr>
+  <tr><td><code>stg_friend_edge</code></td><td><b>한 사람이 본 친구 관계</b> (관계 1건 = 두 행)</td></tr>
+  <tr><td><code>stg_report</code></td><td>신고 한 건 (+ 사유 이름 · 처리 여부)</td></tr>
+</table>
+
+<p>뒤의 넷과 <code>stg_user</code> 의 지역은 <b>대시보드 때문에 늘었다.</b>
+스케치 5쪽 중 2·3·5쪽이 기존 6개로는 그려지지 않았다 — 받은 투표 · 신고 · 친구 관계가
+아예 없었기 때문이다.</p>
+
+<h2 class="pb">4. SQL 을 왜 그렇게 썼나 — 실제 코드 넷</h2>
+
+<p>파일은 <code>bigquery/staging/*.sql</code> 에 있다. <b>파일 이름의 번호가 실행 순서</b>다.
+여기서는 "왜 이렇게 생겼는지"만 본다.</p>
+
+<h3>4.1 대리키 — 실수를 불가능하게 만든다</h3>
+
+<pre>CONCAT(u._source, '-', CAST(u.id AS STRING))  AS user_key
+<span class="c">-- 'local-123' · 'supabase-3'</span></pre>
+
+<p>id 를 그대로 두면 <b>사람이 <code>_source</code> 를 기억해야 한다.</b> 문자열로 붙여 버리면
+합성의 3번과 실유저의 3번이 <b>다른 값</b>이 되어, 잘못 이으면 결과가 <b>0행</b>이 된다.
+<b>틀린 답 대신 빈 답이 나오는 것</b>이 이 설계의 목적이다 — 빈 답은 사람이 알아챈다.</p>
+
+<h3>4.2 친구 관계를 두 행으로 편다</h3>
+
+<p>원본은 관계 하나를 한 줄로 적되, 두 사람을 <b>id 순서로 정렬</b>해 넣는다
+(<code>user_low_id &lt; user_high_id</code>). 저장에는 좋지만 분석에는 함정이다.</p>
+
+<pre><span class="c">-- 낮은 쪽에서 본 관계</span>
+SELECT user_low_id AS user_id, user_high_id AS friend_id ... FROM friendship
+UNION ALL
+<span class="c">-- 높은 쪽에서 본 같은 관계</span>
+SELECT user_high_id AS user_id, user_low_id AS friend_id ... FROM friendship</pre>
+
+<div class="box">
+  <h4>안 폈으면 어떻게 됐나</h4>
+  <p><code>user_low_id</code> 만 세면 <b>친구 수가 정확히 절반</b>이 되고,
+  <b>id 가 작은 사람에게만 친구가 있는 것처럼</b> 보인다. 역시 오류는 안 난다.</p>
+  <p>그래서 뷰 이름도 <code>friendship</code> 이 아니라 <b><code>friend_edge</code></b> 다 —
+  한 행은 "관계"가 아니라 <b>"한 사람이 본 관계"</b>라는 뜻. 확인도 쉽다:
+  <b>795,656 = 397,828 × 2</b> 여야 한다.</p>
+</div>
+
+<h3>4.3 이름을 바꿔 실은 것 — <code>relation_source</code></h3>
+
+<p>친구 표에는 이미 <code>source</code> 라는 컬럼이 있다(어떻게 맺어졌나 — 초대코드·검색·추천).
+그런데 우리는 적재 원천 <code>_source</code> 를 <code>source</code> 로 싣는 관례를 쓴다.
+<b>이름이 부딪히면 나중에 반드시 잘못 읽는다.</b> 그래서 관계 출처를
+<code>relation_source</code> 로 바꿔 실었다.</p>
+
+<h3>4.4 일부러 <b>계산하지 않은</b> 것 — 신고 에이징</h3>
+
+<p><code>stg_report</code> 는 "며칠째 밀렸나"를 계산하지 않는다. <b>뷰이기 때문이다.</b>
+뷰는 읽을 때마다 다시 계산되므로 "7일 이상 미해결 8,898건"이 <b>조회하는 시각마다 달라진다.</b>
+화면에는 그 사실이 드러나지 않는다.</p>
+
+<p>그래서 <b>자르는 시각은 마트가 정하고</b>, <code>as_of_date</code> 컬럼으로 <b>언제 기준인지를
+표에 박아 둔다.</b> stg 는 <code>created_at</code> 과 <code>reviewed_at</code> 이라는
+<b>사실만</b> 싣는다.</p>
+
+<div class="box ok">
+  <h4>여기서 보이는 원칙</h4>
+  <p><b>stg 는 "사실"을 다듬고, mart 는 "판단"을 굽는다.</b>
+  며칠 밀렸는지는 사실이 아니라 <b>기준 시각을 정해야 나오는 판단</b>이다.</p>
+</div>
+
+<h2 class="pb">5. 마트가 무엇인가</h2>
+
+<div class="box plain">
+  <h4>한 문장</h4>
+  <p><b>마트(<code>mart</code>)는 "대시보드가 읽을 답을 미리 계산해 둔 층"이다.</b>
+  stg 가 <b>틀리지 않게</b> 하는 층이라면, mart 는 <b>빠르고 싸게</b> 하는 층이다.</p>
+</div>
+
+<h3>5.1 왜 여기는 뷰가 아니라 표인가</h3>
+
+<p>루커 스튜디오 같은 대시보드는 <b>화면을 다시 그릴 때마다 쿼리를 날린다.</b>
+필터를 한 번 바꾸면 또 날아간다. 뷰로 두면 그때마다 1억 2천만 행을 다시 읽는다.
+<b>표로 구워 두면 495 MiB 만 읽는다.</b> stg 와 정반대의 선택이고, 이유도 정반대다.</p>
+
+<h3>5.2 그레인 — "한 행이 무엇인가"</h3>
+
+<p>마트를 만들 때 제일 먼저 정하는 것이 <b>그레인</b>이다. "이 표의 한 행은 무엇 하나를
+뜻하는가". 유저 한 명인가, 하루인가, 유저의 하루인가.
+<b>그레인이 정해지면 그 표로 답할 수 있는 질문의 범위가 정해진다.</b></p>
+
+<h3>5.3 ⚠️ 주간 필터가 설계를 바꿨다 — 규칙 넷</h3>
+
+<p>이 프로젝트에서 마트 설계를 실제로 결정한 것은 지표 목록이 아니라
+<b>"주 단위로 좁혀 전주와 비교하고 싶다"</b>는 한 줄이었다.</p>
+
+<table>
+  <tr><th style="width:38%">규칙</th><th>어기면 무슨 일이 생기나</th></tr>
+  <tr>
+    <td>① <b>모든 표에 날짜 컬럼</b>을 둔다</td>
+    <td>루커의 '전주와 비교' 기능은 날짜 축이 있는 데이터에서만 켜진다.
+        없으면 증감 표시가 <b>아예 생기지 않는다</b></td>
+  </tr>
+  <tr>
+    <td>② <b>비율을 굽지 않는다.</b> 분자·분모를 싣는다</td>
+    <td>"처리율 45.4%"를 미리 저장하면, 주간 값이 <b>일별 비율의 평균</b>이 된다.
+        1건 중 1건(100%)과 100건 중 50건(50%)의 평균은 75% 지만 실제로는 50.5% 다</td>
+  </tr>
+  <tr>
+    <td>③ <b>사람 수를 미리 세지 않는다</b></td>
+    <td>같은 사람이 월·수·금 접속하면 일별로는 1+1+1 이지만 주간으로는 <b>1명</b>이다.
+        미리 세어 두면 기간을 바꿀 때 다시 셀 수 없다</td>
+  </tr>
+  <tr>
+    <td>④ 퍼널·분포는 <b>사건이 일어난 날</b>로 자른다</td>
+    <td>축이 잘못 잡히면 기간을 좁힐 때 같은 대상이 두 주에 <b>중복으로</b> 잡힌다</td>
+  </tr>
+</table>
+
+<div class="box">
+  <h4>규칙 ③ 때문에 표 하나가 통째로 바뀌었다</h4>
+  <p>원래 계획은 <b>유저×월</b> 표였다. 그러면 주간 활성 유저를 낼 수 없다.
+  그래서 <b>유저×활동일</b> — "이 사람이 이 날 무엇을 했나"를 한 행으로 하는 표로 바꿨다.
+  원자 행이 <b>사람 단위</b>로 남아 있으면 루커가 어떤 기간에서든 다시 셀 수 있다.
+  덤으로 일·주·월 지표가 <b>표 하나에서</b> 전부 나온다.</p>
+</div>
+
+<h3>5.4 표 여덟 개</h3>
+
+<table>
+  <tr><th style="width:26%">표</th><th style="width:22%">한 행 = 무엇</th>
+      <th style="width:14%" class="n">행 수</th><th>어디에 쓰나</th></tr>
+  <tr><td><code>mart_user</code></td><td>유저 한 명</td><td class="n">20,018</td>
+      <td>가입·해금·첫 투표·탈퇴, 퍼널 플래그, 친구 수 구간</td></tr>
+  <tr><td><code>mart_user_activity</code></td><td><b>유저의 하루</b></td><td class="n">2,288,001</td>
+      <td><b>사람 수는 전부 여기서 센다</b> — MAU·WAU·주간 투표자</td></tr>
+  <tr><td><code>mart_daily</code></td><td>하루 × 소속</td><td class="n">33,786</td>
+      <td>더할 수 있는 것만 — 가입 수·투표 수·하트·매출</td></tr>
+  <tr><td><code>mart_funnel_step</code></td><td>퍼널의 한 단계</td><td class="n">272,890</td>
+      <td>가입→…→이름 공개 · 수신→열람→힌트</td></tr>
+  <tr><td><code>mart_distribution</code></td><td>분포의 한 구간</td><td class="n">396,197</td>
+      <td>문항 도달 · 열람→첫 힌트 지연 · 힌트 종류</td></tr>
+  <tr><td><code>mart_report</code></td><td>신고 한 건</td><td class="n">31,026</td>
+      <td>상태·유형·에이징 (작아서 접지 않고 그대로 굽는다)</td></tr>
+  <tr><td><code>mart_heart_flow</code></td><td>하루 × 하트 유형</td><td class="n">197,879</td>
+      <td>하트가 어디서 들어와 어디로 나가나</td></tr>
+  <tr><td><code>mart_backlog_weekly</code></td><td><b>주 스냅샷</b></td><td class="n">3,435</td>
+      <td>그 주 말 기준으로 신고가 몇 건 밀려 있었나</td></tr>
+  <tr><th colspan="2">합계</th><th class="n">약 325만</th><th>495 MiB (저장 무료 한도의 5%)</th></tr>
+</table>
+
+<h3>5.5 마지막 표만 성격이 다르다</h3>
+
+<p><b>적체는 사건이 아니라 상태다.</b> "이번 주에 신고가 몇 건 들어왔나"는 접수일로 셀 수 있지만,
+"이번 주 말 기준으로 몇 건 밀려 있나"는 <b>그 시점의 상태</b>라 사건일 축으로는 안 나온다.
+그래서 주마다 스냅샷을 만든다.</p>
+
+<pre><span class="c">-- 그 시점에 "접수됐고 아직 안 본" 것을 계산으로 복원한다</span>
+created_at &lt;= T AND (reviewed_at IS NULL OR reviewed_at &gt; T)</pre>
+
+<p>과거를 <b>계산으로 되살릴 수 있으므로</b> 매번 통째로 다시 구워도 이력이 사라지지 않는다.
+쌓아 두는 표가 아니라서 다른 표와 갱신 방법이 같다.</p>
+
+<h2 class="pb">6. 무슨 결정을 했고 왜 그렇게 했나</h2>
+
+<table>
+  <tr><th style="width:26%">결정</th><th style="width:34%">왜</th><th>기각한 대안</th></tr>
+  <tr>
+    <td>stg 는 <b>뷰</b>, mart 는 <b>표</b></td>
+    <td>저장 여유가 1 GiB 뿐 · stg 는 읽는 쪽이 적다. 대시보드는 반대로 자주 읽는다</td>
+    <td>stg 도 표로 굽기 — 남은 여유가 사라진다</td>
+  </tr>
+  <tr>
+    <td><b>유저×활동일</b> 팩트를 둔다</td>
+    <td>사람 수는 기간이 바뀌면 다시 세야 한다. 원자 행이 사람 단위여야 가능하다</td>
+    <td>유저×월 표 — 주간 MAU 를 못 낸다</td>
+  </tr>
+  <tr>
+    <td><b>비율을 굽지 않는다</b></td>
+    <td>미리 계산한 비율은 기간을 합칠 때 '평균의 평균'이 된다</td>
+    <td>처리율·전환율을 컬럼으로 저장 — 편하지만 틀린다</td>
+  </tr>
+  <tr>
+    <td>친구 관계를 <b>두 행으로</b> 편다</td>
+    <td>한쪽만 세면 친구 수가 절반이 되고 오류는 안 난다</td>
+    <td>마트에서 매번 <code>UNION</code> — 실수를 막는 자리가 뒤로 밀릴 뿐</td>
+  </tr>
+  <tr>
+    <td>"누가 나를 뽑았나"(<code>voter_id</code>)를 <b>싣지 않는다</b></td>
+    <td>앱에서 <b>하트를 받고 파는 유료 정보</b>다. 대시보드가 쓰지도 않는다</td>
+    <td>일단 실어두기 — 필요해질 때 여는 편이 안전하다</td>
+  </tr>
+  <tr>
+    <td>탈퇴자를 <b>빼지 않고 표시만</b></td>
+    <td>빼면 이탈률의 <b>분자가 사라진다</b>. 거를지는 보는 쪽이 고른다</td>
+    <td>차원 표에서 제외 — 되돌릴 수 없다</td>
+  </tr>
+  <tr>
+    <td>제재는 유저가 아니라 <b>시각</b>으로 자른다</td>
+    <td>유저를 통째로 빼면 <b>제재 전의 정상 활동</b>까지 사라진다</td>
+    <td>제재 유저 제외 — 34명의 과거가 통째로 날아간다</td>
+  </tr>
+  <tr>
+    <td>신고 에이징은 <b>mart 가</b> 계산한다</td>
+    <td>뷰로 두면 조회 시각마다 답이 달라지고 그 사실이 안 보인다</td>
+    <td>stg 에서 <code>CURRENT_DATE</code> 사용</td>
+  </tr>
+  <tr>
+    <td>유저 퍼널은 <b>독립 플래그</b>로 둔다</td>
+    <td>힌트는 받은 투표에서 사는 것이라 투표 세션과 인과가 없다.
+        누적 조건부로 강제하면 <b>세션을 안 끝내고 힌트만 산 사람이 사라진다</b></td>
+    <td>단조 감소하게 강제 — 대신 <b>화면을 막대 묶음으로</b> 그리기로 했다</td>
+  </tr>
+  <tr>
+    <td>이름 공개는 <code>hint_type</code> 으로 센다</td>
+    <td>합성 데이터의 <code>reveal_status</code> 가 갱신되지 않는다(8장)</td>
+    <td>생성기 수정 — 다음 판본에서 다른 어긋남과 함께</td>
+  </tr>
+</table>
+
+<h2 class="pb">7. 맞는지 어떻게 확인했나</h2>
+
+<h3>7.1 이미 아는 답과 맞춰 본다</h3>
+
+<p>노트북이 <b>raw 를 직접 읽어</b> 낸 값이 있다. 같은 값이 stg·mart 를 거쳐도 나오면
+층이 제대로 선 것이다.</p>
+
+<table>
+  <tr><th>지표</th><th class="n">노트북(raw 직접)</th><th class="n">마트</th></tr>
+  <tr><td>신규 가입</td><td class="n">20,000</td><td class="n">19,995</td></tr>
+  <tr><td>접속 사용자</td><td class="n">18,714</td><td class="n">18,706</td></tr>
+  <tr><td>투표 참여</td><td class="n">16,562</td><td class="n">16,552</td></tr>
+  <tr><td>탈퇴</td><td class="n">1,999</td><td class="n good">1,999</td></tr>
+  <tr><td>총매출</td><td class="n">₩47.38M</td><td class="n">₩47.22M</td></tr>
+  <tr><td>미해결 신고</td><td class="n">10,140</td><td class="n">10,123</td></tr>
+</table>
+
+<div class="box note">
+  <h4>왜 똑같지 않은가 — <b>일부러 어긋난다</b></h4>
+  <p>노트북은 <b>제재를 아무 데서도 거르지 않는다.</b> 마트는 <code>valid_until</code> 로
+  제재 이후 활동을 잘라낸다. 그래서 <b>마트가 조금 작게 나오는 것이 정상</b>이다.
+  <b>크게 나오면 그때가 버그다.</b> 이렇게 "어긋나야 하는 방향"을 미리 적어 두면
+  다음 사람이 정상을 버그로 오해하지 않는다.</p>
+</div>
+
+<h3>7.2 주간이 진짜 되는지 — 이번 작업의 핵심 확인</h3>
+
+<p>같은 값을 <b>두 경로로</b> 구해 맞춰 봤다(2026-06-01~07 한 주).</p>
+
+<table>
+  <tr><th style="width:30%">확인</th><th>결과</th></tr>
+  <tr><td>주간 합계</td><td>마트 <b>386,252</b> = stg 직접 <b>386,252</b> <span class="good">일치</span></td></tr>
+  <tr><td>주간 활성 유저</td><td>마트 <b>1,384</b> = stg 직접 <b>1,384</b> <span class="good">일치</span></td></tr>
+  <tr><td>전주 대비</td><td>1,533 → 1,384(<b>−149</b>) → 1,303(<b>−81</b>) 로 계산된다</td></tr>
+  <tr><td>적체 스냅샷</td><td>주마다 값이 달라진다 (9,508 → 10,123)</td></tr>
+</table>
+
+<p><b>여기서 사람 수를 미리 세어 둔 표가 하나라도 있었으면 값이 어긋난다.</b>
+이 검증의 목적이 그것이다.</p>
+
+<h2 class="pb">8. 만들다가 드러난 것 둘</h2>
+
+<div class="box">
+  <h4>① 합성 데이터가 앱과 다르게 동작한다</h4>
+  <p>받은 투표에는 "얼마나 공개됐나"를 적는 <code>reveal_status</code> 컬럼이 있다.
+  실측해 보니:</p>
+  <table>
+    <tr><th>&nbsp;</th><th class="n">reveal_status = 공개됨</th><th class="n">이름 공개 힌트 구매</th></tr>
+    <tr><td>합성 데이터</td><td class="n bad">0건</td><td class="n">8,411건 · 4,921명</td></tr>
+    <tr><td>실유저</td><td class="n">10건</td><td class="n good">10건 (일치)</td></tr>
+  </table>
+  <p><b>생성기가 이름 공개를 팔면서 이 컬럼을 갱신하지 않는다.</b> 앱은 갱신한다 —
+  실유저 쪽이 10 대 10 으로 정확히 맞는 것이 증거다.
+  <b>두 원천을 함께 보지 않았으면 못 찾았을 종류</b>다.</p>
+  <p>이 컬럼으로 퍼널을 셌다면 마지막 단계가 <b>0</b> 이 되고, 차트는 멀쩡히 그려지며,
+  "아무도 이름을 안 산다"는 <b>틀린 결론</b>만 남았을 것이다.</p>
+</div>
+
+<div class="box">
+  <h4>② 대시보드 스케치의 숫자 하나가 재현되지 않는다</h4>
+  <p>스케치에는 "이름 공개 구매 <b>6,701명</b>"이 적혀 있다. 그런데 이름 공개 힌트를 산 사람은
+  <b>통틀어 4,921명</b>이다. <b>불가능한 숫자</b>다 — 스케치 쪽이 틀렸다.</p>
+  <p>루커에 실제로 붙일 때 마트 값으로 고친다. <b>그림이 먼저 나오면 그림의 숫자를
+  믿게 되는데</b>, 층을 세워 두면 이렇게 대조가 된다.</p>
+</div>
+
+<h2>9. 앞으로 — Airflow 계획</h2>
+
+<h3>9.1 지금</h3>
+
+<p>Airflow(자동 실행기)는 이미 돌고 있지만 <b>맨 앞 두 걸음만</b> 한다.</p>
+
+<pre>ping_raw_load   <span class="c">매일 새벽 4시 (한국 시간)</span>
+  ├─ extract_load   <span class="c">Supabase → BigQuery raw 증분 적재</span>
+  └─ verify         <span class="c">행 수 대조</span></pre>
+
+<p>나머지 — 품질검증과 마트 굽기 — 는 <b>사람이 손으로 돌린다.</b>
+그래서 8월 6일부터 18일까지 <b>12일 동안 아무도 모르게 멈춰</b> 있었다.</p>
+
+<h3>9.2 다음 — 네 걸음으로 늘린다</h3>
+
+<p>데이터가 갱신될 때 실제로 필요한 것은 네 줄이고, 이것이 그대로 DAG 가 된다.</p>
+
+<pre>extract_load → verify → quality_check → build --layer mart</pre>
+
+<table>
+  <tr><th style="width:26%">걸음</th><th>왜 필요한가</th></tr>
+  <tr><td>① 적재</td><td>새 행을 가져온다. 여기가 유일한 입구다</td></tr>
+  <tr><td>② 대조</td><td>증분은 조용히 틀린다. 매번 센다</td></tr>
+  <tr><td>③ 품질</td><td>온 행을 믿어도 되는지 본다 (430항목)</td></tr>
+  <tr><td>④ <b>마트 굽기</b></td><td><b>안 하면 오류 없이 옛날 숫자가 뜬다.</b>
+      표는 만든 시점에 굳은 값이기 때문이다. <code>stg</code> 는 뷰라 안 해도 된다</td></tr>
+</table>
+
+<div class="box ok">
+  <h4>④ 는 ① 과 성격이 다르다</h4>
+  <p>적재(①)는 <b>행을 밖에서 안으로</b> 나른다. 마트 굽기(④)는 <b>BigQuery 안에서</b>
+  계산만 한다 — 오가는 것은 SQL 글자 몇 KB 뿐이다. 그래서 느리지도, 위험하지도 않다.
+  <b>갈아끼우는 동안에도 옛 표가 보이므로</b> 굽는 중에 대시보드를 열어도
+  반쯤 만들어진 숫자가 보이지 않는다.</p>
+</div>
+
+<h3>9.3 그다음 — 주간 배달</h3>
+
+<p>대시보드는 <b>사람이 열어야</b> 보인다. 안 열면 안 본다. 그래서 주 1회
+<b>표지 요약 + 대시보드 PDF</b> 를 보내는 것까지가 계획이다.
+PDF 발송은 루커 스튜디오의 <b>내장 예약 발송</b>을 쓴다 — DAG 로 만들면
+헤드리스 브라우저를 떠안게 되고 얻는 것이 없다.</p>
+
+<table>
+  <tr><th style="width:26%">지킬 것</th><th>왜</th></tr>
+  <tr>
+    <td><b>실패도 배달한다</b></td>
+    <td>적재가 멈추면 메일이 <b>안 오는 게 아니라</b> "이번 주 데이터 없음 — 적재 실패"가 와야 한다.
+        안 오는 것과 문제없는 것을 구분할 수 없으면 <b>12일 멈춰도 아무도 모른다</b></td>
+  </tr>
+  <tr>
+    <td>합성이 안 변해도 <b>보낸다</b></td>
+    <td>"변화 없음"을 명시해 보낸다. 안 보내면 파이프라인이 죽은 것과 구분되지 않는다</td>
+  </tr>
+  <tr>
+    <td>실유저에는 <b>비율을 쓰지 않는다</b></td>
+    <td>23명 · 받은 투표 616건에서 "열람률 70.5%"는 두세 건만 움직여도 몇 %p 씩 튄다.
+        <b>절대 수</b>와 <b>"처음 있는 일"</b>(첫 결제·첫 탈퇴·첫 신고)로 보낸다</td>
+  </tr>
+  <tr>
+    <td>원천을 <b>파라미터로</b> 받는다</td>
+    <td>실유저는 매일, 합성은 재생성했을 때만 돈다. 같은 코드로 둘 다 되게 한다</td>
+  </tr>
+</table>
+
+<div class="box note">
+  <h4>⚠️ Airflow 스케줄은 UTC 다</h4>
+  <p>월요일 아침 9시(한국)에 받으려면 <b>일요일 00:00 UTC</b> 로 걸어야 한다.
+  이 프로젝트에서 시간대는 이미 두 번 문제를 냈다(저장 UTC · 집계 KST).</p>
+</div>
+
+<h2 class="pb">10. 돈과 한도</h2>
+
+<table>
+  <tr><th style="width:26%">항목</th><th style="width:20%">무료 한도</th><th>지금</th></tr>
+  <tr><td>저장</td><td>10 GiB</td>
+      <td>raw 8.74 GiB + stg 0 + mart 0.48 GiB ≈ <b>92%</b></td></tr>
+  <tr><td>쿼리(읽은 양)</td><td>월 1 TiB</td>
+      <td>품질검사 11.7 GiB/회 · 마트 굽기 <b>7.3 GiB/회</b> — 매일 돌려도 여유</td></tr>
+  <tr><td>일일 하드캡</td><td>직접 건 상한</td>
+      <td>실수로 큰돈이 나가지 않게 <b>스스로 채운 자물쇠</b></td></tr>
+</table>
+
+<div class="box">
+  <h4>실제로 걸렸다 — 2026-08-18</h4>
+  <p>마트를 처음 구우려는데 <code>Custom quota exceeded</code> 로 막혔다.
+  그날 이미 <b>136개 잡 · 30.5 GiB</b> 를 쓴 뒤였다(품질검사 등).
+  <b>이건 사고가 아니라 장치가 작동한 것이다</b> — 이 프로젝트는 BigQuery 샌드박스가
+  아니라서 한도를 넘으면 <b>막히지 않고 과금된다.</b> 하드캡이 그 "막힘"을 되살린다.</p>
+  <p>해결은 둘 중 하나 — <b>콘솔에서 캡을 올리거나</b>, 태평양 자정(한국시간 오후 4~5시)의
+  <b>자동 리셋을 기다리거나</b>. 이번에는 캡을 올렸다.</p>
+</div>
+
+<h3>비용이 커지는 곳은 표 개수가 아니다</h3>
+<p><b>쿼리 <u>횟수</u>가 지배한다.</b> 대시보드가 raw 를 직접 본다면
+(차트 20개 × 하루 30회 × 30일) 월 17 TiB 를 넘겨 <b>수십만 원</b>이 된다.
+마트를 만드는 이유가 여기 있다 — <b>같은 화면을 495 MiB 로 그린다.</b></p>
+
+<h2>11. 용어집</h2>
+
+<table>
+  <tr><th style="width:22%">말</th><th>뜻</th></tr>
+  <tr><td><b>raw / stg / mart</b></td><td>원본 / 손질한 것 / 미리 만들어 둔 것</td></tr>
+  <tr><td><b>뷰</b></td><td>저장된 질문. 데이터를 갖고 있지 않아 용량 0, 항상 최신</td></tr>
+  <tr><td><b>증분 적재</b></td><td>전부가 아니라 <b>바뀐 것만</b> 가져오기</td></tr>
+  <tr><td><b>워터마크</b></td><td>"여기까지 가져왔다"는 표시. 이게 멈추면 조용히 낡는다</td></tr>
+  <tr><td><b>대리키</b></td><td><code>local-123</code> 처럼 원천을 붙여 만든 키. 잘못된 조인을 불가능하게 한다</td></tr>
+  <tr><td><b>그레인</b></td><td>"한 행이 무엇 하나를 뜻하는가"</td></tr>
+  <tr><td><b>코호트</b></td><td>같은 시점에 시작한 집단. 여기서는 "그 주에 가입한 사람들"</td></tr>
+  <tr><td><b>퍼널</b></td><td>단계별로 얼마나 남는가. 단, 우리 유저 퍼널은 <b>단조 감소하지 않는다</b>(6장)</td></tr>
+  <tr><td><b>distinct</b></td><td>중복을 뺀 개수. <b>사람 수</b>가 대표적이라 미리 세면 안 된다</td></tr>
+  <tr><td><b>스텁</b></td><td>진짜처럼 생겼지만 실제로는 동작하지 않는 것. 우리 결제가 그렇다</td></tr>
+</table>
+
+<h3>명령 요약 — 데이터가 갱신되면 이 네 줄</h3>
+
+<pre>python pipeline/extract_load.py --source supabase   <span class="c">① 새 행을 raw 로</span>
+python pipeline/verify_load.py  --source supabase   <span class="c">② 빠진 행이 없는지</span>
+python qa/quality_check.py      --source supabase   <span class="c">③ 믿어도 되는지 (430항목)</span>
+python bigquery/build.py --layer mart               <span class="c">④ 마트를 다시 굽는다</span></pre>
+
+<p><b><code>stg</code> 는 여기 없다.</b> 뷰라서 ①이 끝나면 이미 최신이다 —
+<b>SQL 을 고쳤을 때만</b> <code>--layer stg</code> 를 돌린다.</p>
+
+<h3>어디를 고치면 무엇이 바뀌나</h3>
+
+<table>
+  <tr><th style="width:34%">고치는 곳</th><th>따라 바뀌는 것</th></tr>
+  <tr><td><code>bigquery/staging/*.sql</code></td><td>stg 뷰. <code>--layer stg</code> 를 돌리면 즉시 반영된다</td></tr>
+  <tr><td><code>bigquery/mart/*.sql</code></td><td>마트 표. <b>다시 구워야</b> 반영된다</td></tr>
+  <tr><td>파일 이름의 번호</td><td><b>실행 순서.</b> 앞 표를 읽는 표는 번호가 뒤여야 한다</td></tr>
+  <tr><td>새 지표가 필요할 때</td><td>임시 표를 만들지 말고 <code>bigquery/mart/</code> 에 SQL 을 더한다 —
+      그래야 다음 사람도 같은 값을 본다</td></tr>
+</table>
+
+<footer>
+  ping-v2 · 품질검증 · 스테이징 · 마트 안내서 · 2026-08-18 작성 ·
+  원본 <code>docs/stg-mart-guide.html</code> (HTML 을 고치고 PDF 를 다시 뽑는다) ·
+  더 깊이: <code>docs/ops/ops-p5-p7.md</code> · 결정 이력은
+  <code>docs/decisions/mart-grain-for-weekly-filter.md</code>
+</footer>
