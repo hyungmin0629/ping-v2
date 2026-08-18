@@ -59,6 +59,11 @@ SELECT
   s.name_masked                                       AS school_name,
   s.school_type,
 
+  -- 지역 — 대시보드의 시도 필터가 여기에 기댄다. 학교를 거쳐야만 닿으므로
+  -- 매번 두 번 조인하게 두면 언젠가 한 곳이 빠진다. 여기서 한 번만 잇는다.
+  r.sido,
+  r.sigungu,
+
   -- 현재 상태
   u.heart_balance,
   u.friend_count,
@@ -90,6 +95,8 @@ LEFT JOIN `{{raw}}.grade_class` AS c
   ON c.id = u.class_id AND c._source = u._source AND c._deleted_at IS NULL
 LEFT JOIN `{{raw}}.school` AS s
   ON s.id = c.school_id AND s._source = u._source AND s._deleted_at IS NULL
+LEFT JOIN `{{raw}}.region` AS r
+  ON r.id = s.region_id AND r._source = u._source AND r._deleted_at IS NULL
 LEFT JOIN withdrawal AS w
   ON w.user_id = u.id AND w._source = u._source
 LEFT JOIN sanctioned AS x
