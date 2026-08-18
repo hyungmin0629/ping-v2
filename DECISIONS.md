@@ -61,6 +61,7 @@ DDL과 스크립트가 진실이다.
 - `2026-07-29` ~~[[lower-scope-when-short|후보가 4명이 안 되면 스코프를 낮추고, 그래도 안 되면 질문을 내지 않는다]]~~ ⛔ → [[pad-candidates-keep-scope]]
 - `2026-07-30` [[one-time-reply|1회성 답장을 연다 — 차단 화면 없이]]
 - `2026-08-03` [[appearance-questions-for-report-rate|외모·신체 질문을 연다 — 민감 질문이 없으면 신고율을 못 잰다]]
+- `2026-08-18` [[synthetic-reveal-status-not-updated|이름 공개는 reveal_status 가 아니라 hint_type 으로 센다]]
 
 ## 친구
 
@@ -109,6 +110,8 @@ DDL과 스크립트가 진실이다.
 - `2026-08-04` [[generator-emits-updated-at|`updated_at` 을 생성기가 직접 싣는다]]
 - `2026-08-06` [[bulk-load-batch-rows|합성 대량 적재는 배치를 20만 행으로 키운다]]
 - `2026-08-06` [[partition-ordered-extract|파티션 테이블로 부을 때는 파티션 컬럼 순서로 꺼낸다]]
+- `2026-08-18` [[stg-views-for-dashboard|대시보드가 스테이징을 넷 늘린다]]
+- `2026-08-18` [[mart-grain-for-weekly-filter|마트 그레인 — 주간 필터가 설계를 정한다]]
 
 ## 인프라
 

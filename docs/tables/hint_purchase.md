@@ -36,10 +36,11 @@ tags: [테이블, 질문과 투표]
 
 **이 표를 참조하는 표** — [[heart_transaction]]
 
-## 얽힌 결정 2개
+## 얽힌 결정 3개
 
 - [[ddl-comments-rot-with-migrations|DDL 주석은 마이그레이션 뒤에 낡는다 — 파일이 아니라 순서가 진실이다]]
 - [[remove-circular-fk|순환 FK를 제거하는 방향으로 스키마 정리]]
+- [[synthetic-reveal-status-not-updated|이름 공개는 reveal_status 가 아니라 hint_type 으로 센다]]
 
 ## 이 표를 지키는 정합성 검사 1종
 

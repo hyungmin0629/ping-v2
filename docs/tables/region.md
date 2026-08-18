@@ -30,6 +30,10 @@ tags: [테이블, 기준 정보]
 
 **이 표를 참조하는 표** — [[school]]
 
+## 얽힌 결정 1개
+
+- [[stg-views-for-dashboard|대시보드가 스테이징을 넷 늘린다]]
+
 ## 이 표를 다루는 정책·RPC
 
 `db/rls/policies.sql` · `db/rls/school_picker.sql`

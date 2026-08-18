@@ -31,10 +31,11 @@ user_low_id < user_high_id 를 강제해 (A,B)와 (B,A)가 중복 저장되는 �
 
 **UNIQUE** — `user_low_id, user_high_id · 단, (ended_at IS NULL)`
 
-## 얽힌 결정 3개
+## 얽힌 결정 4개
 
 - [[friend-invite-code-two-step|친구 맺기는 초대 코드로만, 요청·수락 2단계로]]
 - [[friendship-ended-at|친구를 끊어도 행을 지우지 않는다]]
+- [[stg-views-for-dashboard|대시보드가 스테이징을 넷 늘린다]]
 - [[withdraw-keeps-rows|계정 삭제는 행을 지우지 않는다]]
 
 ## 이 표를 지키는 정합성 검사 3종

@@ -40,11 +40,13 @@ tags: [테이블, 질문과 투표]
 
 **이 표를 참조하는 표** — [[hint_purchase]]
 
-## 얽힌 결정 5개
+## 얽힌 결정 7개
 
 - [[ddl-comments-rot-with-migrations|DDL 주석은 마이그레이션 뒤에 낡는다 — 파일이 아니라 순서가 진실이다]]
 - [[one-time-reply|1회성 답장을 연다 — 차단 화면 없이]]
 - [[partition-ordered-extract|파티션 테이블로 부을 때는 파티션 컬럼 순서로 꺼낸다]]
+- [[stg-views-for-dashboard|대시보드가 스테이징을 넷 늘린다]]
+- [[synthetic-reveal-status-not-updated|이름 공개는 reveal_status 가 아니라 hint_type 으로 센다]]
 - [[voter-identity-view-only|투표자 신원은 뷰로만 노출한다]]
 - [[watermark-updated-at|증분 워터마크를 `updated_at` 하나로 통일한다]]
 

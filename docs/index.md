@@ -55,7 +55,7 @@ API 스펙 등 바깥에서 온 문서.
 
 _아직 없다._
 
-## 결정 <sub>`docs/decisions` · 84</sub>
+## 결정 <sub>`docs/decisions` · 87</sub>
 
 왜 그렇게 했는지. 하나가 한 노드다.
 
@@ -100,6 +100,7 @@ _아직 없다._
 - [[local-docker-airflow|Cloud Composer 대신 로컬 Docker Airflow]] — 로컬 Docker면 0원이고, 나중에 필요하면 작은 VM(월 3~4만원)으로 옮기면 된다.
 - [[lognormal-not-uniform|시간 간격을 균등분포에서 로그정규로 바꾼다 — v5]] — 균등분포의 stddev)가 6종에서 1.0 근처로 나왔다 — 완전한 균등이라는 뜻이다.
 - [[lower-scope-when-short|후보가 4명이 안 되면 스코프를 낮추고, 그래도 안 되면 질문을 내지 않는다]] — 낮춘다. GLOBAL 에서도 모자라면 그 질문은 출제하지 않는다(세션에 넣지 않는다).
+- [[mart-grain-for-weekly-filter|마트 그레인 — 주간 필터가 설계를 정한다]] — 같은 이름의 차원 다섯을 싣고,
 - [[neis-merge-spans|NEIS 가 하루씩 주는 것을 기간으로 묶는다]] — 하나로 합쳐 start_date~end_date 로 저장한다. 사이에 낀 주말은 이어진
 - [[never-voters-by-friend-count|해금하고도 투표 안 하는 유저를 의도적으로 만든다 — 친구가 적을수록 많이]] — 확률로 만든다. 친구가 딱 5명이라 겨우 연 사람이 가장 많이 안 하고,
 - [[no-anonymous-board|익명 게시판을 v1에서 제외]] — 전례가 있고, 1인 프로젝트로는 신고 검토를 감당할 수 없다. 사고가 났을 때 책임을 질 수 없는 기능은 열지 않는다.
@@ -130,9 +131,11 @@ _아직 없다._
 - [[signup-single-rpc|가입은 RPC 하나로만 한다]] — RLS 는 행 단위라 이걸 막지 못한다.
 - [[soft-delete-marking|삭제를 전파하지는 않되, 표시는 한다 (앞 항목 보완)]] — 다만 _deleted_at 을 찍어 지워진 행임을 표시한다.
 - [[spring-spike-growth-curve|성장 곡선을 봄학기형으로 바꾼다 — 회복이 아니라 3월 스파이크 뒤 하강]] — 굴러가면서 관심이 식는 것이 학사 일정과 맞는다. 옛 곡선은 뒤로 갈수록
+- [[stg-views-for-dashboard|대시보드가 스테이징을 넷 늘린다]] — 를 싣는다. 그 안에서 세 가지를 함께 정했다.
 - [[student-mvp-adult-testers|학생용 MVP를 만들고, 검증은 성인이 한다]] — 다만 실제 이용자는 여전히 성인 지인이며, 그들이 학생용 MVP가 작동하는지 확인한다.
 - [[supabase-session-pooler|Supabase 연결은 Session pooler 를 쓴다]] — 로 접속한다.
 - [[synthetic-real-separation|합성 데이터와 실유저 데이터를 분리]] — BigQuery 적재 시 is_synthetic 플래그로 구분한다. 합성 규모는 유저 5,000명 / 3개월치.
+- [[synthetic-reveal-status-not-updated|이름 공개는 reveal_status 가 아니라 hint_type 으로 센다]] — 앱은 갱신한다 — 실유저 쪽이 10 대 10 으로 정확히 맞는 것이 그 증거다.
 - [[testers-pick-real-school|NEIS 연동 후 테스터는 실제 학교 중 하나를 고른다]] — 성인 테스터는 다니지 않는 실제 학교를 골라 쓴다. 이는 문제되지 않는다.
 - [[topup-stub-daily-limit|하트 충전은 결제 없는 스텁 — 대신 하루 한 번]] — 하트가 들어온다. 대신 어떤 상품을 골랐든 하루에 한 번만 받을 수 있다.
 - [[user-personas|페르소나는 분류가 아니라 생성 편의다]] — 혼합 · 트레잇 교차 · 무배정. 트레잇마다 따로 개인 편차를 곱한다.
@@ -205,4 +208,4 @@ _아직 없다._
 
 ---
 
-문서 151개 · `python db/wiki_index.py` 로 갱신
+문서 154개 · `python db/wiki_index.py` 로 갱신
