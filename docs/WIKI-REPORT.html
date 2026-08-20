@@ -68,6 +68,8 @@
           margin:4mm 0; color:var(--ink2); font-size:9.4pt; page-break-inside:avoid; }
   .warn { border-left-color:var(--warn); }
   .note b { color:var(--ink); }
+  /* 7장 — 지켜진 항목. 어긴 항목의 ⚠️ 와 대비를 준다 */
+  td.ok::before { content:"✓ "; color:#1C7048; font-weight:700; }
 
   pre { font-family:var(--mono); font-size:8.3pt; line-height:1.52;
         background:#F3F6FB; border:1px solid var(--rule2); border-radius:2px;
@@ -102,15 +104,22 @@
 <div class="cover">
   <div class="eyebrow">ping-v2 · 문서 체계 개편 보고</div>
   <h1>문서를 LLM 위키로 바꿨다<br>— 무엇이 달라졌나</h1>
-  <p class="sub">문서 6개를 노드 109개로 쪼개고, 원본·위키·규약의 세 층으로 나눴다.
+  <p class="sub">문서 6개를 노드로 쪼개고, 원본·위키·규약의 세 층으로 나눴다.
      결정 하나를 찾는 비용이 <b>1,928 → 1,263 토큰</b>으로 줄었고,
-     낡은 문서를 기계가 잡게 됐다.</p>
+     낡은 문서를 기계가 잡게 됐다.
+     <b>그로부터 3주, 결정이 56개에서 89개로 늘었다</b> — 구조가 견뎠는지를 7장에 적었다.</p>
   <dl>
-    <dt>기준일</dt><dd>2026년 7월 31일</dd>
+    <dt>기준일</dt><dd>2026년 8월 20일 <span style="color:var(--ink3)">(개편 자체는 7월 31일)</span></dd>
     <dt>근거</dt><dd>Andrej Karpathy, <em>LLM Wiki: A Pattern for Persistent Knowledge Bases</em></dd>
     <dt>범위</dt><dd>문서 체계만. 코드·스키마는 건드리지 않음</dd>
-    <dt>도구</dt><dd>Obsidian 볼트로 열림 · 스크립트 3종 추가</dd>
+    <dt>도구</dt><dd>Obsidian 볼트로 열림 · 스크립트 5종</dd>
   </dl>
+  <div class="note" style="margin-top:8mm">
+    <b>3장의 토큰 수치는 2026-07-31 측정값이다.</b> 다시 재지 않았다 —
+    개편의 효과를 재는 실험이었고, 그 실험은 그 시점의 것이다. 이후 규모가
+    늘었으므로 <b>A(통째로 읽기) 경로는 지금 더 나빠졌고 D(골라 읽기)는 거의 그대로다.</b>
+    즉 격차는 벌어졌지 좁아지지 않았다.
+  </div>
 </div>
 
 <!-- ══════════ 1 ══════════ -->
@@ -167,7 +176,10 @@
       <thead><tr><th style="width:52mm">위치</th><th class="n" style="width:14mm">개수</th><th>무엇</th></tr></thead>
       <tbody>
         <tr><td><code>raw/meetings/</code></td><td class="n">템플릿</td>
-            <td>팀 회의록. <code>YYYY-MM-DD-주제.md</code></td></tr>
+            <td>팀 회의록. <code>YYYY-MM-DD-주제.md</code><br>
+                <span style="font-size:8.5pt;color:var(--ink3)">⚠️ 3주가 지나도록 <b>한 건도 안 쌓였다.</b>
+                결정 33건이 전부 작업 중에 났다 — 6장의 "회의 없이 결정이 났을 때"가
+                예외가 아니라 <b>기본 경로</b>였다</span></td></tr>
         <tr><td><code>raw/legacy-analysis/</code></td><td class="n">12</td>
             <td>구 서비스 DB 분석 리포트 9종 + PDF 2종</td></tr>
         <tr><td><code>raw/external/</code></td><td class="n">0</td>
@@ -189,16 +201,19 @@
     <table>
       <thead><tr><th style="width:52mm">위치</th><th class="n" style="width:14mm">개수</th><th>무엇</th></tr></thead>
       <tbody>
-        <tr><td><code>docs/decisions/</code></td><td class="n">56</td>
+        <tr><td><code>docs/decisions/</code></td><td class="n">89 <span style="color:var(--ink3)">←56</span></td>
             <td>결정 하나가 한 파일. <code>status</code>·<code>superseded_by</code> 로 관계 표시</td></tr>
         <tr><td><code>docs/tables/</code></td><td class="n">40</td>
             <td><b>표마다 한 장.</b> DDL·결정·검사·정책을 모아 자동 생성</td></tr>
-        <tr><td><code>docs/ops/</code></td><td class="n">5</td>
+        <tr><td><code>docs/ops/</code></td><td class="n">9 <span style="color:var(--ink3)">←5</span></td>
             <td>실제 작업할 때 필요한 값과 절차</td></tr>
         <tr><td><code>docs/index.md</code></td><td class="n">1</td>
             <td>위키 전체 목록. 자동 생성</td></tr>
         <tr><td><code>docs/log.md</code></td><td class="n">1</td>
             <td>무엇을 언제 했나. 덧붙이기만</td></tr>
+        <tr><td><code>docs/reports.md</code></td><td class="n">1</td>
+            <td><b>새로 생겼다.</b> PDF 리포트는 옵시디언에서 첨부로만 보여 검색·백링크가
+                안 된다. 그래서 이 페이지가 목록 역할을 한다</td></tr>
         <tr><td><code>DECISIONS.md</code></td><td class="n">1</td>
             <td>결정 색인. 기존 링크 19곳이 그대로 살도록 남김</td></tr>
       </tbody>
@@ -282,13 +297,17 @@
   </tbody>
 </table>
 
-<h3>지금 규모</h3>
+<h3>지금 규모 <span style="font-family:var(--mono);font-size:8.5pt;color:var(--ink3);font-weight:400">2026-08-20</span></h3>
 <div class="kpi">
-  <div><b>109</b><span>위키 노드</span></div>
-  <div><b>12</b><span>원본 파일</span></div>
-  <div><b>3</b><span>생성·검사 스크립트</span></div>
+  <div><b>148</b><span>위키 노드 ←109</span></div>
+  <div><b>89</b><span>결정 ←56</span></div>
+  <div><b>5</b><span>스크립트 ←3</span></div>
   <div><b>0</b><span>끊어진 링크</span></div>
 </div>
+<p style="font-size:9.2pt;color:var(--ink2)">
+  결정 89 · 표 40 · 운영 9 · 구 서비스 분석 10 을 색인이 센 값이다.
+  <b>3주 만에 노드가 36% 늘었는데 끊어진 링크는 여전히 0 이다</b> —
+  링크 검사가 실패로 잡히기 때문이지 조심해서가 아니다.</p>
 
 <h3>토큰이 아닌 이득</h3>
 <table>
@@ -296,11 +315,18 @@
   <tbody>
     <tr><td><b>뒤집힌 결정이<br>드러난다</b></td>
         <td>frontmatter 에 <code>status: superseded</code> 와 <code>superseded_by</code> 를 단다.
-            지금 2건 — 후보 스코프 규칙, 초대 링크 시점. 색인에서 취소선으로 보이고
-            후속 결정으로 화살표가 간다.</td></tr>
+            지금 <b>4건</b> — 후보 스코프 규칙 · 초대 링크 시점 · 행수 가드레일 · v4 확정.
+            색인에서 취소선으로 보이고 후속 결정으로 화살표가 간다.</td></tr>
     <tr><td><b>낡음을 기계가<br>잡는다</b></td>
-        <td><code>db/doc_lint.py</code> 가 여섯 가지를 본다 — 숫자 · 사라진 이름 ·
-            끊어진 링크 · 없는 스크립트 · 낡은 생성물 · <b>미반영 회의록</b>.</td></tr>
+        <td><code>db/doc_lint.py</code> 가 <b>아홉 가지</b>를 본다 — 숫자 · 사라진 이름 ·
+            끊어진 링크 · 없는 스크립트 · 낡은 생성물 · 미반영 회의록 ·
+            <b>없는 질문 번호 · 결정 없이 쌓인 코드 · 색인에서 빠진 결정 노드.</b><br>
+            <span style="font-size:8.5pt;color:var(--ink3)">뒤의 셋은 처음엔 없었다.
+            셋 다 실제로 당한 뒤에 붙였다 — 7장</span></td></tr>
+    <tr><td><b>결정끼리<br>이어진다</b></td>
+        <td><b>새로 생겼다.</b> <code>db/link_decisions.py</code> 가 같은 갈래·같은 주제의
+            결정을 짚어 '이어지는 결정' 절을 만든다. 지금 76개 노드가 평균 2.3개씩 연결돼 있다.
+            그래프가 별 모양이 되지 않게 하는 장치다.</td></tr>
     <tr><td><b>목록을 손으로<br>관리하지 않는다</b></td>
         <td>색인과 표 페이지는 생성물이다. 스키마가 바뀌면 다시 뽑는다.
             손으로 만든 목록이 어긋나 있던 사고가 반복되지 않는다.</td></tr>
@@ -353,12 +379,26 @@ CLAUDE.md      10,031  ·  매 세션 자동 주입
   <tbody>
     <tr><td><code>db/wiki_index.py</code></td><td class="n">163</td>
         <td><code>docs/index.md</code> 재생성</td></tr>
-    <tr><td><code>db/wiki_tables.py</code></td><td class="n">251</td>
+    <tr><td><code>db/wiki_tables.py</code></td><td class="n">262</td>
         <td><code>docs/tables/</code> 40장 재생성</td></tr>
-    <tr><td><code>db/doc_lint.py</code></td><td class="n">222</td>
-        <td>문서 주장을 실제와 대조</td></tr>
+    <tr><td><code>db/doc_lint.py</code></td><td class="n">312</td>
+        <td>문서 주장을 실제와 대조 <span style="color:var(--ink3)">(222 → 312. 검사 셋이 늘었다)</span></td></tr>
+    <tr><td><code>db/link_decisions.py</code></td><td class="n">289</td>
+        <td><b>나중에 붙였다.</b> 결정끼리 '이어지는 결정' 링크 생성</td></tr>
+    <tr><td><code>db/wiki_merge.py</code></td><td class="n">121</td>
+        <td><b>나중에 붙였다.</b> <b>되돌리기</b> — 노드를 <code>DECISIONS.md</code> 한 파일로 합친다</td></tr>
   </tbody>
 </table>
+<div class="note">
+  <b>되돌리는 길을 먼저 깔아 뒀다.</b> 쪼갠 것이 손해로 드러나면 되돌린다 —
+  판단 기준은 둘이다. 같은 질문에 <b>토큰을 더 쓰거나</b>, 관련 결정을 놓쳐
+  <b>답이 나빠지거나.</b><br>
+  ⚠️ <b><code>git revert</code> 로 하지 않는다.</b> 위키로 바꾼 뒤에 쓴 결정이
+  함께 사라진다 — 그것들은 노드 파일로만 존재하기 때문이다. 지금이면
+  <b>33건이 날아간다.</b> <code>wiki_merge.py</code> 는 <b>지금 있는 노드 전부</b>를
+  읽어 합치므로 새로 쓴 결정도 살아남는다.
+  기준점은 <code>git tag pre-wiki</code> 가 가리키고 있다.
+</div>
 <p><code>wiki_tables.py</code> 는 <code>erd.py</code> 의 스키마 읽기 코드를 재사용한다.
 DB 를 읽는 코드를 두 벌 두지 않는다.</p>
 
@@ -500,20 +540,84 @@ python db/doc_lint.py     # 문서가 실제와 맞는지</pre>
 
 <h3>옵시디언으로 볼 때</h3>
 <p>저장소 루트를 볼트로 연다. <code>group</code>·<code>status</code>·<code>tags</code>
-속성으로 필터가 되고, 그래프에서 <code>superseded</code> 노드 2개가 각각 후속 결정으로
+속성으로 필터가 되고, 그래프에서 <code>superseded</code> 노드 4개가 각각 후속 결정으로
 화살표가 가 있는 것이 보인다.</p>
+</section>
 
-<div class="note">
-  <b>다음 단계에서 바로 쓰인다 —</b> 곧 합성 데이터를 만들 때 표 40개를 하나씩
-  놓고 "이 컬럼에 무슨 값이 들어가야 하고 왜 그런가"를 봐야 한다.
-  <code>docs/tables/</code> 각 장에 <b>생성기가 그 표를 만드는지</b>가 표시돼 있고,
-  지금 <b>14개가 미구현</b>이다 — 게시판 4 · 신고제재차단 3 · 추천거절 1 · 학교정보 6.
+<!-- ══════════ 7 ══════════ -->
+<section>
+<h2><span class="num">07</span>3주 뒤 — 구조가 견뎠나</h2>
+<p class="lede">결정이 <b>56 → 89 개</b>로 늘었다. 늘어난 33건이 구조를 시험했다.</p>
+
+<h3>검사가 셋 늘었다 — 전부 당하고 나서</h3>
+<p>lint 는 여섯 가지로 시작했다. 지금 아홉이다. <b>새로 붙은 셋은 전부
+실제로 겪은 사고에서 나왔다</b> — 미리 상상해서 넣은 것이 하나도 없다.</p>
+<table>
+  <thead><tr><th style="width:46mm">검사</th><th>무엇을 당했나</th></tr></thead>
+  <tbody>
+    <tr><td><b>없는 질문 번호</b></td>
+        <td>합성 데이터 설계 문답에서 질문 하나를 지웠더니, 그것을 <code>Q17</code> 같은
+            번호로 인용하던 <b>문서 4개가 조용히 깨져 있었다.</b>
+            <b>번호는 위치 기반 식별자라</b> 원본이 바뀌면 가리키는 곳이 어긋난다.</td></tr>
+    <tr><td><b>결정 없이 쌓인 코드</b></td>
+        <td>합성 데이터 작업에서 <b>아홉 번 연속으로 결정 노드를 건너뛰었다.</b>
+            근거가 커밋 메시지와 설정 주석에만 남았다 — 위키에서는 안 보인다.
+            마지막 결정 노드 이후 코드 커밋이 8개를 넘으면 알린다.</td></tr>
+    <tr><td><b>색인에서 빠진 노드</b></td>
+        <td><code>group: 웹앱</code> 인 노드 3개가 <b>그 갈래 자체가 색인에 없어서</b>
+            통째로 빠져 있었다. 파일은 멀쩡히 있는데 아무도 못 찾는다 —
+            query 연산이 색인을 거쳐 찾기 때문이다. <b>색인에 없는 노드는 없는 노드다.</b></td></tr>
+  </tbody>
+</table>
+<div class="note warn">
+  <b>셋 다 3장에서 말한 그 성질이다 —</b> 오류를 내지 않는다. 링크는 멀쩡하고
+  문서는 잘 읽힌다. 다만 가리키는 곳이 없거나, 근거가 없거나, 찾을 수 없을 뿐이다.
+  <b>검사를 늘리는 일은 끝나지 않는다</b>는 것이 3주 동안 배운 것이다.
 </div>
 
-<footer>
-  ping-v2 · 2026-07-31 기준 · 이 보고서는 <code>docs/WIKI-REPORT.html</code> 에서 만든다
-</footer>
+<h3>규율은 지켜졌나 — 반반이다</h3>
+<table>
+  <thead><tr><th style="width:46mm">무엇</th><th>결과</th></tr></thead>
+  <tbody>
+    <tr><td><b>끊어진 링크 0</b></td>
+        <td class="ok">지켜졌다. 노드가 36% 늘었는데도 0 이다 —
+            <b>lint 가 실패로 잡기 때문</b>이지 조심해서가 아니다.
+            기계가 확정할 수 있는 것은 실패로 두는 판단이 맞았다.</td></tr>
+    <tr><td><b>결정을 노드로 적기</b></td>
+        <td>⚠️ <b>아홉 번 어겼다.</b> 그래서 검사를 붙였다. 사람의 규율에 기대는
+            항목은 결국 어긋난다 — 검사로 옮겨야 지켜진다.</td></tr>
+    <tr><td><b>회의록 ingest</b></td>
+        <td>⚠️ <b>한 번도 안 썼다.</b> 회의가 없었다. ingest 연산은 3주 동안
+            놀았고, 결정 33건이 전부 "작업하다 판단이 서면 그 자리에서" 경로로 났다.</td></tr>
+    <tr><td><b>CLAUDE.md 를 얇게</b></td>
+        <td>⚠️ <b>못 지켰다.</b> 개편 때 10,031 → 8,782 토큰으로 줄였는데
+            <b>다시 불었다</b>(669줄). 함정을 겪을 때마다 한 줄씩 늘기 때문이다.
+            중복 117줄을 덜어내는 일이 대기 중이다.</td></tr>
+  </tbody>
+</table>
+
+<h3>쪼갠 것이 실제로 도움이 됐나</h3>
+<p>가장 뚜렷한 증거는 <b>뒤집힌 결정</b>이다. 3주 사이에 2건에서 <b>4건</b>이 됐다 —
+행수 가드레일이 쿼리 하드캡으로, v4 확정이 v5 로 뒤집혔다. 한 파일 시절이었다면
+옛 결정이 그대로 살아 있었을 것이고, <b>나중에 누군가 그것을 근거로 삼았을 것이다.</b>
+지금은 색인에서 취소선이 그어지고 후속 결정으로 화살표가 간다.</p>
+<div class="note">
+  <b>되돌리지 않았다.</b> 3장의 판단 기준 둘(토큰을 더 쓰는가 · 답이 나빠지는가)
+  어느 쪽도 발생하지 않았다. 다만 <b>되돌리는 스크립트는 계속 유지한다</b> —
+  쓰지 않을 길을 열어 두는 값이 싸기 때문이다.
+</div>
+
+<h3>지금 이 위키가 서 있는 자리</h3>
+<p>문서 체계를 바꾼 뒤 프로젝트는 <b>P5 품질검증 · P6 스테이징과 마트 · Airflow DAG</b>
+까지 왔다. 그 사이 늘어난 결정 33건 중 파이프라인 갈래가 가장 많다.
+<b>표 40개를 하나씩 놓고 값을 정하는 작업</b>(개편 당시 "다음 단계에서 바로 쓰인다"고
+적었던 그것)은 끝났다 — 그때 미구현이던 14개가 지금 <b>0개</b>다.</p>
 </section>
+
+<footer>
+  ping-v2 · 2026-08-20 기준 <span style="color:var(--ink3)">(개편 2026-07-31 · 토큰 측정 그때 값)</span>
+  · 이 보고서는 <code>docs/WIKI-REPORT.html</code> 에서 만든다
+</footer>
 
 </body>
 </html>
