@@ -55,7 +55,7 @@ API 스펙 등 바깥에서 온 문서.
 
 _아직 없다._
 
-## 결정 <sub>`docs/decisions` · 87</sub>
+## 결정 <sub>`docs/decisions` · 88</sub>
 
 왜 그렇게 했는지. 하나가 한 노드다.
 
@@ -100,6 +100,7 @@ _아직 없다._
 - [[local-docker-airflow|Cloud Composer 대신 로컬 Docker Airflow]] — 로컬 Docker면 0원이고, 나중에 필요하면 작은 VM(월 3~4만원)으로 옮기면 된다.
 - [[lognormal-not-uniform|시간 간격을 균등분포에서 로그정규로 바꾼다 — v5]] — 균등분포의 stddev)가 6종에서 1.0 근처로 나왔다 — 완전한 균등이라는 뜻이다.
 - [[lower-scope-when-short|후보가 4명이 안 되면 스코프를 낮추고, 그래도 안 되면 질문을 내지 않는다]] — 낮춘다. GLOBAL 에서도 모자라면 그 질문은 출제하지 않는다(세션에 넣지 않는다).
+- [[mart-build-dag-follows-raw-load|마트 굽기를 별도 DAG 로 떼고 센서로 잇는다]] — 고치지 않고, 새 DAG 쪽에서 ExternalTaskSensor 로 앞 DAG 의 verify 태스크가
 - [[mart-grain-for-weekly-filter|마트 그레인 — 주간 필터가 설계를 정한다]] — 같은 이름의 차원 다섯을 싣고,
 - [[neis-merge-spans|NEIS 가 하루씩 주는 것을 기간으로 묶는다]] — 하나로 합쳐 start_date~end_date 로 저장한다. 사이에 낀 주말은 이어진
 - [[never-voters-by-friend-count|해금하고도 투표 안 하는 유저를 의도적으로 만든다 — 친구가 적을수록 많이]] — 확률로 만든다. 친구가 딱 5명이라 겨우 연 사람이 가장 많이 안 하고,
@@ -208,4 +209,4 @@ _아직 없다._
 
 ---
 
-문서 154개 · `python db/wiki_index.py` 로 갱신
+문서 155개 · `python db/wiki_index.py` 로 갱신

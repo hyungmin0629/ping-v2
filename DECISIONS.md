@@ -112,6 +112,7 @@ DDL과 스크립트가 진실이다.
 - `2026-08-06` [[partition-ordered-extract|파티션 테이블로 부을 때는 파티션 컬럼 순서로 꺼낸다]]
 - `2026-08-18` [[stg-views-for-dashboard|대시보드가 스테이징을 넷 늘린다]]
 - `2026-08-18` [[mart-grain-for-weekly-filter|마트 그레인 — 주간 필터가 설계를 정한다]]
+- `2026-08-20` [[mart-build-dag-follows-raw-load|마트 굽기를 별도 DAG 로 떼고 센서로 잇는다]]
 
 ## 인프라
 
