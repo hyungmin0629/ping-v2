@@ -55,7 +55,7 @@ API 스펙 등 바깥에서 온 문서.
 
 _아직 없다._
 
-## 결정 <sub>`docs/decisions` · 88</sub>
+## 결정 <sub>`docs/decisions` · 89</sub>
 
 왜 그렇게 했는지. 하나가 한 노드다.
 
@@ -115,6 +115,7 @@ _아직 없다._
 - [[popularity-floor-is-activity|인기도 45%는 도달할 수 없다 — 바닥은 활동 불균형이다]] — 45%는 파라미터로 도달할 수 없다는 것이 실측으로 드러났다.
 - [[profile-edit-rpc|프로필 수정도 RPC 하나로 — 직접 UPDATE 권한 회수]] — 가입은 complete_onboarding() 이 닉네임 2~20자, 성별 필수, 학급 존재를
 - [[purge-synthetic-data|합성 데이터를 전부 지운다 — 낡아서]] — Supabase 는 손대지 않았다. 애초에 합성이 0행이었다 — 더미 친구는 진작에 정리됐다.
+- [[quality-check-incremental-and-weekly-full|품질 검증을 매일 증분과 주 1회 전수로 가른다]] — DAG 를 둘로 나눈다.
 - [[reactivation-cohort|휴면했다 돌아오는 유저를 만든다 — 3월에 몰리되 다른 달에도 있게]] — 복귀 시점은 봄학기에 가중치를 주되 다른 달에도 나오게 한다.
 - [[remove-circular-fk|순환 FK를 제거하는 방향으로 스키마 정리]] — 알 수 없다. 원장이 원인을 가리키는 단방향이 자연스럽다.
 - [[report-first-block-later|신고는 게시판과 함께, 차단은 뒤로]] — 다르다. 게시판은 공개 공간이라 "안 보이게"보다 "내려가게"가 먼저 필요하다.
@@ -209,4 +210,4 @@ _아직 없다._
 
 ---
 
-문서 155개 · `python db/wiki_index.py` 로 갱신
+문서 156개 · `python db/wiki_index.py` 로 갱신

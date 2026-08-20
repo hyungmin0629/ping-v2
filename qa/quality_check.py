@@ -49,6 +49,9 @@ REPORTS = ROOT / "qa" / "reports"
 # 실패했을 때 어디가 문제인지 보기 어렵다.
 CHUNK = 12
 
+# 화면과 리포트에 나오는 순서다.
+ALL_KINDS = ["유일성", "필수값", "참조", "시각"]
+
 # 시각 순서 검사 — "뒤가 앞보다 이르면 안 된다". 표마다 다르므로 손으로 적는다.
 TIME_ORDER = [
     ("vote_item", "voted_at", "served_at"),
@@ -63,8 +66,8 @@ TIME_ORDER = [
 ]
 
 
-def load_schema() -> tuple[dict, dict]:
-    """erd.json → {표: 컬럼목록}, tables.yaml → {표: PK 컬럼}."""
+def load_schema() -> tuple[dict, dict, set[str]]:
+    """erd.json → {표: 컬럼목록}, tables.yaml → {표: PK 컬럼}, 증분 적재하는 표 이름."""
     erd = json.loads(ERD.read_text(encoding="utf-8"))
     cols = {t["name"]: t["columns"] for t in erd["tables"]}
 
@@ -72,15 +75,39 @@ def load_schema() -> tuple[dict, dict]:
     overrides = m.get("pk_overrides") or {}
     default_pk = m["defaults"]["pk"]
     pks = {name: overrides.get(name, default_pk) for name in (m["full"] + m["incremental"])}
-    return cols, pks
+    return cols, pks, set(m["incremental"])
 
 
-def build_checks(cols: dict, pks: dict, raw: str) -> list[tuple[str, str, str]]:
-    """(구분, 이름, SQL) 목록. SQL 은 전부 `check_id, n` 두 컬럼을 낸다."""
+def build_checks(
+    cols: dict, pks: dict, raw: str, since_days: int | None = None,
+    incremental: set[str] | None = None,
+) -> list[tuple[str, str, str]]:
+    """(구분, 이름, SQL) 목록. SQL 은 전부 `check_id, n` 두 컬럼을 낸다.
+
+    `since_days` 를 주면 **행 단위로 판정되는 검사**(필수값·시각)에만
+    `updated_at >= 지금-N일` 을 건다. raw 의 증분 표는 `updated_at` 으로
+    파티션돼 있어서(`extract_load.py`) 이 조건이 파티션 가지치기로 걸린다.
+
+    ⚠️ **유일성·참조에는 걸지 않는다.** 둘은 표 전체를 봐야 답이 나온다 —
+       새 행의 PK 가 옛 행과 부딪히는지, 자식의 부모가 옛 행 중에 있는지는
+       최근 조각만 봐서는 알 수 없다.
+
+    ⚠️ **증분 표에만 건다.** full 적재 표는 파티션이 없어(가지치기가 안 걸리고)
+       통째로 갈아끼우는 성격이라 `updated_at` 이 행의 나이를 뜻하지 않는다.
+    """
     checks: list[tuple[str, str, str]] = []
+    incremental = incremental or set()
 
     def add(kind: str, name: str, sql: str) -> None:
         checks.append((kind, name, " ".join(sql.split())))
+
+    def recent(table: str, names: set[str]) -> str:
+        """행 단위 검사에 붙일 증분 조건. 안 걸리는 경우엔 빈 문자열."""
+        if since_days is None or table not in incremental or "updated_at" not in names:
+            return ""
+        # 리터럴로 박는다. 쿼리 파라미터로 주면 가지치기가 걸리지 않을 수 있다.
+        return (f" AND updated_at >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(),"
+                f" INTERVAL {int(since_days)} DAY)")
 
     for table, columns in sorted(cols.items()):
         names = {c["name"] for c in columns}
@@ -102,7 +129,7 @@ def build_checks(cols: dict, pks: dict, raw: str) -> list[tuple[str, str, str]]:
             add("필수값", f"{table}.{c['name']}", f"""
                 SELECT '필수값|{table}.{c['name']}' AS check_id,
                        COUNTIF({c['name']} IS NULL) AS n
-                FROM `{raw}.{table}` WHERE {live}
+                FROM `{raw}.{table}` WHERE {live}{recent(table, names)}
             """)
 
         # 3. 참조 — 부모를 **같은 원천에서만** 찾는다. _source 를 빼면 실유저의
@@ -126,16 +153,18 @@ def build_checks(cols: dict, pks: dict, raw: str) -> list[tuple[str, str, str]]:
             add("시각", f"{table}.updated_at 미래", f"""
                 SELECT '시각|{table}.updated_at 미래' AS check_id,
                        COUNTIF(updated_at > CURRENT_TIMESTAMP()) AS n
-                FROM `{raw}.{table}` WHERE {live}
+                FROM `{raw}.{table}` WHERE {live}{recent(table, names)}
             """)
 
     # 4-b. 순서가 뒤집힌 시각
     for table, later, earlier in TIME_ORDER:
+        names = {c["name"] for c in cols.get(table, [])}
         add("시각", f"{table}.{later}<{earlier}", f"""
             SELECT '시각|{table}.{later}<{earlier}' AS check_id,
                    COUNTIF({later} < {earlier}) AS n
             FROM `{raw}.{table}`
-            WHERE _source = @s AND _deleted_at IS NULL AND {later} IS NOT NULL
+            WHERE _source = @s AND _deleted_at IS NULL
+              AND {later} IS NOT NULL{recent(table, names)}
         """)
 
     return checks
@@ -173,6 +202,14 @@ def main() -> int:
     ap.add_argument("--max-scan-gib", type=float, default=20.0,
                     help="예상 스캔량이 이보다 크면 멈춘다 (쿼리 무료 한도는 월 1 TiB)")
     ap.add_argument("--yes", action="store_true", help="스캔량 확인 없이 실행")
+    ap.add_argument("--since-days", type=int, default=None, metavar="N",
+                    help="최근 N일 안에 바뀐 행만 검사한다 (필수값·시각만. "
+                         "유일성·참조는 표 전체를 봐야 답이 나오므로 그대로 전체를 본다)")
+    ap.add_argument("--kinds", default=None, metavar="목록",
+                    help="쉼표로 구분한 검사 구분만 돌린다 (유일성·필수값·참조·시각). "
+                         "⚠️ --since-days 와 함께 쓸 때 반드시 나눈다 — "
+                         "안 걸러지는 검사가 같은 묶음에 있으면 같은 컬럼을 다시 읽어 "
+                         "가지치기 효과가 사라진다")
     args = ap.parse_args()
 
     load_dotenv(ROOT / ".env")
@@ -181,9 +218,21 @@ def main() -> int:
     raw = f"{project}.{os.getenv('BQ_DATASET_RAW', 'raw')}"
     bq = bigquery.Client(project=project, location=os.getenv("BQ_LOCATION", "asia-northeast3"))
 
-    cols, pks = load_schema()
-    checks = build_checks(cols, pks, raw)
-    print(f"검사 {len(checks)}개 · 원천 {args.source} · {raw}\n")
+    cols, pks, incremental = load_schema()
+    checks = build_checks(cols, pks, raw, args.since_days, incremental)
+
+    kinds = ALL_KINDS
+    if args.kinds:
+        kinds = [k.strip() for k in args.kinds.split(",") if k.strip()]
+        unknown = [k for k in kinds if k not in ALL_KINDS]
+        if unknown:
+            print(f"모르는 구분: {', '.join(unknown)} — 쓸 수 있는 것: {', '.join(ALL_KINDS)}")
+            return 2
+        checks = [c for c in checks if c[0] in kinds]
+
+    scope = "전체" if args.since_days is None else f"최근 {args.since_days}일 (필수값·시각만)"
+    print(f"검사 {len(checks)}개 · 원천 {args.source} · {raw} · "
+          f"범위 {scope} · 구분 {'·'.join(kinds)}\n")
 
     # 먼저 얼마나 스캔하는지 잰다. 쿼리 무료 한도는 월 1 TiB 뿐이고
     # 이 검사는 매번 돌 물건이라, 비용을 모르고 켜지 않는다.
@@ -212,7 +261,7 @@ def main() -> int:
 
     lines = []
     failed = 0
-    for kind in ["유일성", "필수값", "참조", "시각"]:
+    for kind in kinds:
         items = by_kind.get(kind, [])
         bad = [(n, v) for n, v in items if v]
         failed += len(bad)
@@ -248,7 +297,7 @@ def main() -> int:
     out = REPORTS / f"quality-{stamp}-{args.source}.md"
     out.write_text(
         f"# 품질 검증 · {args.source} · {stamp}\n\n"
-        f"검사 {len(checks)}개 · 위반 {failed}개 · 스캔 {gib:,.3f} GiB\n\n```\n"
+        f"검사 {len(checks)}개 · 위반 {failed}개 · 스캔 {gib:,.3f} GiB · 범위 {scope}\n\n```\n"
         + "\n".join(lines)
         + "\n```\n",
         encoding="utf-8",

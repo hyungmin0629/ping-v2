@@ -123,6 +123,7 @@ DDL과 스크립트가 진실이다.
 ## 검증
 
 - `2026-07-31` [[integrity-checks-aged|정합성 검사 3종이 낡아 있었다]]
+- `2026-08-20` [[quality-check-incremental-and-weekly-full|품질 검증을 매일 증분과 주 1회 전수로 가른다]]
 - `2026-08-13` [[ddl-comments-rot-with-migrations|DDL 주석은 마이그레이션 뒤에 낡는다 — 파일이 아니라 순서가 진실이다]]
 - `2026-08-03` [[user-personas|페르소나는 분류가 아니라 생성 편의다]]
 - `2026-08-03` [[activity-by-retention-tier|활동 강도는 잔존 구간마다 다르다]]
