@@ -21,7 +21,11 @@ TriggerDagRunOperator 를 넣으면 두 DAG 가 서로를 알아야 하는데, �
    것이 틀린 숫자를 보여주는 것보다 낫다. 마트는 `CREATE OR REPLACE` 라
    굽기 전까지 지난번 표가 그대로 살아 있다.
 
-원천은 파라미터다. 기본은 실유저(supabase)이고 매일 돈다.
+⚠️ **`quality_source` 는 ③ 에만 걸린다.** ④ 마트에는 원천 개념이 없다 —
+   `build.py --layer mart` 에 `--source` 인자가 아예 없고, 여덟 표를 통째로
+   다시 구우면 두 원천이 **한 표에 `source` 컬럼으로 갈려** 들어간다.
+   즉 `local` 로 트리거하든 `supabase` 로 트리거하든 ④ 가 하는 일은 같다.
+
 합성(local)은 재생성했을 때만 **손으로 트리거**한다 — 값이 안 변하는데
 매일 구울 이유가 없다. 손으로 트리거하면 적재 대기를 건너뛴다(아래 branch).
 """
@@ -69,11 +73,16 @@ with DAG(
         "retry_delay": pendulum.duration(minutes=10),
     },
     params={
-        "source": Param(
+        # ⚠️ 이 값은 **③ 품질 검증에만** 걸린다. ④ 마트 굽기에는 원천 개념이 없다 —
+        #    `build.py --layer mart` 에는 `--source` 인자 자체가 없고, 여덟 표를
+        #    통째로 다시 구우면 두 원천이 **한 표에 `source` 컬럼으로 갈려** 들어간다.
+        #    그래서 이름을 `source` 가 아니라 `quality_source` 로 둔다 — DAG 전체의
+        #    범위를 정하는 값으로 읽히면 안 된다.
+        "quality_source": Param(
             "supabase",
             type="string",
             enum=["supabase", "local"],
-            description="어느 원천을 검사하나. 마트는 두 원천을 한 표에 담으므로 ④는 같다",
+            description="③ 품질 검증이 raw 에서 어느 원천을 볼지. ④ 마트는 이 값과 무관하게 통째로 다시 굽는다",
         ),
         "max_scan_gib": Param(
             20.0,
@@ -128,7 +137,7 @@ with DAG(
         task_id="quality_check",
         bash_command=(
             f"cd {PROJECT} && {PYTHON} qa/quality_check.py"
-            " --source {{ params.source }}"
+            " --source {{ params.quality_source }}"
             " --kinds 필수값,시각 --since-days 2"
             " --max-scan-gib {{ params.max_scan_gib }}"
         ),
