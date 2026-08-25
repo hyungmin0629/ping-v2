@@ -154,15 +154,75 @@ def measure(nodes_dir: Path, term: str, hints: tuple[str, ...], tok, window: int
             "picked": picked.name if picked else "—"}
 
 
+# 세 단계. 개편 전은 노드가 아예 없어서 위의 A~E 경로를 잴 수 없다 —
+# 읽을 것이 `DECISIONS.md` 한 파일뿐이었다.
+STAGES = [
+    ("개편 전",   "pre-wiki", "2026-07-30"),
+    ("개편 직후", "9a10db0",  "2026-07-31"),
+    ("현재",      None,       "2026-08-25"),
+]
+
+
+def git_show(ref: str | None, path: str) -> str | None:
+    """그 시점의 파일 하나. ref 가 None 이면 작업 트리."""
+    if ref is None:
+        f = ROOT / path
+        return f.read_text(encoding="utf-8") if f.exists() else None
+    out = subprocess.run(["git", "show", f"{ref}:{path}"], cwd=ROOT, capture_output=True)
+    return out.stdout.decode("utf-8", "replace") if out.returncode == 0 else None
+
+
+def stages(tok, window: int) -> None:
+    """세 단계 비교 — **매 세션 고정비**와 **결정 하나를 찾는 비용**.
+
+    ⚠️ 개편 전에는 D(골라 읽기) 경로가 존재하지 않았다. 노드가 없었기 때문이다.
+       그래서 '그때 실제로 하던 것'과 '같은 방법으로 맞춘 비교'를 나눠 싣는다.
+    """
+    print("=" * 74)
+    print("■ 세 단계 — 매 세션 고정비 (CLAUDE.md · 모든 세션이 무조건 지불한다)")
+    print("=" * 74)
+    base = None
+    for label, ref, when in STAGES:
+        n = tok(git_show(ref, "CLAUDE.md") or "")
+        base = base if base is not None else n
+        print(f"  {label:<10} {when}   {n:>8,} 토큰   ({100*(n-base)/base:+.0f}%)")
+
+    print()
+    print("=" * 74)
+    print("■ 세 단계 — 결정 하나를 알기 위해 읽는 토큰")
+    print("=" * 74)
+    for label, ref, when in STAGES:
+        if ref == "pre-wiki":
+            whole = tok(git_show(ref, "DECISIONS.md") or "")
+            print(f"  {label:<10} {when}   실제로 하던 것(통째로 읽기) {whole:>8,}")
+            continue
+        nodes_dir, tmp = materialize(ref)
+        vals = [measure(nodes_dir, term, hints, tok, window)
+                for _, term, hints in QUERIES]
+        d = sum(v["D"] for v in vals) / len(vals)
+        b = sum(v["B"] for v in vals) / len(vals)
+        print(f"  {label:<10} {when}   골라 읽기 {d:>8,.0f}   "
+              f"(한 파일이었다면 grep {b:,.0f})")
+        if tmp:
+            shutil.rmtree(tmp, ignore_errors=True)
+    print()
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--window", default="25",
                     help="B 경로의 읽기 창(줄). 쉼표로 여러 개")
+    ap.add_argument("--stages", action="store_true",
+                    help="개편 전 · 직후 · 현재 세 단계만 본다")
     args = ap.parse_args()
     windows = [int(w) for w in args.window.split(",")]
 
     tok, tok_name = encoder()
     print(f"토크나이저: {tok_name}\n")
+
+    if args.stages:
+        stages(tok, windows[0])
+        return 0
 
     for window in windows:
         print("=" * 74)

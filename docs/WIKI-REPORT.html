@@ -70,7 +70,7 @@
 <div class="meta">
   <div><b>기준일</b> 2026년 8월 25일 · 개편은 2026년 7월 31일 (4주 경과)</div>
   <div><b>규모</b> 위키 노드 163개 (결정 91 · 표 40 · 색인/규약 13 · 운영 10 · 원본 9) · 링크 663개</div>
-  <div><b>핵심 수치</b> 결정 하나를 찾는 비용 <b>4,484 → 1,268 토큰</b> (71.7% 절감, 같은 자로 잰 값)</div>
+  <div><b>핵심 수치</b> 결정 하나를 찾는 비용 <b>33,792 → 972 → 1,268 토큰</b> (개편 전 · 직후 · 현재. 같은 토크나이저로 잰 값)</div>
   <div><b>근거</b> Andrej Karpathy, <i>LLM Wiki: A Pattern for Persistent Knowledge Bases</i></div>
   <div><b>도구</b> Obsidian 볼트로 열림 · 생성·검사 스크립트 7종</div>
 </div>
@@ -145,11 +145,11 @@
 
 <table>
   <tr><th>무엇이</th><th>왜 문제였나</th></tr>
-  <tr><td><b>DECISIONS.md</b><br>24,946 토큰</td>
-      <td>결정 56개가 한 파일에 시간순으로 쌓였다. 결정 하나는 중앙값 456토큰인데
+  <tr><td><b>DECISIONS.md</b><br>33,792 토큰</td>
+      <td>결정 56개가 한 파일에 시간순으로 쌓였다. 결정 하나는 중앙값 680토큰인데
           실제로는 파일을 통째로 읽었다 — 작업 중 시스템이 <b>"내용이 너무 커서 포함할 수
           없다"</b>며 잘라낼 정도였다</td></tr>
-  <tr><td><b>CLAUDE.md</b><br>10,031 토큰</td>
+  <tr><td><b>CLAUDE.md</b><br>13,518 토큰</td>
       <td>에이전트가 <b>매 세션 무조건</b> 읽는 파일. BigQuery 설정처럼 특정 작업에만
           필요한 내용이 항상 따라왔다</td></tr>
   <tr><td><b>뒤집힌 결정이</b><br>그대로 살아 있었다</td>
@@ -300,7 +300,94 @@
 <h2 class="pb">5. 무엇이 달라졌나 — 숫자</h2>
 <p class="lede">토큰 절감이 가장 크고, 그다음이 낡음 탐지다.</p>
 
-<h3>결정 하나를 찾는 비용</h3>
+<h3>세 단계로 한눈에</h3>
+<p>같은 토크나이저로 <b>개편 전 · 개편 직후 · 현재</b> 세 시점을 쟀다.
+옛 상태는 git 에서 꺼냈다(<code>pre-wiki</code> · <code>9a10db0</code>).</p>
+
+<figure>
+<svg viewBox="0 0 700 258" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto">
+  <text x="0" y="14" font-size="12" font-weight="700" fill="#1a1a1a">결정 하나를 알기 위해 읽는 토큰</text>
+
+  <text x="112" y="45" text-anchor="end" font-size="11" fill="#333">개편 전</text>
+  <text x="112" y="58" text-anchor="end" font-size="8.5" fill="#999">7/30 · 한 파일</text>
+  <rect x="120" y="31" width="520" height="22" fill="#b3261e"/>
+  <text x="632" y="46" text-anchor="end" font-size="12" font-weight="800" fill="#fff">33,792</text>
+
+  <text x="112" y="90" text-anchor="end" font-size="11" fill="#333">개편 직후</text>
+  <text x="112" y="103" text-anchor="end" font-size="8.5" fill="#999">7/31 · 56 노드</text>
+  <rect x="120" y="76" width="15" height="22" fill="#1b6b3a"/>
+  <text x="142" y="91" font-size="12" font-weight="800" fill="#1b6b3a">972</text>
+
+  <text x="112" y="135" text-anchor="end" font-size="11" fill="#333">현재</text>
+  <text x="112" y="148" text-anchor="end" font-size="8.5" fill="#999">8/25 · 91 노드</text>
+  <rect x="120" y="121" width="20" height="22" fill="#1b6b3a"/>
+  <text x="147" y="136" font-size="12" font-weight="800" fill="#1b6b3a">1,268</text>
+
+  <text x="120" y="172" font-size="9.5" fill="#666">개편 전은 실제로 파일을 통째로 읽었다. 아래는 그 작은 값들만 확대한 것이다.</text>
+  <line x1="0" y1="182" x2="700" y2="182" stroke="#e2e2e2"/>
+
+  <text x="112" y="205" text-anchor="end" font-size="11" fill="#333">개편 직후</text>
+  <rect x="120" y="192" width="113" height="18" fill="#1b6b3a"/>
+  <text x="240" y="205" font-size="11" font-weight="800" fill="#1b6b3a">972</text>
+
+  <text x="112" y="230" text-anchor="end" font-size="11" fill="#333">현재</text>
+  <rect x="120" y="217" width="147" height="18" fill="#1b6b3a"/>
+  <text x="274" y="230" font-size="11" font-weight="800" fill="#1b6b3a">1,268</text>
+
+  <text x="112" y="247" text-anchor="end" font-size="10" fill="#777">한 파일이면</text>
+  <rect x="120" y="238" width="520" height="10" fill="#c9d2dc"/>
+  <text x="632" y="247" text-anchor="end" font-size="9.5" font-weight="700" fill="#4a5b6b">4,484</text>
+</svg>
+<figcaption><b>위</b> 세 시점의 실제 비용 — 개편 전에는 파일을 통째로 읽었다(33,792).
+<b>아래</b> 작은 값 확대. 회색은 <b>지금 규모를 한 파일로 되돌렸을 때</b> grep 으로
+구간만 읽는 비용(4,484)이다 — 공정한 기준선은 이쪽이고, 그에 비해서도 71.7% 싸다.</figcaption>
+</figure>
+
+<figure>
+<svg viewBox="0 0 700 150" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto">
+  <text x="0" y="14" font-size="12" font-weight="700" fill="#1a1a1a">매 세션 고정비 — CLAUDE.md (모든 세션이 무조건 지불한다)</text>
+
+  <text x="112" y="42" text-anchor="end" font-size="11" fill="#333">개편 전</text>
+  <rect x="120" y="30" width="414" height="20" fill="#8a97a5"/>
+  <text x="542" y="45" font-size="11.5" font-weight="800" fill="#555">13,518</text>
+
+  <text x="112" y="80" text-anchor="end" font-size="11" fill="#333">개편 직후</text>
+  <rect x="120" y="68" width="329" height="20" fill="#1b6b3a"/>
+  <text x="457" y="83" font-size="11.5" font-weight="800" fill="#1b6b3a">10,745</text>
+  <text x="522" y="83" font-size="10" font-weight="700" fill="#1b6b3a">−21%</text>
+
+  <text x="112" y="118" text-anchor="end" font-size="11" fill="#333">현재</text>
+  <rect x="120" y="106" width="520" height="20" fill="#b3261e"/>
+  <text x="632" y="121" text-anchor="end" font-size="11.5" font-weight="800" fill="#fff">16,982</text>
+  <text x="120" y="143" font-size="10" font-weight="700" fill="#b3261e">개편 직후 대비 +58% · 개편 전보다도 +26%</text>
+</svg>
+<figcaption>개편 때 덜어낸 것을 4주 만에 도로 채웠다. 함정을 겪을 때마다 규약이 한 줄씩
+늘기 때문이다. <b>이 보고서에서 유일하게 나빠진 숫자다</b>(8장).</figcaption>
+</figure>
+
+<table>
+  <tr><th>단계</th><th class="n">결정 하나 찾기</th><th class="n">매 세션 고정비</th>
+      <th>그때 실제로 하던 방식</th></tr>
+  <tr><td><b>개편 전</b> <span class="dim">7/30</span></td>
+      <td class="n bad">33,792</td><td class="n">13,518</td>
+      <td>결정 56개짜리 한 파일을 통째로 읽었다</td></tr>
+  <tr><td><b>개편 직후</b> <span class="dim">7/31</span></td>
+      <td class="n cut">972</td><td class="n good">10,745</td>
+      <td>grep 으로 파일명만 받고 노드 하나만</td></tr>
+  <tr><td><b>현재</b> <span class="dim">8/25</span></td>
+      <td class="n cut">1,268</td><td class="n bad">16,982</td>
+      <td>같은 방식. 결정은 91개로 늘었다</td></tr>
+</table>
+
+<div class="box plain">
+  <h4>두 숫자가 반대 방향으로 갔다</h4>
+  <p><b>질문당 비용</b>은 33,792 → 1,268 로 줄었고 위키가 커져도 거의 안 늘었다.
+  <b>세션당 고정비</b>는 13,518 → 16,982 로 늘었다. 전자는 구조가 만든 이득이고,
+  후자는 규율이 무너져 생긴 손해다. <b>지금 이 위키에서 가장 값싼 개선은
+  규약을 다시 덜어내는 것이다.</b></p>
+</div>
+
+<h3>경로별로 나눠 보기</h3>
 <p>질문 다섯(하트 경제 · 친구 끊기 · 합성 데이터 · 증분 함정 · 힌트 요금)으로
 경로별 비용을 쟀다. <b>2026-08-25 에 다시 쟀고</b>, 비교를 위해 <b>개편 직후 상태를
 git 에서 꺼내 같은 토크나이저로 함께 쟀다.</b></p>
@@ -436,16 +523,15 @@ git 에서 꺼내 같은 토크나이저로 함께 쟀다.</b></p>
   <tr><td><b>회의록 ingest</b></td>
       <td class="warn">⚠️ 0회. 회의가 없었다</td></tr>
   <tr><td><b>CLAUDE.md 를 얇게</b></td>
-      <td class="bad">❌ <b>못 지켰다. 개편 때 10,031 → 8,782 로 줄였는데 지금
-          16,935 토큰(708줄)이다</b> — 개편 전보다도 69% 크다</td></tr>
+      <td class="bad">❌ <b>못 지켰다. 개편 때 13,518 → 10,745 로 줄였는데 지금 16,982 토큰이다</b> — 개편 전보다도 26% 크다</td></tr>
 </table>
 
 <div class="box">
   <h4>가장 크게 실패한 항목 — 매 세션 고정비가 두 배가 됐다</h4>
   <p>CLAUDE.md 는 <b>모든 세션이 무조건 지불하는 비용</b>이라 위키에서 제일 비싼
-  파일이다. 함정을 겪을 때마다 한 줄씩 늘어난 결과 개편 때의 두 배가 됐다.
+  파일이다. 함정을 겪을 때마다 한 줄씩 늘어난 결과, 개편 때 덜어낸 것을 도로 채우고도 개편 전보다 커졌다.
   <b>노드를 쪼개 아낀 것보다 이쪽에서 잃은 것이 클 수 있다</b> — 골라 읽기가
-  질문당 1,268 토큰인데, 규약은 세션마다 16,935 토큰이다.</p>
+  질문당 1,268 토큰인데, 규약은 세션마다 16,982 토큰이다.</p>
   <p>중복 117줄을 덜어내는 작업이 대기 중이다. <b>이것이 지금 이 위키의 가장 큰
   미해결 항목이다.</b></p>
 </div>
@@ -462,7 +548,7 @@ git 에서 꺼내 같은 토크나이저로 함께 쟀다.</b></p>
 <table>
   <tr><th>무엇</th><th>지금 값</th></tr>
   <tr><td><b>규약 파일이 매 세션 붙는다</b></td>
-      <td class="bad">16,935 토큰. 개편 때보다 두 배. 최대 미해결 항목</td></tr>
+      <td class="bad">16,982 토큰. 개편 직후 대비 +58%. 최대 미해결 항목</td></tr>
   <tr><td><b>색인 자체가 무겁다</b></td>
       <td>10,545 토큰. 전체 탐색 때는 이 값을 낸다(보통은 안 읽는다)</td></tr>
   <tr><td><b>규율이 무너지면 더 나쁘다</b></td>
