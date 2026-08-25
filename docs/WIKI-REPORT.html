@@ -317,29 +317,52 @@
 <h3>결정 하나를 알려면 몇 토큰을 읽어야 하나</h3>
 
 <figure>
-<svg viewBox="0 0 700 152" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto">
-  <text x="112" y="30" text-anchor="end" font-size="11" fill="#333">개편 전</text>
-  <text x="112" y="43" text-anchor="end" font-size="8.5" fill="#999">한 파일 · 56 결정</text>
-  <rect x="120" y="16" width="520" height="22" fill="#b3261e"/>
-  <text x="632" y="31" text-anchor="end" font-size="12" font-weight="800" fill="#fff">33,792</text>
+<svg viewBox="0 0 700 214" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto">
+  <text x="126" y="14" font-size="9.5" fill="#777">0</text>
+  <text x="646" y="14" text-anchor="end" font-size="9.5" fill="#777">5,600 토큰</text>
+  <line x1="126" y1="20" x2="646" y2="20" stroke="#e2e2e2"/>
 
-  <text x="112" y="78" text-anchor="end" font-size="11" fill="#333">지금 · 위키</text>
-  <text x="112" y="91" text-anchor="end" font-size="8.5" fill="#999">91 노드</text>
-  <rect x="120" y="64" width="20" height="22" fill="#1b6b3a"/>
-  <text x="147" y="79" font-size="12" font-weight="800" fill="#1b6b3a">1,268</text>
+  <!-- 56 노드 시절 -->
+  <text x="118" y="45" text-anchor="end" font-size="10.5" font-weight="700" fill="#333">개편 직후</text>
+  <text x="118" y="58" text-anchor="end" font-size="8.5" fill="#999">결정 56개</text>
+  <rect x="126" y="32" width="235" height="18" fill="#8a97a5"/>
+  <line x1="314" y1="35" x2="314" y2="47" stroke="#5b6875" stroke-width="1.4"/>
+  <line x1="415" y1="35" x2="415" y2="47" stroke="#5b6875" stroke-width="1.4"/>
+  <line x1="314" y1="41" x2="415" y2="41" stroke="#5b6875" stroke-width="1.4"/>
+  <text x="423" y="46" font-size="10.5" font-weight="700" fill="#555">2,535</text>
+  <rect x="126" y="54" width="90" height="18" fill="#1b6b3a"/>
+  <text x="223" y="68" font-size="10.5" font-weight="800" fill="#1b6b3a">972</text>
 
-  <text x="112" y="126" text-anchor="end" font-size="11" fill="#333">지금 · 위키가 없었다면</text>
-  <text x="112" y="139" text-anchor="end" font-size="8.5" fill="#999">같은 내용, 한 파일</text>
-  <rect x="120" y="112" width="69" height="22" fill="#8a97a5"/>
-  <text x="196" y="127" font-size="12" font-weight="800" fill="#555">4,484</text>
+  <!-- 91 노드 지금 -->
+  <text x="118" y="115" text-anchor="end" font-size="10.5" font-weight="700" fill="#333">지금</text>
+  <text x="118" y="128" text-anchor="end" font-size="8.5" fill="#999">결정 91개</text>
+  <rect x="126" y="102" width="416" height="18" fill="#8a97a5"/>
+  <line x1="491" y1="105" x2="491" y2="117" stroke="#5b6875" stroke-width="1.4"/>
+  <line x1="602" y1="105" x2="602" y2="117" stroke="#5b6875" stroke-width="1.4"/>
+  <line x1="491" y1="111" x2="602" y2="111" stroke="#5b6875" stroke-width="1.4"/>
+  <text x="610" y="116" font-size="10.5" font-weight="700" fill="#555">4,484</text>
+  <rect x="126" y="124" width="118" height="18" fill="#1b6b3a"/>
+  <text x="251" y="138" font-size="10.5" font-weight="800" fill="#1b6b3a">1,268</text>
+
+  <!-- 범례 -->
+  <rect x="126" y="162" width="11" height="11" fill="#8a97a5"/>
+  <text x="143" y="172" font-size="10" fill="#444">한 파일 방식 — grep 으로 찾아 그 부분만 읽는다</text>
+  <text x="470" y="172" font-size="9" fill="#5b6875">├─┤ 구간을 ±15~40줄로 잡았을 때의 폭</text>
+  <rect x="126" y="180" width="11" height="11" fill="#1b6b3a"/>
+  <text x="143" y="190" font-size="10" fill="#444">위키 방식 — 파일명을 보고 골라 그 노드만 읽는다</text>
+
+  <text x="126" y="209" font-size="9" fill="#999">※ 개편 전에는 실제로 파일을 통째로 읽었다(33,792). 그 값은 이 비교에 쓰지 않는다.</text>
 </svg>
-<figcaption>세 번째 막대가 <b>공정한 비교 대상</b>이다 — 지금의 결정 91개를 한 파일로
-합쳐 놓고 grep 으로 필요한 부분만 읽었을 때의 비용. 첫 번째 막대는 개편 전에
-<b>실제로 하던 습관</b>(파일을 통째로 읽기)이다.</figcaption>
+<figcaption><b>같은 내용을 두 방식으로 찾을 때의 비용을, 두 시점에서.</b>
+위키 규모가 커지면 <b>한 파일 방식만 같이 비싸진다</b> — 검색에 걸리는 줄이 늘기 때문이다.
+위키 방식은 노드 하나 크기가 위키 전체와 무관해서 거의 그대로다.
+회색 막대의 <b>├─┤ 는 구간을 몇 줄 읽느냐에 따른 폭</b>이다.
+본문을 <b>한 줄도 안 읽어도</b> 지금 규모에서 3,206 인데, 검색 결과 자체가 그만큼이기
+때문이다. 자세한 것은 부록.</figcaption>
 </figure>
 
 <div class="kpis">
-  <div class="kpi"><div class="v">3.5배</div><div class="k">같은 질문이 싸졌다<br>4,484 → 1,268</div></div>
+  <div class="kpi"><div class="v">3.5배</div><div class="k">같은 질문이 싸졌다<br>4,484 → 1,268<br><span style="font-size:7.5pt">읽는 방식에 따라 2.5~4.0배</span></div></div>
   <div class="kpi"><div class="v">2.6배</div><div class="k">그동안 위키는<br>이만큼 커졌다</div></div>
   <div class="kpi"><div class="v">+30%</div><div class="k">그런데 질문 비용은<br>이만큼만 늘었다</div></div>
   <div class="kpi"><div class="v">0건</div><div class="k">끊어진 링크<br>노드 163개 기준</div></div>
