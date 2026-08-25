@@ -277,13 +277,20 @@ def build(data: dict) -> str:
     stage = {r["week_start"]: r for r in data.get("stage", [])}
     s_cur = stage.get(meta["week_start"], {})
     s_prev = stage.get((week_start - timedelta(days=7)).isoformat(), {})
+    # ⚠️ **한 그림에 두 단위를 섞지 않는다.** 10문항 도달은 사람이 아니라
+    #    세션(건)이라 같은 막대에 두면 축이 그쪽에 끌려간다 — 합성 데이터로
+    #    시험했을 때 48,714건 옆에서 379명 막대가 보이지 않았다.
+    #    세션 수는 그림 밑에 한 줄로 적는다.
     chart_stage = grouped_bars([
-        ("신규", g(prev, "signups"), g(cur, "signups")),
+        ("신규 가입", g(prev, "signups"), g(cur, "signups")),
         ("접속", g(prev, "wau"), g(cur, "wau")),
         ("투표", g(prev, "voters"), g(cur, "voters")),
-        ("10문항(건)", g(s_prev, "sessions_10q"), g(s_cur, "sessions_10q")),
         ("결제", g(prev, "payers"), g(cur, "payers")),
-    ], width=500, height=365)
+    ], width=500, height=330)
+    chart_stage += (
+        f'<div class="foot-note">10문항까지 간 투표 세션 '
+        f'{g(s_cur,"sessions_10q"):,}건 (전주 {g(s_prev,"sessions_10q"):,}건) — '
+        f'이것만 단위가 사람이 아니라 세션입니다</div>')
 
     # ── 1쪽 요약 — 데이터가 문장을 정한다 ─────────────────────────
     lines = []
@@ -294,9 +301,11 @@ def build(data: dict) -> str:
                      if diff >= 0 else
                      ("warn", f"주간 유효 투표 참여율 {part.text}로 목표 {GOAL_PARTICIPATION:.0f}%에 "
                               f"{abs(diff):.1f}%p 못 미쳤습니다."))
-    else:
+    elif g(cur, "eligible"):
         lines.append(("info", f"유효 사용자 {g(cur,'eligible'):,}명 중 {g(cur,'eligible_voters'):,}명이 "
                               f"투표했습니다. 표본이 작아 비율 대신 실수로 적었습니다."))
+    else:
+        lines.append(("info", "친구 5명을 확보한 유효 사용자가 아직 없어 참여율을 낼 수 없습니다."))
     if g(cur, "signups"):
         lines.append(("info", f"신규 가입 {g(cur,'signups'):,}명. "
                               f"활동 사용자는 {g(cur,'wau'):,}명(전주 {g(prev,'wau'):,}명)입니다."))
@@ -385,7 +394,7 @@ def build(data: dict) -> str:
         "KPI_CARDS": kpi_cards,
         "CHART_PARTICIPATION": chart_part,
         "CHART_STAGES": chart_stage,
-        "STAGE_UNIT_NOTE": " · 10문항만 세션 건수",
+        "STAGE_UNIT_NOTE": " · 단위는 모두 사람 수",
         "SUMMARY": summary,
         "DASHBOARD_URL": DASHBOARD_URL,
         "ACT_CAP": act_cap,
