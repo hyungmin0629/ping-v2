@@ -1,623 +1,494 @@
-<!doctype html>
-<html lang="ko">
-<head>
 <meta charset="utf-8">
-<title>ping-v2 — 문서를 LLM 위키로 바꾼 기록</title>
+<title>문서를 LLM 위키로 바꿨다 — 왜, 어떻게, 그래서 무엇이 달라졌나</title>
 <style>
-  @font-face { font-family:"MalgunLocal"; font-weight:400;
-               src:url("file:///C:/Windows/Fonts/malgun.ttf") format("truetype"); }
-  @font-face { font-family:"MalgunLocal"; font-weight:700;
-               src:url("file:///C:/Windows/Fonts/malgunbd.ttf") format("truetype"); }
-  @page { size: A4; margin: 18mm 16mm 16mm; }
-
-  :root {
-    --ink:#16191F; --ink2:#4E566A; --ink3:#818AA0;
-    --rule:#D9DEE8; --rule2:#EAEEF5; --accent:#3B4FA0; --warn:#A15A2A; --good:#2C7A5A;
-    --mono:"Consolas","MalgunLocal",monospace;
-    --sans:"MalgunLocal","Malgun Gothic",sans-serif;
-  }
-  * { box-sizing:border-box; }
-  body { margin:0; font-family:var(--sans); color:var(--ink);
-         font-size:10.2pt; line-height:1.62; }
-
-  .cover { height:245mm; display:flex; flex-direction:column; justify-content:center;
-           page-break-after:always; }
-  .cover .eyebrow { font-family:var(--mono); font-size:9pt; letter-spacing:.22em;
-           text-transform:uppercase; color:var(--accent); margin-bottom:10mm; }
-  .cover h1 { font-size:26pt; line-height:1.28; margin:0 0 6mm; letter-spacing:-.02em;
-           font-weight:700; }
-  .cover .sub { font-size:12pt; color:var(--ink2); margin:0 0 16mm; max-width:132mm; }
-  .cover dl { display:grid; grid-template-columns:24mm 1fr; gap:2.5mm 6mm; margin:0;
-           padding-top:8mm; border-top:1px solid var(--rule); font-size:9.5pt; }
-  .cover dt { font-family:var(--mono); font-size:8.5pt; color:var(--ink3);
-           letter-spacing:.06em; padding-top:.5mm; }
-  .cover dd { margin:0; color:var(--ink2); }
-
-  h2 { font-size:15pt; margin:0 0 1mm; letter-spacing:-.01em; font-weight:700;
-       page-break-after:avoid; }
-  h2 .num { font-family:var(--mono); font-size:10pt; color:var(--accent);
-       margin-right:3mm; font-weight:600; }
-  .lede { color:var(--ink2); margin:0 0 5mm; font-size:10pt;
-       padding-bottom:3mm; border-bottom:1px solid var(--rule); }
-  h3 { font-size:11pt; margin:7mm 0 2mm; font-weight:650; page-break-after:avoid; }
-  h4 { font-size:9.5pt; margin:5mm 0 1.5mm; font-weight:650; color:var(--ink2);
-       page-break-after:avoid; }
-  p { margin:0 0 3mm; }
-  section { page-break-before:always; }
-  section.cont { page-break-before:auto; }
-  strong { font-weight:650; }
-  code { font-family:var(--mono); font-size:8.8pt; background:#EFF2F8;
-         padding:.3mm 1.1mm; border-radius:1.5px; }
-
-  table { border-collapse:collapse; width:100%; margin:3mm 0 5mm; font-size:9pt;
-          page-break-inside:avoid; }
-  th { text-align:left; font-size:8pt; letter-spacing:.09em; text-transform:uppercase;
-       color:var(--ink3); font-weight:650; border-bottom:1.2px solid var(--rule);
-       padding:0 3mm 1.5mm 0; }
-  td { padding:1.6mm 3mm 1.6mm 0; border-bottom:1px solid var(--rule2);
-       vertical-align:top; }
-  td.n, th.n { font-family:var(--mono); font-variant-numeric:tabular-nums;
-       white-space:nowrap; text-align:right; }
-  tr.tot td { border-top:1.2px solid var(--rule); border-bottom:0; font-weight:650; }
-  .cut { color:var(--good); font-weight:650; }
-
-  ul,ol { margin:0 0 3mm; padding-left:5mm; }
-  li { margin-bottom:1.2mm; }
-
-  .note { border-left:2.5px solid var(--accent); padding:1mm 0 1mm 4mm;
-          margin:4mm 0; color:var(--ink2); font-size:9.4pt; page-break-inside:avoid; }
-  .warn { border-left-color:var(--warn); }
-  .note b { color:var(--ink); }
-  /* 7장 — 지켜진 항목. 어긴 항목의 ⚠️ 와 대비를 준다 */
-  td.ok::before { content:"✓ "; color:#1C7048; font-weight:700; }
-
-  pre { font-family:var(--mono); font-size:8.3pt; line-height:1.52;
-        background:#F3F6FB; border:1px solid var(--rule2); border-radius:2px;
-        padding:3mm 4mm; margin:3mm 0 5mm; white-space:pre-wrap;
-        page-break-inside:avoid; }
-
-  .layer { border:1px solid var(--rule); border-radius:3px; margin:0 0 4mm;
-           page-break-inside:avoid; overflow:hidden; }
-  .layer > .h { display:flex; align-items:baseline; gap:4mm; padding:2.5mm 4mm;
-           background:#F3F6FB; border-bottom:1px solid var(--rule2); }
-  .layer > .h b { font-size:11pt; }
-  .layer > .h .who { margin-left:auto; font-family:var(--mono); font-size:8.5pt;
-           color:var(--ink3); }
-  .layer > .c { padding:3mm 4mm 1mm; }
-  .layer table { margin:1mm 0 2mm; }
-
-  .kpi { display:grid; grid-template-columns:repeat(4,1fr); border:1px solid var(--rule);
-         border-radius:2px; margin:3mm 0 5mm; page-break-inside:avoid; }
-  .kpi div { padding:3mm; border-right:1px solid var(--rule2); }
-  .kpi div:last-child { border-right:0; }
-  .kpi b { display:block; font-family:var(--mono); font-size:15pt; font-weight:650;
-           letter-spacing:-.02em; font-variant-numeric:tabular-nums; }
-  .kpi span { font-size:8pt; color:var(--ink3); font-family:var(--mono);
-              letter-spacing:.05em; }
-
-  footer { margin-top:8mm; padding-top:3mm; border-top:1px solid var(--rule);
-           font-family:var(--mono); font-size:8pt; color:var(--ink3); }
+  @page { size: A4; margin: 18mm 16mm; }
+  * { box-sizing: border-box; }
+  body { font-family: "Malgun Gothic", "맑은 고딕", -apple-system, sans-serif;
+         font-size: 10.5pt; line-height: 1.65; color: #1a1a1a; margin: 0; }
+  h1 { font-size: 20pt; margin: 0 0 4px; letter-spacing: -0.5px; }
+  h2 { font-size: 13.5pt; margin: 26px 0 10px; padding-bottom: 5px;
+       border-bottom: 2px solid #1a1a1a; page-break-after: avoid; }
+  h3 { font-size: 11.5pt; margin: 18px 0 7px; page-break-after: avoid; }
+  h4 { font-size: 10.5pt; margin: 14px 0 5px; page-break-after: avoid; }
+  p { margin: 7px 0; }
+  .sub { color: #666; font-size: 9.5pt; margin: 0 0 14px; }
+  .lede { color: #444; font-size: 10pt; margin: -4px 0 12px; }
+  .meta { border: 1px solid #ddd; background: #fafafa; padding: 10px 14px;
+          font-size: 9pt; color: #444; margin-bottom: 20px; }
+  .meta b { color: #1a1a1a; } .meta div { margin: 2px 0; }
+  table { border-collapse: collapse; width: 100%; margin: 10px 0 16px; font-size: 9.5pt; }
+  th, td { border: 1px solid #d8d8d8; padding: 5px 9px; text-align: left; vertical-align: top; }
+  th { background: #f2f2f2; font-weight: 600; }
+  td.n, th.n { text-align: right; font-variant-numeric: tabular-nums; }
+  td.c, th.c { text-align: center; }
+  tr { page-break-inside: avoid; }
+  .bad { color: #b3261e; font-weight: 600; }
+  .good { color: #1b6b3a; font-weight: 600; }
+  .warn { color: #8a6d1f; font-weight: 600; }
+  .dim { color: #777; }
+  .cut { color: #1b6b3a; font-weight: 700; }
+  .box { border-left: 4px solid #b3261e; background: #fdf3f2;
+         padding: 10px 14px; margin: 12px 0; page-break-inside: avoid; }
+  .box.ok { border-left-color: #1b6b3a; background: #f1f8f3; }
+  .box.note { border-left-color: #8a6d1f; background: #fdfaef; }
+  .box.plain { border-left-color: #4a6a8a; background: #f4f7fa; }
+  .box h4 { margin: 0 0 5px; font-size: 10.5pt; } .box p { margin: 5px 0; }
+  ol, ul { margin: 7px 0 7px 20px; padding: 0; } li { margin: 4px 0; }
+  code { font-family: Consolas, monospace; font-size: 9pt;
+         background: #f0f0f0; padding: 1px 4px; border-radius: 2px; }
+  pre { font-family: Consolas, monospace; font-size: 8.7pt; line-height: 1.5;
+        background: #f7f7f7; border: 1px solid #e2e2e2; border-left: 3px solid #999;
+        padding: 9px 11px; margin: 9px 0; white-space: pre-wrap;
+        page-break-inside: avoid; }
+  pre .c { color: #6a8a5a; }
+  .pb { page-break-before: always; }
+  footer { margin-top: 28px; padding-top: 8px; border-top: 1px solid #ddd;
+           font-size: 8.5pt; color: #777; }
+  figure { margin: 14px 0; page-break-inside: avoid; }
+  figure img { width: 100%; border: 1px solid #e2e2e2; }
+  figcaption { font-size: 8.8pt; color: #666; margin-top: 5px; }
+  .toc { border: 1px solid #ddd; padding: 12px 16px; background: #fafafa;
+         font-size: 9.5pt; margin-bottom: 20px; }
+  .toc div { margin: 3px 0; }
+  .toc b { display: inline-block; width: 26px; color: #555; }
+  .layers { display: flex; gap: 8px; margin: 12px 0; page-break-inside: avoid; }
+  .layer { flex: 1; border: 1px solid #ccc; padding: 9px 11px; background: #fff; }
+  .layer .t { font-weight: 700; font-size: 10pt; margin-bottom: 3px; }
+  .layer .w { font-size: 8.8pt; color: #555; }
+  .layer.raw { border-top: 3px solid #a2762f; }
+  .layer.wiki { border-top: 3px solid #3b6fd4; }
+  .layer.rule { border-top: 3px solid #4a4a4a; }
+  .kpis { display: flex; gap: 8px; margin: 12px 0; page-break-inside: avoid; }
+  .kpi { flex: 1; border: 1px solid #ddd; padding: 8px 10px; text-align: center; }
+  .kpi .v { font-size: 16pt; font-weight: 800; letter-spacing: -0.5px; }
+  .kpi .k { font-size: 8.5pt; color: #666; }
 </style>
-</head>
-<body>
 
-<div class="cover">
-  <div class="eyebrow">ping-v2 · 문서 체계 개편 보고</div>
-  <h1>문서를 LLM 위키로 바꿨다<br>— 무엇이 달라졌나</h1>
-  <p class="sub">문서 6개를 노드로 쪼개고, 원본·위키·규약의 세 층으로 나눴다.
-     결정 하나를 찾는 비용이 <b>1,928 → 1,263 토큰</b>으로 줄었고,
-     낡은 문서를 기계가 잡게 됐다.
-     <b>그로부터 3주, 결정이 56개에서 89개로 늘었다</b> — 구조가 견뎠는지를 7장에 적었다.</p>
-  <dl>
-    <dt>기준일</dt><dd>2026년 8월 20일 <span style="color:var(--ink3)">(개편 자체는 7월 31일)</span></dd>
-    <dt>근거</dt><dd>Andrej Karpathy, <em>LLM Wiki: A Pattern for Persistent Knowledge Bases</em></dd>
-    <dt>범위</dt><dd>문서 체계만. 코드·스키마는 건드리지 않음</dd>
-    <dt>도구</dt><dd>Obsidian 볼트로 열림 · 스크립트 5종</dd>
-  </dl>
-  <div class="note" style="margin-top:8mm">
-    <b>3장의 토큰 수치는 2026-07-31 측정값이다.</b> 다시 재지 않았다 —
-    개편의 효과를 재는 실험이었고, 그 실험은 그 시점의 것이다. 이후 규모가
-    늘었으므로 <b>A(통째로 읽기) 경로는 지금 더 나빠졌고 D(골라 읽기)는 거의 그대로다.</b>
-    즉 격차는 벌어졌지 좁아지지 않았다.
-  </div>
+<h1>문서를 LLM 위키로 바꿨다</h1>
+<p class="sub">왜 바꿨고, 무엇이 달라졌으며, 4주 뒤에도 그 판단이 유효한가</p>
+
+<div class="meta">
+  <div><b>기준일</b> 2026년 8월 25일 · 개편은 2026년 7월 31일 (4주 경과)</div>
+  <div><b>규모</b> 위키 노드 163개 (결정 91 · 표 40 · 색인/규약 13 · 운영 10 · 원본 9) · 링크 663개</div>
+  <div><b>핵심 수치</b> 결정 하나를 찾는 비용 <b>4,484 → 1,268 토큰</b> (71.7% 절감, 같은 자로 잰 값)</div>
+  <div><b>근거</b> Andrej Karpathy, <i>LLM Wiki: A Pattern for Persistent Knowledge Bases</i></div>
+  <div><b>도구</b> Obsidian 볼트로 열림 · 생성·검사 스크립트 7종</div>
 </div>
 
-<!-- ══════════ 1 ══════════ -->
-<section class="cont">
-<h2><span class="num">01</span>왜 바꿨나</h2>
-<p class="lede">문서가 늘면서 <b>한 번 볼 때마다 전부를 읽어야 하는</b> 구조가 됐다.</p>
+<div class="toc">
+  <div><b>1</b> LLM 위키란 무엇인가 <span class="dim">— 처음 듣는 사람을 위해</span></div>
+  <div><b>2</b> 왜 도입했나 — 2026년 7월 31일의 상태</div>
+  <div><b>3</b> 지금의 구조 — 세 개의 층</div>
+  <div><b>4</b> 그래프로 본 위키 <span class="dim">— 옵시디언으로 무엇을 관찰하나</span></div>
+  <div><b>5</b> 무엇이 달라졌나 — 숫자</div>
+  <div><b>6</b> 팀 협업에서의 쓸모</div>
+  <div><b>7</b> 어떻게 쓰나 — 세 가지 연산</div>
+  <div><b>8</b> 4주 뒤 — 구조가 견뎠나 <span class="dim">(못 지킨 것 포함)</span></div>
+  <div><b>9</b> 되돌리는 기준과 남은 비용</div>
+</div>
 
-<h3>바꾸기 전의 문제</h3>
+<h2>1. LLM 위키란 무엇인가</h2>
+<p class="lede">사람이 읽는 위키와 목적이 다르다. 독자가 에이전트다.</p>
+
+<h3>출발점: LLM 은 매번 처음부터 시작한다</h3>
+<p>사람과 달리 LLM 에이전트는 어제 한 일을 기억하지 못한다. 새 대화를 열면
+<b>이 프로젝트가 무엇인지, 왜 그렇게 정했는지를 다시 알려줘야 한다.</b>
+그 "다시 알려주는 비용"이 이 문서가 다루는 전부다.</p>
+
+<p>흔히 쓰는 대응이 둘 있고, 둘 다 값을 치른다.</p>
+
 <table>
-  <thead><tr><th style="width:42mm">무엇이</th><th>왜 문제인가</th></tr></thead>
-  <tbody>
-    <tr><td><b>DECISIONS.md<br>24,946 토큰</b></td>
-        <td>결정 56개가 한 파일에 시간순으로 쌓였다. 결정 하나는 중앙값 456토큰인데
-            <b>실제로는 파일을 통째로 읽었다</b> — 이 작업 중 시스템이 "내용이 너무 커서
-            포함할 수 없다"며 요약에서 잘라냈을 정도다.<br>
-            grep 으로 구간만 읽는 방법이 있긴 했다(3장 B 경로). 다만 결정의 시작과 끝을
-            모르므로 <b>읽을 범위를 찍어야 했고, 잘려도 알 수 없었다.</b></td></tr>
-    <tr><td><b>CLAUDE.md<br>10,031 토큰</b></td>
-        <td>에이전트가 <b>매 세션 무조건</b> 읽는 파일. BigQuery 설정처럼 특정 작업에만
-            필요한 내용이 항상 따라왔다.</td></tr>
-    <tr><td><b>뒤집힌 결정이<br>그대로 살아 있었다</b></td>
-        <td>힌트 요금을 순차 4단계에서 선택형으로 바꿨는데, 옛 결정이 같은 파일에
-            남아 있었다. 제목만 보면 서로 모순되는 항목도 있었다.</td></tr>
-    <tr><td><b>표 하나를 알려면<br>네 군데를 열어야</b></td>
-        <td><code>heart_transaction</code> 은 DDL 주석 · 결정 6개 · 정합성 검사 5종 ·
-            정책 7파일에 흩어져 있었다.</td></tr>
-    <tr><td><b>손으로 만든 목록이<br>조용히 낡았다</b></td>
-        <td>"비어 있는 테이블" 목록이 실제와 어긋나 있었다 — 20행짜리 표를 비었다고
-            적어두고, 정작 빈 표는 빠져 있었다.</td></tr>
-  </tbody>
+  <tr><th>대응</th><th>어떻게 되나</th></tr>
+  <tr><td><b>① 큰 문서 하나를 매번 읽힌다</b></td>
+      <td>"우리 프로젝트 문서" 한 파일을 통째로 읽힌다. 확실하지만 <b>질문과 무관한
+          내용까지 전부 값을 낸다.</b> 문서가 자랄수록 매 세션의 고정비가 커진다</td></tr>
+  <tr><td><b>② 대화 세션을 길게 유지한다</b></td>
+      <td>한 번 설명한 맥락을 잃지 않으려고 세션을 안 끊는다.
+          <b>그런데 대화가 길어질수록 이후의 모든 요청이 그 누적 대화를 다시 싣는다.</b>
+          작은 수정 하나에도 앞선 맥락 전체의 값을 낸다</td></tr>
 </table>
 
-<div class="note warn">
-  <b>공통점 —</b> 다섯 가지 모두 <b>오류를 내지 않는다.</b> 문서는 잘 읽히고
-  링크도 멀쩡하다. 다만 낡았거나, 필요 없는 것까지 딸려올 뿐이다.
-  이 프로젝트가 스키마에서 계속 상대해 온 "조용히 틀리는 것"이 문서에서도
-  똑같이 나타난 것이다.
-</div>
-</section>
+<h3>LLM 위키의 답</h3>
+<p>지식을 <b>작은 노드로 쪼개고, 링크로 잇고, 필요한 것만 골라 읽게</b> 한다.
+핵심은 파일을 잘게 나누는 것이 아니라 <b>경계를 의미와 일치시키는 것</b>이다 —
+노드 하나가 "결정 하나"이면, 그 결정이 궁금할 때 딱 그만큼만 읽으면 된다.</p>
 
-<!-- ══════════ 2 ══════════ -->
-<section>
-<h2><span class="num">02</span>지금의 3계층 구조</h2>
+<table>
+  <tr><th>원칙</th><th>이 저장소에서의 모습</th></tr>
+  <tr><td><b>원본은 고치지 않는다</b></td>
+      <td><code>raw/</code> — 회의록·구 서비스 분석·외부 스펙. 나중에 생각이 바뀌어도
+          원본은 그대로 두고 <b>새 결정</b>을 따로 적는다</td></tr>
+  <tr><td><b>파생 문서는 재생성한다</b></td>
+      <td>색인·표 페이지는 스크립트가 만든다. 손으로 고치지 않는다 —
+          고쳐도 다음 생성 때 날아간다</td></tr>
+  <tr><td><b>노드 = 의미 단위</b></td>
+      <td>결정 하나 = 파일 하나. 제목·날짜·갈래·상태를 frontmatter 에 단다</td></tr>
+  <tr><td><b>링크로 잇는다</b></td>
+      <td><code>[[위키링크]]</code>. 뒤집힌 결정은 <code>superseded_by</code> 로
+          후속 결정을 가리킨다</td></tr>
+  <tr><td><b>찾는 규율이 이득을 만든다</b></td>
+      <td>grep 으로 <b>파일명만</b> 받고, 이름을 보고 골라, 그 노드만 읽는다.
+          매칭된 것을 전부 읽으면 쪼개기 전보다 나빠진다(5장)</td></tr>
+</table>
+
+<div class="box plain">
+  <h4>사람 위키와 결정적으로 다른 점</h4>
+  <p>사람은 긴 문서를 <b>훑어보고 필요한 곳만 눈으로 건너뛴다.</b> 비용이 거의 안 든다.
+  에이전트는 읽은 만큼 값을 낸다. 그래서 <b>"찾기 쉬움"이 곧 "쌈"</b>이고,
+  그것이 문서를 노드로 쪼갤 이유가 된다.</p>
+  <p>또 하나 — 사람 위키는 사람이 낡음을 눈치챈다. 여기서는 <b>코드도 진실이고 코드는 매
+  커밋 바뀐다.</b> 문서가 조용히 낡는다. 그래서 <b>lint 연산</b>이 따로 있다(7장).</p>
+</div>
+
+<h2 class="pb">2. 왜 도입했나 — 2026년 7월 31일의 상태</h2>
+<p class="lede">문서가 늘면서, 한 번 볼 때마다 전부를 읽어야 하는 구조가 됐다.</p>
+
+<table>
+  <tr><th>무엇이</th><th>왜 문제였나</th></tr>
+  <tr><td><b>DECISIONS.md</b><br>24,946 토큰</td>
+      <td>결정 56개가 한 파일에 시간순으로 쌓였다. 결정 하나는 중앙값 456토큰인데
+          실제로는 파일을 통째로 읽었다 — 작업 중 시스템이 <b>"내용이 너무 커서 포함할 수
+          없다"</b>며 잘라낼 정도였다</td></tr>
+  <tr><td><b>CLAUDE.md</b><br>10,031 토큰</td>
+      <td>에이전트가 <b>매 세션 무조건</b> 읽는 파일. BigQuery 설정처럼 특정 작업에만
+          필요한 내용이 항상 따라왔다</td></tr>
+  <tr><td><b>뒤집힌 결정이</b><br>그대로 살아 있었다</td>
+      <td>힌트 요금을 순차 4단계에서 선택형으로 바꿨는데 옛 결정이 같은 파일에 남아
+          있었다. 제목만 보면 서로 모순되는 항목도 있었다</td></tr>
+  <tr><td><b>표 하나를 알려면</b><br>네 군데를 열어야</td>
+      <td><code>heart_transaction</code> 은 DDL 주석 · 결정 6개 · 정합성 검사 5종 ·
+          정책 7파일에 흩어져 있었다</td></tr>
+  <tr><td><b>손으로 만든 목록이</b><br>조용히 낡았다</td>
+      <td>"비어 있는 테이블" 목록이 실제와 어긋나 있었다 — 20행짜리 표를 비었다고
+          적어두고, 정작 빈 표는 빠져 있었다</td></tr>
+</table>
+
+<h3>그리고 여섯 번째 — 세션을 끊지 못했다</h3>
+
+<p>이것이 문서만 봐서는 안 보이는, <b>실제 작업 방식의 문제</b>였다.</p>
+
+<p>맥락을 다시 설명하는 것이 비싸니까 <b>세션을 일부러 유지했다.</b>
+스키마 컬럼 하나를 고치는 작은 일도, 새 대화를 열어 "이 프로젝트는 이런 거고
+저 표는 이래서 저렇게 만들었고…"를 다시 말하느니 <b>어제 쓰던 대화창을 이어
+쓰는 편이 싸 보였기 때문이다.</b></p>
+
+<p>그런데 그 선택은 정반대의 값을 치른다. 대화가 길어질수록 <b>그 뒤의 모든 요청이
+누적된 대화 전체를 다시 싣는다.</b> 작은 수정 하나가 앞선 두 시간치 맥락의 값을
+낸다. 게다가 길어진 세션에는 이미 끝난 작업의 시행착오·실패한 시도·중간 출력이
+그대로 남아 있어서, <b>정작 필요한 정보의 밀도는 계속 떨어진다.</b></p>
+
+<div class="box">
+  <h4>진짜 문제는 토큰이 아니라 의존이었다</h4>
+  <p>세션에만 있는 맥락은 <b>저장소에 없는 맥락</b>이다. 그 대화창을 닫는 순간
+  사라지고, 팀원은 처음부터 볼 수 없으며, 몇 주 뒤의 나도 못 찾는다.
+  "왜 그렇게 정했나"가 <b>대화 기록에만 있는 상태</b>였다.</p>
+</div>
+
+<p>위키로 바꾼 뒤에는 <b>세션을 짧게 끊을 수 있게 됐다.</b> 새 대화를 열고
+필요한 노드 하나(평균 1,268 토큰)만 읽으면 그 작업에 필요한 맥락이 선다.
+작은 작업일수록 이득이 크다 — 작은 작업에 긴 세션을 물고 있는 것이 가장 비쌌기
+때문이다.</p>
+
+<div class="box note">
+  <h4>다섯 문제의 공통점</h4>
+  <p>전부 <b>오류를 내지 않는다.</b> 문서는 잘 읽히고 링크도 멀쩡하다. 다만 낡았거나,
+  필요 없는 것까지 딸려올 뿐이다. 이 프로젝트가 스키마에서 계속 상대해 온
+  <b>"조용히 틀리는 것"</b>이 문서에서도 똑같이 나타난 것이다.</p>
+</div>
+
+<h2 class="pb">3. 지금의 구조 — 세 개의 층</h2>
 <p class="lede">원본은 사람만 고치고, 위키는 에이전트가 소유하고, 규약이 그 일을 정의한다.</p>
 
-<div class="layer">
-  <div class="h"><b>1계층 · <code>raw/</code></b><span>원본</span>
-    <span class="who">사람만 고침</span></div>
-  <div class="c">
-    <p>바깥에서 들어온 사실. <b>고치지 않는다.</b> 회의에서 정한 것이 나중에 바뀌어도
-       회의록은 그대로 두고, 바뀐 것은 새 결정으로 적는다 — 그래야 "언제 왜 마음이
-       바뀌었나"가 남는다.</p>
-    <table>
-      <thead><tr><th style="width:52mm">위치</th><th class="n" style="width:14mm">개수</th><th>무엇</th></tr></thead>
-      <tbody>
-        <tr><td><code>raw/meetings/</code></td><td class="n">템플릿</td>
-            <td>팀 회의록. <code>YYYY-MM-DD-주제.md</code><br>
-                <span style="font-size:8.5pt;color:var(--ink3)">⚠️ 3주가 지나도록 <b>한 건도 안 쌓였다.</b>
-                결정 33건이 전부 작업 중에 났다 — 6장의 "회의 없이 결정이 났을 때"가
-                예외가 아니라 <b>기본 경로</b>였다</span></td></tr>
-        <tr><td><code>raw/legacy-analysis/</code></td><td class="n">12</td>
-            <td>구 서비스 DB 분석 리포트 9종 + PDF 2종</td></tr>
-        <tr><td><code>raw/external/</code></td><td class="n">0</td>
-            <td>API 스펙 등 외부 문서</td></tr>
-      </tbody>
-    </table>
-    <p style="font-size:9.2pt;color:var(--ink2)">
-      ⚠️ <code>legacy-analysis</code> 는 <b>구 서비스(다른 스키마)</b>를 분석한 것이다.
-      행동 수치(이탈률·전환율)는 참고하되 <b>표 구조는 우리 것이 아니다</b> —
-      그건 우리가 갈아엎은 대상이다.</p>
+<div class="layers">
+  <div class="layer raw">
+    <div class="t">1층 · 원본 <code>raw/</code></div>
+    <div class="w">회의록 · 구 서비스 분석 · 외부 스펙<br>
+      <b>사람만 고친다.</b> 에이전트는 읽기만<br>
+      <span class="dim">9개 노드</span></div>
+  </div>
+  <div class="layer wiki">
+    <div class="t">2층 · 위키 <code>docs/</code></div>
+    <div class="w">원본과 코드에서 뽑아 만든 것<br>
+      <b>에이전트가 소유한다</b><br>
+      <span class="dim">결정 91 · 표 40 · 운영 10 · 색인</span></div>
+  </div>
+  <div class="layer rule">
+    <div class="t">3층 · 규약 <code>CLAUDE.md</code></div>
+    <div class="w">그 일을 어떻게 하는지<br>
+      <b>사람과 에이전트가 함께 다듬는다</b><br>
+      <span class="dim">매 세션 자동으로 읽힌다</span></div>
   </div>
 </div>
 
-<div class="layer">
-  <div class="h"><b>2계층 · <code>docs/</code></b><span>위키</span>
-    <span class="who">에이전트가 소유</span></div>
-  <div class="c">
-    <p>원본과 코드에서 <b>뽑아 만든</b> 것. 노드 하나가 옵시디언 노드 하나다.</p>
-    <table>
-      <thead><tr><th style="width:52mm">위치</th><th class="n" style="width:14mm">개수</th><th>무엇</th></tr></thead>
-      <tbody>
-        <tr><td><code>docs/decisions/</code></td><td class="n">89 <span style="color:var(--ink3)">←56</span></td>
-            <td>결정 하나가 한 파일. <code>status</code>·<code>superseded_by</code> 로 관계 표시</td></tr>
-        <tr><td><code>docs/tables/</code></td><td class="n">40</td>
-            <td><b>표마다 한 장.</b> DDL·결정·검사·정책을 모아 자동 생성</td></tr>
-        <tr><td><code>docs/ops/</code></td><td class="n">9 <span style="color:var(--ink3)">←5</span></td>
-            <td>실제 작업할 때 필요한 값과 절차</td></tr>
-        <tr><td><code>docs/index.md</code></td><td class="n">1</td>
-            <td>위키 전체 목록. 자동 생성</td></tr>
-        <tr><td><code>docs/log.md</code></td><td class="n">1</td>
-            <td>무엇을 언제 했나. 덧붙이기만</td></tr>
-        <tr><td><code>docs/reports.md</code></td><td class="n">1</td>
-            <td><b>새로 생겼다.</b> PDF 리포트는 옵시디언에서 첨부로만 보여 검색·백링크가
-                안 된다. 그래서 이 페이지가 목록 역할을 한다</td></tr>
-        <tr><td><code>DECISIONS.md</code></td><td class="n">1</td>
-            <td>결정 색인. 기존 링크 19곳이 그대로 살도록 남김</td></tr>
-      </tbody>
-    </table>
-  </div>
-</div>
-
-<div class="layer">
-  <div class="h"><b>3계층 · <code>CLAUDE.md</code></b><span>규약</span>
-    <span class="who">사람 + 에이전트</span></div>
-  <div class="c">
-    <p>위키가 어떻게 생겼고 <b>어떻게 다루는지</b>를 정의한다. 세 연산이 절차로 적혀 있다.</p>
-    <table>
-      <thead><tr><th style="width:22mm">연산</th><th>무엇을 하나</th></tr></thead>
-      <tbody>
-        <tr><td><b>ingest</b></td>
-            <td>원본을 읽어 위키에 반영. 결정은 노드로, 뒤집으면 옛 노드에 표시,
-                색인 갱신, 원본을 <code>ingested: true</code> 로, 이력에 한 줄</td></tr>
-        <tr><td><b>query</b></td>
-            <td>전문을 훑지 않고 색인에서 고른 노드만 읽는다. 답이 다시 쓰일 것 같으면
-                <b>그 답을 새 노드로 남긴다</b></td></tr>
-        <tr><td><b>lint</b></td>
-            <td>문서 주장을 살아 있는 DB·파일시스템과 대조 (<code>db/doc_lint.py</code>)</td></tr>
-      </tbody>
-    </table>
-  </div>
-</div>
-</section>
-
-<!-- ══════════ 3 ══════════ -->
-<section>
-<h2><span class="num">03</span>얻은 것 — 숫자</h2>
-<p class="lede">토큰 절감이 가장 크고, 그다음이 낡음 탐지다.</p>
-
-<h3>결정 하나를 찾는 데 드는 비용 — 다섯 경로</h3>
-<p>질문 5개(하트 경제·친구 끊기·합성 데이터·증분 함정·힌트 요금)로 실측한 평균이다.
-읽기 호출 오버헤드를 포함했다.</p>
 <table>
-  <thead><tr><th style="width:12mm">경로</th><th style="width:52mm">방법</th>
-    <th class="n">토큰</th><th>비고</th></tr></thead>
-  <tbody>
-    <tr><td class="n"><b>A</b></td><td>파일을 통째로 읽는다</td><td class="n">25,066</td>
-        <td>쪼개기 전에 <b>실제로 하던 것</b></td></tr>
-    <tr><td class="n"><b>B</b></td><td>grep 으로 줄을 찾아 그 구간만</td><td class="n">1,928</td>
-        <td>⚠️ <b>쪼개기 전에도 가능했다</b></td></tr>
-    <tr><td class="n"><b>C</b></td><td>색인을 읽고 노드 하나</td><td class="n">2,656</td>
-        <td>색인이 1,810 이라 B 보다 무겁다</td></tr>
-    <tr><td class="n"><b>D</b></td><td>grep 으로 파일명만 받고 정확한 노드만</td><td class="n cut">1,263</td>
-        <td>쪼갠 뒤 <b>실제로 하게 되는 것</b></td></tr>
-    <tr><td class="n"><b>E</b></td><td>매칭된 노드를 전부 읽는다</td><td class="n">6,907</td>
-        <td>⚠️ <b>B 보다 2.6배 나쁘다</b></td></tr>
-  </tbody>
+  <tr><th>갈래</th><th class="n">개수</th><th>무엇이 들어 있나</th></tr>
+  <tr><td><b>결정</b> <code>docs/decisions/</code></td><td class="n">91</td>
+      <td>결정 하나 = 파일 하나. 결정 / 이유 / 대안 / 영향.
+          갈래는 검증 21 · 파이프라인 18 · 투표 8 · 보안 7 · 하트 6 순.
+          <b>뒤집힌 것 4건</b>은 취소선과 화살표로 후속 결정을 가리킨다</td></tr>
+  <tr><td><b>표</b> <code>docs/tables/</code></td><td class="n">40</td>
+      <td><b>생성물.</b> 표 하나의 DDL·결정·검사·정책을 한 장에 모은다</td></tr>
+  <tr><td><b>운영</b> <code>docs/ops/</code></td><td class="n">10</td>
+      <td>"이 작업 어떻게 하지"에 답하는 절차 문서</td></tr>
+  <tr><td><b>색인·규약</b></td><td class="n">13</td>
+      <td><code>index</code>(생성물) · <code>DECISIONS</code> · <code>CLAUDE</code> ·
+          <code>log</code> · <code>README</code> · <code>TEAM-PLAN</code> ·
+          <code>ONBOARDING</code> 등</td></tr>
+  <tr><td><b>원본</b> <code>raw/</code></td><td class="n">9</td>
+      <td>불변. 바뀐 것은 새 결정 노드로 적는다</td></tr>
 </table>
 
-<div class="note warn">
-  <b>공정한 비교는 B 대 D 다 — 절감은 34%.</b><br>
-  처음에 "91% 절감"이라 적었던 것은 A(통째로 읽기)를 기준으로 삼은 것인데,
-  그건 <b>게으른 선택이었지 유일한 방법이 아니었다.</b> 한 파일이어도 grep 으로
-  구간만 읽으면 1,928 이었다. 숫자를 바로잡는다.<br><br>
-  <b>그리고 E 가 실재하는 위험이다.</b> 결정이 56개라 "하트" 같은 흔한 낱말은
-  13~16개 노드에 걸린다. 매칭된 것을 전부 읽으면 <b>쪼개기 전보다 나쁘다.</b>
-  <b>구조가 아니라 규율이 이득을 만든다</b> — 파일명을 보고 골라 읽어야 한다.
+<h2>4. 그래프로 본 위키</h2>
+<p class="lede">노드와 링크를 그림으로 보면 문서로는 안 보이는 것이 보인다.</p>
+
+<figure>
+  <img src="img/wiki-graph.svg" alt="위키 링크 그래프">
+  <figcaption>
+    <b>ping-v2 위키 링크 그래프</b> (2026-08-25 · 노드 153 · 링크 505).
+    색은 갈래, 크기는 연결 수. <code>python db/wiki_graph.py</code> 로 다시 만든다 —
+    <b>배치 씨앗이 고정돼 있어 같은 그림이 다시 나온다.</b>
+    생성 색인(<code>index</code>)은 뺐다. 모든 노드를 가리켜서 그리면 그래프가
+    통째로 별 모양이 되고 결정끼리의 구조가 안 보인다.
+  </figcaption>
+</figure>
+
+<h3>이 그림에서 읽는 것</h3>
+<table>
+  <tr><th>보이는 것</th><th>뜻</th></tr>
+  <tr><td><b>가운데 큰 회색</b> — <code>DECISIONS</code></td>
+      <td>결정 색인. 모든 결정이 여기로 모인다</td></tr>
+  <tr><td><b>오른쪽 청록 뭉치</b> — <code>app_user</code> ·
+          <code>heart_transaction</code> · <code>vote_item</code></td>
+      <td>표 페이지들. 결정이 많이 얽힌 표일수록 크다.
+          <b>이 표를 건드리면 무엇이 딸려 오는지</b>가 그대로 보인다</td></tr>
+  <tr><td><b>파란 점들의 그물</b></td>
+      <td>결정 91개. 서로 이어져 있으면 <code>link_decisions.py</code> 가
+          '이어지는 결정'을 붙인 것이다</td></tr>
+  <tr><td><b>바깥의 외톨이들</b></td>
+      <td>링크가 하나뿐인 노드. <b>나쁜 신호는 아니지만 볼 값은 있다</b> —
+          아무도 안 가리키는 결정은 잊힌 결정이 되기 쉽다</td></tr>
+</table>
+
+<h3>옵시디언으로 실제로 잡은 것 셋</h3>
+<p>이 저장소의 <code>docs/</code> 는 <b>옵시디언 볼트로 그대로 열린다.</b> 링크가
+그래프가 되고 frontmatter 가 속성이 된다. 별도 도구를 붙이지 않았다.</p>
+
+<table>
+  <tr><th class="c">#</th><th>그래프를 보다가 발견한 것</th></tr>
+  <tr><td class="c">1</td>
+      <td><b>결정 56개가 통째로 사라져 있었다.</b> 루트 색인 하나만 그래프에서 빼려고
+          <code>-path:"DECISIONS"</code> 필터를 걸었는데, 옵시디언의 <code>path:</code> 는
+          <b>대소문자를 구분하지 않아</b> <code>docs/decisions/</code> 전체가 걸러졌다.
+          그래프가 텅 비어서 알았다 — 파일 목록으로는 못 봤을 사고다</td></tr>
+  <tr><td class="c">2</td>
+      <td><b>별 모양이 되는 것을 막았다.</b> 모든 노드가 색인만 가리키면 그래프가
+          바큇살이 된다. 그래서 <b>참조는 되도록 개별 노드를 가리킨다</b>는 규칙을
+          규약에 박고, <code>link_decisions.py</code> 로 결정끼리 잇게 했다</td></tr>
+  <tr><td class="c">3</td>
+      <td><b>색인에서 빠진 노드가 보였다.</b> <code>group: 웹앱</code> 인 노드 3개가
+          그 갈래 자체가 색인에 없어서 통째로 빠져 있었다. 파일은 멀쩡한데 아무도
+          못 찾는 상태다 — <b>색인에 없는 노드는 없는 노드다.</b>
+          이건 결국 lint 검사로 옮겼다</td></tr>
+</table>
+
+<div class="box plain">
+  <h4>그림은 문서가 아니라 <b>구조</b>를 보여준다</h4>
+  <p>세 사고 모두 "문서를 읽어서" 발견한 것이 아니다. <b>모양이 이상해서</b> 발견했다.
+  한 파일 시절에는 볼 모양 자체가 없었다.</p>
 </div>
 
-<h3>토큰보다 중요한 것 — 경계가 의미와 일치한다</h3>
-<p>B 경로에는 숨은 결함이 있다. 결정이 <b>어디서 시작해 어디서 끝나는지 모르므로</b>
-읽을 구간을 찍어야 한다. 짧은 결정은 다음 결정까지 딸려오고, 긴 결정은
-<em>대안·영향</em> 절이 잘린다. <b>잘린 줄 모르고 답한다.</b></p>
-<p>노드는 파일을 열면 정확히 결정 하나가 온전히 온다. 그리고 실제로,
-쪼개기 전에는 B 를 안 하고 A 를 했다 — 이번 작업 중 통째로 읽다가 시스템이
-"내용이 너무 커서 포함할 수 없다"며 잘라냈다. <b>구조가 게으른 선택을 막는다.</b></p>
+<h2 class="pb">5. 무엇이 달라졌나 — 숫자</h2>
+<p class="lede">토큰 절감이 가장 크고, 그다음이 낡음 탐지다.</p>
+
+<h3>결정 하나를 찾는 비용</h3>
+<p>질문 다섯(하트 경제 · 친구 끊기 · 합성 데이터 · 증분 함정 · 힌트 요금)으로
+경로별 비용을 쟀다. <b>2026-08-25 에 다시 쟀고</b>, 비교를 위해 <b>개편 직후 상태를
+git 에서 꺼내 같은 토크나이저로 함께 쟀다.</b></p>
+
+<table>
+  <tr><th>경로</th><th class="n">노드 56개<br>(2026-07-31)</th>
+      <th class="n">노드 91개<br>(2026-08-25)</th><th>무엇인가</th></tr>
+  <tr><td><b>A</b> 통째로 읽기</td><td class="n">34,796</td><td class="n">92,384</td>
+      <td>쪼개기 전에 실제로 하던 것</td></tr>
+  <tr><td><b>B</b> grep + 구간 읽기</td><td class="n">2,535</td><td class="n">4,484</td>
+      <td><b>쪼개기 전에도 가능했던 것</b> — 공정한 기준선</td></tr>
+  <tr><td><b>D</b> grep + 정확한 노드</td><td class="n cut">972</td><td class="n cut">1,268</td>
+      <td><b>쪼갠 뒤 하게 되는 것</b></td></tr>
+  <tr><td><b>E</b> grep + 매칭 전부</td><td class="n bad">8,822</td><td class="n bad">31,655</td>
+      <td>규율이 무너졌을 때</td></tr>
+  <tr><th>B 대비 D 절감</th><th class="n">61.6%</th><th class="n cut">71.7%</th><th></th></tr>
+</table>
+
+<div class="kpis">
+  <div class="kpi"><div class="v">2.6배</div><div class="k">위키 전체 크기 증가</div></div>
+  <div class="kpi"><div class="v">+30%</div><div class="k">골라 읽기 비용 증가</div></div>
+  <div class="kpi"><div class="v">71.7%</div><div class="k">절감 (61.6% → )</div></div>
+  <div class="kpi"><div class="v">7.1배</div><div class="k">규율을 어겼을 때(E/B)</div></div>
+</div>
+
+<p><b>위키가 커질수록 이득도 커졌다.</b> 전체는 2.6배가 됐는데 골라 읽기는 30%만
+늘었다 — 노드 하나의 크기는 위키 크기와 무관하기 때문이다. 읽기 창을 ±15/±40 줄로
+바꿔도 방향은 같다(52→68%, 69→75%).</p>
+
+<div class="box">
+  <h4>규율을 어겼을 때의 벌금은 두 배가 됐다</h4>
+  <p>매칭된 노드를 <b>전부</b> 읽으면 한 파일 시절의 <b>7.1배</b>다(56개 시절엔 3.5배).
+  "합성"이라는 낱말은 이제 <b>91개 중 47개</b>에 걸리고, 그것을 다 읽으면 58,940 토큰이다.
+  <b>구조가 아니라 규율이 이득을 만든다</b>는 말이 4주 만에 더 사실이 됐다.</p>
+</div>
+
+<h3>세션을 끊을 수 있게 됐다</h3>
+<p>2장의 여섯 번째 문제에 대한 답이다. 지금은 작은 작업마다 새 세션을 열고,
+필요한 노드만 읽어 시작한다.</p>
+<table>
+  <tr><th>작업 방식</th><th>맥락을 세우는 비용</th><th>남는 것</th></tr>
+  <tr><td>세션을 계속 이어 쓰기</td>
+      <td>0 처럼 보이지만, <b>이후 모든 요청이 누적 대화를 다시 싣는다</b></td>
+      <td>대화창을 닫으면 사라진다</td></tr>
+  <tr><td><b>새 세션 + 노드 골라 읽기</b></td>
+      <td><b>1,268 토큰</b> (결정 하나 기준)</td>
+      <td>저장소에 남는다. 팀원도 본다</td></tr>
+</table>
 
 <h3>그 밖의 절감</h3>
 <table>
-  <thead><tr><th style="width:44mm">작업</th><th class="n">전</th><th class="n">후</th><th class="n">절감</th></tr></thead>
-  <tbody>
-    <tr><td><b>매 세션 자동 주입</b><br><span style="font-size:8.5pt;color:var(--ink3)">모든 작업이 지불</span></td>
-        <td class="n">10,031</td><td class="n">8,782</td><td class="n cut">−12%</td></tr>
-    <tr><td><b>표 하나 파악</b><br><span style="font-size:8.5pt;color:var(--ink3)">네 파일 → 한 장</span></td>
-        <td class="n">4파일</td><td class="n">1장</td><td class="n cut">484토큰</td></tr>
-  </tbody>
+  <tr><th>작업</th><th>전</th><th>후</th></tr>
+  <tr><td>표 하나 파악</td><td>4개 파일을 열어 조합</td>
+      <td><b>표 페이지 1장</b> (484 토큰)</td></tr>
+  <tr><td>뒤집힌 결정 찾기</td><td>제목만 보면 알 수 없음</td>
+      <td>색인에서 <b>취소선 + 후속 결정 화살표</b></td></tr>
+  <tr><td>낡은 서술 찾기</td><td>사람이 눈으로</td>
+      <td><code>doc_lint.py</code> <b>9종 검사</b></td></tr>
 </table>
 
-<h3>지금 규모 <span style="font-family:var(--mono);font-size:8.5pt;color:var(--ink3);font-weight:400">2026-08-20</span></h3>
-<div class="kpi">
-  <div><b>148</b><span>위키 노드 ←109</span></div>
-  <div><b>89</b><span>결정 ←56</span></div>
-  <div><b>5</b><span>스크립트 ←3</span></div>
-  <div><b>0</b><span>끊어진 링크</span></div>
-</div>
-<p style="font-size:9.2pt;color:var(--ink2)">
-  결정 89 · 표 40 · 운영 9 · 구 서비스 분석 10 을 색인이 센 값이다.
-  <b>3주 만에 노드가 36% 늘었는데 끊어진 링크는 여전히 0 이다</b> —
-  링크 검사가 실패로 잡히기 때문이지 조심해서가 아니다.</p>
+<h2>6. 팀 협업에서의 쓸모</h2>
+<p class="lede">에이전트를 위해 만든 구조인데, 사람에게 먼저 쓰였다.</p>
 
-<h3>토큰이 아닌 이득</h3>
+<p>팀원 4명이 붙어 있다(BigQuery 관리자 권한). 위키가 협업에서 실제로 한 일은 셋이다.</p>
+
 <table>
-  <thead><tr><th style="width:42mm">무엇</th><th>어떻게 달라졌나</th></tr></thead>
-  <tbody>
-    <tr><td><b>뒤집힌 결정이<br>드러난다</b></td>
-        <td>frontmatter 에 <code>status: superseded</code> 와 <code>superseded_by</code> 를 단다.
-            지금 <b>4건</b> — 후보 스코프 규칙 · 초대 링크 시점 · 행수 가드레일 · v4 확정.
-            색인에서 취소선으로 보이고 후속 결정으로 화살표가 간다.</td></tr>
-    <tr><td><b>낡음을 기계가<br>잡는다</b></td>
-        <td><code>db/doc_lint.py</code> 가 <b>아홉 가지</b>를 본다 — 숫자 · 사라진 이름 ·
-            끊어진 링크 · 없는 스크립트 · 낡은 생성물 · 미반영 회의록 ·
-            <b>없는 질문 번호 · 결정 없이 쌓인 코드 · 색인에서 빠진 결정 노드.</b><br>
-            <span style="font-size:8.5pt;color:var(--ink3)">뒤의 셋은 처음엔 없었다.
-            셋 다 실제로 당한 뒤에 붙였다 — 7장</span></td></tr>
-    <tr><td><b>결정끼리<br>이어진다</b></td>
-        <td><b>새로 생겼다.</b> <code>db/link_decisions.py</code> 가 같은 갈래·같은 주제의
-            결정을 짚어 '이어지는 결정' 절을 만든다. 지금 76개 노드가 평균 2.3개씩 연결돼 있다.
-            그래프가 별 모양이 되지 않게 하는 장치다.</td></tr>
-    <tr><td><b>목록을 손으로<br>관리하지 않는다</b></td>
-        <td>색인과 표 페이지는 생성물이다. 스키마가 바뀌면 다시 뽑는다.
-            손으로 만든 목록이 어긋나 있던 사고가 반복되지 않는다.</td></tr>
-    <tr><td><b>출처가 생겼다</b></td>
-        <td>구 서비스 숫자(탈퇴 70,764건·잔액 20억)의 원본이 저장소 밖에 있었고
-            git 으로 추적되지도 않았다. 인용만 있고 근거가 없는 상태였다.</td></tr>
-    <tr><td><b>옵시디언에서<br>열린다</b></td>
-        <td>그래프 뷰·백링크·속성 필터가 그대로 작동한다. 별도 도구가 필요 없다.</td></tr>
-  </tbody>
+  <tr><th>무엇</th><th>어떻게 쓰이나</th></tr>
+  <tr><td><b>합류 경로가 문서 하나</b></td>
+      <td><code>ONBOARDING</code> 이 <b>계정 없이 되는 A 갈래</b>(로컬 합성 데이터)와
+          <b>계정이 필요한 B 갈래</b>를 나눠 적는다. 새로 온 사람에게 이것만 가리키면 된다</td></tr>
+  <tr><td><b>영향 범위가 한 장에</b></td>
+      <td>스키마를 바꿀 때 <code>docs/tables/&lt;표&gt;.md</code> 한 장이 그 표에 걸린
+          결정·검사·정책을 다 보여준다. <b>"이거 고치면 뭐가 깨지죠"에 답하는 문서</b>다.
+          절차는 <code>TEAM-PLAN</code> 에 있다</td></tr>
+  <tr><td><b>결정이 리뷰 단위가 된다</b></td>
+      <td>결정 하나가 파일 하나라 <b>커밋 diff 에 그 결정만 뜬다.</b> 한 파일 시절에는
+          긴 문서의 어느 줄이 바뀌었는지 봐야 했다</td></tr>
+  <tr><td><b>도구를 강요하지 않는다</b></td>
+      <td>마크다운이라 에디터·깃허브에서 그냥 읽히고, 옵시디언으로 열면 그래프와
+          백링크가 덤으로 온다. <b>팀원에게 새 도구를 깔라고 하지 않아도 된다</b></td></tr>
 </table>
-</section>
 
-<!-- ══════════ 4 ══════════ -->
-<section>
-<h2><span class="num">04</span>어떻게 바꿨나</h2>
-<p class="lede">한 번에 옮기지 않고 <b>측정 → 분할 → 자동화</b> 순으로 갔다.</p>
-
-<h3>1. 먼저 쟀다</h3>
-<p>어느 파일이 얼마를 쓰는지, 언제 읽히는지부터 확인했다. 그 결과
-<b>이득의 90%가 <code>DECISIONS.md</code> 한 파일에 몰려 있다</b>는 것이 드러났고,
-나머지 문서는 건드리지 않기로 했다.</p>
-
-<pre>DECISIONS.md   24,946  ·  56항목  ·  중앙값 456  →  낭비 98.2%
-CLAUDE.md      10,031  ·  매 세션 자동 주입
-[[DECISIONS]]  19곳에서 가리킴 (2위의 다섯 배)</pre>
-
-<h3>2. 결정을 노드로 쪼갰다</h3>
-<p>파일명은 <b>ASCII 슬러그</b>로 했다. 한글 파일명은 git·셸에서 깨져 읽기 어렵다.
-제목은 frontmatter 안에 한글로 둔다.</p>
-<p><code>DECISIONS.md</code> 는 <b>색인으로 남겼다.</b> 그래야 기존 <code>[[DECISIONS]]</code>
-링크 19곳이 그대로 산다. 본문 참조 9곳은 개별 노드로 다시 걸었다 —
-전부 색인만 가리키면 <b>그래프가 별 모양이 되어</b> 노드로 쪼갠 의미가 없다.</p>
-
-<h3>3. CLAUDE.md 는 조심스럽게 덜어냈다</h3>
-<div class="note warn">
-  <b>원칙 하나로 갔다 — 안전 규칙은 빼지 않는다.</b><br>
-  조건부로 읽히는 규칙은 안 읽힐 수 있고, 그 순간 규칙이 없는 것과 같다.
-  이 프로젝트의 핵심 가치가 "조용히 틀리는 것을 막는다" 인데, 안전 규칙을
-  조건부 로딩으로 바꾸는 것은 정확히 그 반대다.
+<div class="box note">
+  <h4>정직하게 — 협업 기능 중 하나는 4주 동안 놀았다</h4>
+  <p><b>회의록 ingest 는 한 번도 쓰이지 않았다.</b> <code>raw/meetings/</code> 에는
+  템플릿만 있다. 회의가 없었기 때문이고, 결정 35건이 전부 "작업하다 판단이 서면
+  그 자리에서" 경로로 났다. <b>구조를 만들었다고 그 경로가 쓰이는 것은 아니다.</b></p>
 </div>
-<p>그래서 뺀 절마다 <b>함정 이름이 든 한 줄</b>을 남겼다. 값은 안 읽어도 되지만
-함정이 있다는 사실은 항상 보인다.</p>
-<pre>⚠️ 증분 적재는 조용히 틀린다. 실제로 걸린 함정 넷 — _source 없는 조인 ·
-컬럼 추가 후 워터마크 정지 · 지운 행의 유령 · 과거 시각 백필.
-파이프라인을 건드리기 전에 [[ops-bigquery]] 를 읽는다.</pre>
 
-<h3>4. 생성물은 스크립트가 만든다</h3>
+<h2 class="pb">7. 어떻게 쓰나 — 세 가지 연산</h2>
+
 <table>
-  <thead><tr><th style="width:44mm">스크립트</th><th class="n" style="width:12mm">줄</th><th>무엇</th></tr></thead>
-  <tbody>
-    <tr><td><code>db/wiki_index.py</code></td><td class="n">163</td>
-        <td><code>docs/index.md</code> 재생성</td></tr>
-    <tr><td><code>db/wiki_tables.py</code></td><td class="n">262</td>
-        <td><code>docs/tables/</code> 40장 재생성</td></tr>
-    <tr><td><code>db/doc_lint.py</code></td><td class="n">312</td>
-        <td>문서 주장을 실제와 대조 <span style="color:var(--ink3)">(222 → 312. 검사 셋이 늘었다)</span></td></tr>
-    <tr><td><code>db/link_decisions.py</code></td><td class="n">289</td>
-        <td><b>나중에 붙였다.</b> 결정끼리 '이어지는 결정' 링크 생성</td></tr>
-    <tr><td><code>db/wiki_merge.py</code></td><td class="n">121</td>
-        <td><b>나중에 붙였다.</b> <b>되돌리기</b> — 노드를 <code>DECISIONS.md</code> 한 파일로 합친다</td></tr>
-  </tbody>
+  <tr><th>연산</th><th>언제</th><th>무엇을 하나</th></tr>
+  <tr><td><b>ingest</b></td><td>원본을 넣었을 때</td>
+      <td>무엇이 결정이고 무엇이 논의인지 가른다 → 결정 노드를 만들고 → 영향받는
+          문서를 고치고 → 생성물을 다시 뽑고 → 이력에 한 줄 남긴다</td></tr>
+  <tr><td><b>query</b></td><td>물어볼 때</td>
+      <td><b>grep 으로 파일명만 받고, 이름을 보고 골라, 그 노드만 읽는다.</b>
+          색인까지 읽을 필요도 보통 없다. 답이 길고 다시 쓰일 것 같으면
+          <b>그 답 자체를 새 노드로 남긴다</b></td></tr>
+  <tr><td><b>lint</b></td><td>문서·스키마를 손댄 뒤</td>
+      <td>문서의 주장을 <b>살아 있는 DB·파일시스템과 대조</b>한다. 9종</td></tr>
 </table>
-<div class="note">
-  <b>되돌리는 길을 먼저 깔아 뒀다.</b> 쪼갠 것이 손해로 드러나면 되돌린다 —
-  판단 기준은 둘이다. 같은 질문에 <b>토큰을 더 쓰거나</b>, 관련 결정을 놓쳐
-  <b>답이 나빠지거나.</b><br>
-  ⚠️ <b><code>git revert</code> 로 하지 않는다.</b> 위키로 바꾼 뒤에 쓴 결정이
-  함께 사라진다 — 그것들은 노드 파일로만 존재하기 때문이다. 지금이면
-  <b>33건이 날아간다.</b> <code>wiki_merge.py</code> 는 <b>지금 있는 노드 전부</b>를
-  읽어 합치므로 새로 쓴 결정도 살아남는다.
-  기준점은 <code>git tag pre-wiki</code> 가 가리키고 있다.
+
+<p><code>doc_lint.py</code> 가 보는 아홉 가지 — 숫자 · 사라진 이름 · 끊어진 링크 ·
+없는 스크립트 · 낡은 생성물 · 미반영 회의록 · <b>없는 질문 번호</b> ·
+<b>결정 없이 쌓인 코드</b> · <b>색인에서 빠진 결정 노드</b>.
+뒤의 셋은 처음엔 없었다 — 전부 실제로 당하고 나서 붙였다.</p>
+
+<div class="box plain">
+  <h4>★ 는 고쳐야 하고, · 는 사람이 판단한다</h4>
+  <p>숫자와 이름은 <b>이력 서술과 기계적으로 구별되지 않는다.</b> "그때는 30개였다"는
+  틀린 게 아니다. 그래서 알리기만 한다. 전부 실패로 두면 늘 빨간불이 되고,
+  그러면 검사 자체를 안 보게 된다.</p>
 </div>
-<p><code>wiki_tables.py</code> 는 <code>erd.py</code> 의 스키마 읽기 코드를 재사용한다.
-DB 를 읽는 코드를 두 벌 두지 않는다.</p>
 
-<h3>5. lint 를 믿을 수 있게 만들었다</h3>
-<p>처음엔 어긋난 것을 전부 실패로 뒀더니 <b>7건이 전부 오탐</b>이었다.
-<code>"42 → 41 테이블"</code> 같은 이력 서술을 기계가 현재 주장과 구별하지 못한다.</p>
-<div class="note">
-  <b>늘 빨간불인 검사는 아무도 안 본다.</b> 그래서 <code>★</code>(고쳐야 함)와
-  <code>·</code>(사람이 판단)를 갈랐다. 링크·스크립트·생성물·미반영 회의록은
-  기계가 확정할 수 있으므로 실패로, 숫자와 이름은 알림으로 둔다.
-</div>
-</section>
+<h2>8. 4주 뒤 — 구조가 견뎠나</h2>
+<p class="lede">결정이 56 → 91 개가 됐다. 늘어난 35건이 구조를 시험했다.</p>
 
-<!-- ══════════ 5 ══════════ -->
-<section>
-<h2><span class="num">05</span>이 프로젝트에 맞춘 부분</h2>
-<p class="lede">원문 패턴을 그대로 옮기지 않았다. 상황이 하나 다르다.</p>
-
-<h3>karpathy 의 전제와 다른 점</h3>
-<p>원문은 <b>"외부 문서를 계속 읽어 지식으로 컴파일한다"</b>는 상황을 가정한다.
-원본이 불변이므로 위키는 한 방향으로만 자란다.</p>
-<p>이 저장소는 <b>살아 있는 코드베이스</b>다. 원본이 둘이다 —</p>
 <table>
-  <thead><tr><th style="width:38mm">원본</th><th>성질</th><th>낡으면</th></tr></thead>
-  <tbody>
-    <tr><td><b><code>raw/</code></b> 회의록·리포트</td><td>불변</td>
-        <td>안 낡는다</td></tr>
-    <tr><td><b>코드·DB</b> DDL·스크립트</td><td><b>매 커밋 바뀐다</b></td>
-        <td><b>위키가 조용히 낡는다</b></td></tr>
-  </tbody>
+  <tr><th>항목</th><th>결과</th></tr>
+  <tr><td><b>끊어진 링크 0</b></td>
+      <td class="good">지켜졌다. 노드가 63% 늘었는데도 0 이다 —
+          <b>lint 가 실패로 잡기 때문이지 조심해서가 아니다</b></td></tr>
+  <tr><td><b>토큰 이득</b></td>
+      <td class="good">커졌다. 61.6% → 71.7% (5장)</td></tr>
+  <tr><td><b>뒤집힌 결정이 드러난다</b></td>
+      <td class="good">4건. 한 파일 시절이었다면 옛 결정이 살아남아 누군가 그것을
+          근거로 삼았을 것이다</td></tr>
+  <tr><td><b>결정을 노드로 적기</b></td>
+      <td class="warn">⚠️ 아홉 번 어겼다. 그래서 검사를 붙였다 —
+          <b>사람의 규율에 기대는 항목은 결국 어긋난다</b></td></tr>
+  <tr><td><b>회의록 ingest</b></td>
+      <td class="warn">⚠️ 0회. 회의가 없었다</td></tr>
+  <tr><td><b>CLAUDE.md 를 얇게</b></td>
+      <td class="bad">❌ <b>못 지켰다. 개편 때 10,031 → 8,782 로 줄였는데 지금
+          16,935 토큰(708줄)이다</b> — 개편 전보다도 69% 크다</td></tr>
 </table>
-<p><code>lint</code> 연산이 그 두 번째 때문에 있다. 원문에는 lint 가 모순·고아 문서를
-찾는 용도인데, 여기서는 <b>코드와의 어긋남</b>을 찾는 것이 주 목적이다.</p>
 
-<h3>하지 않은 것</h3>
-<ul>
-  <li><b><code>design-spec</code> · <code>ONBOARDING</code> · <code>TEAM-PLAN</code> 은
-      쪼개지 않았다.</b> 사람이 처음부터 끝까지 읽는 문서라, 쪼개면 읽는 흐름만
-      깨지고 아무도 이득을 못 본다.</li>
-  <li><b>RAG·임베딩을 쓰지 않는다.</b> 색인 파일 하나로 충분하다. 문서가 109개고,
-      제목과 한 줄 요약만 보면 어느 노드를 열지 정할 수 있다.</li>
-</ul>
+<div class="box">
+  <h4>가장 크게 실패한 항목 — 매 세션 고정비가 두 배가 됐다</h4>
+  <p>CLAUDE.md 는 <b>모든 세션이 무조건 지불하는 비용</b>이라 위키에서 제일 비싼
+  파일이다. 함정을 겪을 때마다 한 줄씩 늘어난 결과 개편 때의 두 배가 됐다.
+  <b>노드를 쪼개 아낀 것보다 이쪽에서 잃은 것이 클 수 있다</b> — 골라 읽기가
+  질문당 1,268 토큰인데, 규약은 세션마다 16,935 토큰이다.</p>
+  <p>중복 117줄을 덜어내는 작업이 대기 중이다. <b>이것이 지금 이 위키의 가장 큰
+  미해결 항목이다.</b></p>
+</div>
+
+<h2>9. 되돌리는 기준과 남은 비용</h2>
+
+<p>판단 기준은 둘이다 — 같은 질문에 <b>토큰을 더 쓰거나</b>, 관련 결정을 놓쳐
+<b>답이 나빠지거나.</b> 4주 뒤 기준으로 <b>둘 다 발생하지 않았다.</b>
+그래도 되돌리는 스크립트(<code>db/wiki_merge.py</code>)는 유지한다 — 지금 있는 노드
+전부를 읽어 합치므로 <b>개편 이후에 쓴 결정도 살아남는다.</b>
+<code>git revert</code> 로 하면 그것들이 함께 사라진다.</p>
 
 <h3>남은 비용 — 정직하게</h3>
 <table>
-  <thead><tr><th style="width:38mm">무엇</th><th>얼마나</th></tr></thead>
-  <tbody>
-    <tr><td><b>색인 자체가<br>가벼운 편은 아니다</b></td>
-        <td><code>docs/index.md</code> 가 5,889 토큰이다. 문서 109개를 한 줄 요약과 함께
-            싣기 때문. 결정 조회는 <code>DECISIONS.md</code>(1,810) 만 보면 되지만,
-            <b>전체를 탐색할 때는 이 비용을 낸다.</b></td></tr>
-    <tr><td><b>노드를 타고 돌면<br>손해가 된다</b></td>
-        <td>매칭된 노드를 전부 읽으면 6,907 토큰으로 <b>쪼개기 전(1,928)보다 2.6배
-            나쁘다.</b> 파일명을 보고 <b>골라 읽는 규율</b>이 이득의 전제다.
-            읽기 호출마다 오버헤드도 붙는다.</td></tr>
-    <tr><td><b>세션 전체로는<br>몇 % 다</b></td>
-        <td>실제 작업에서 토큰 대부분은 도구 출력(SQL 결과·빌드 로그·코드 읽기)이다.
-            문서 절감은 <b>결정 조회 작업에 집중적으로</b> 나타난다.</td></tr>
-  </tbody>
-</table>
-</section>
-
-<!-- ══════════ 6 ══════════ -->
-<section>
-<h2><span class="num">06</span>어떻게 쓰나</h2>
-<p class="lede">사람이 할 일은 원본을 넣는 것, 나머지는 에이전트가 한다.</p>
-
-<h3>처음 열었다면 — 읽는 순서</h3>
-<table>
-  <thead><tr><th style="width:44mm">알고 싶은 것</th><th>어디로</th></tr></thead>
-  <tbody>
-    <tr><td>이 프로젝트가 뭔가</td><td><code>README.md</code> → <code>docs/design-spec.md</code></td></tr>
-    <tr><td>내 손으로 돌려보고 싶다</td><td><code>docs/ONBOARDING.md</code></td></tr>
-    <tr><td>문서가 다 어디 있나</td><td><code>docs/index.md</code> — 전체 목록</td></tr>
-    <tr><td><b>왜 이렇게 했지?</b></td><td><code>DECISIONS.md</code> 색인 → 해당 결정 노드</td></tr>
-    <tr><td><b>이 표는 뭐지?</b></td><td><code>docs/tables/&lt;표이름&gt;.md</code> — 한 장에 다 있다</td></tr>
-    <tr><td>최근에 무슨 일이</td><td><code>docs/log.md</code></td></tr>
-  </tbody>
-</table>
-<p><b>옵시디언으로 열면</b> 저장소 루트가 볼트다. 검색(<code>Ctrl+O</code>)으로 노드
-이름을 치는 것이 가장 빠르다. 그래프는 전체를 조망할 때만 쓴다.</p>
-
-<h3>회의록을 남길 때</h3>
-<ol>
-  <li><code>raw/meetings/_template.md</code> 를 복사해 <code>YYYY-MM-DD-주제.md</code> 로</li>
-  <li>정한 것 / 못 정한 것 / 오간 이야기 / 숫자를 적는다.
-      <b>숫자에는 출처를 함께</b> — 나중에 문서 곳곳에 인용된다</li>
-  <li>에이전트에게 <b>"회의록 반영해줘"</b> — 결정이 노드로 옮겨지고, 영향받는 문서가
-      고쳐지고, 색인이 갱신되고, 이력에 남는다</li>
-</ol>
-<p>반영을 잊으면 <code>db/doc_lint.py</code> 가 <code>ingested: false</code> 를 잡는다.</p>
-
-<h3>회의 없이 결정이 났을 때</h3>
-<p>실제로는 이쪽이 더 흔하다. 작업하다 판단이 서면 그 자리에서
-<code>docs/decisions/&lt;슬러그&gt;.md</code> 를 만든다.</p>
-<pre>---
-title: 친구를 끊어도 행을 지우지 않는다     # 한글. 색인에 그대로 쓰인다
-date: 2026-07-31
-group: 친구                                # 12개 갈래 중 하나
-status: active                             # 뒤집히면 superseded
-tags: [결정, 친구]
----
-
-**결정** 무엇을 정했나   **이유** 왜, 무엇을 근거로
-**대안** 무엇을 기각했고 왜   **영향** 무엇이 따라 바뀌나</pre>
-<p><b>파일명은 ASCII 케밥케이스.</b> 한글 파일명은 git·셸에서 깨져 읽기 어렵다.</p>
-<div class="note warn">
-  <b>기존 결정을 뒤집는다면 —</b> 새 노드만 쓰고 끝내면 안 된다.
-  <b>옛 노드에 <code>status: superseded</code> 와 <code>superseded_by</code> 를 단다.</b>
-  뒤집힌 결정이 그대로 살아 있는 것이 이 위키에서 가장 위험한 상태다.
-  나중에 누군가 그것을 근거로 삼는다.
-</div>
-
-<h3>⚠️ 하지 말아야 할 것</h3>
-<table>
-  <thead><tr><th style="width:52mm">무엇</th><th>왜</th></tr></thead>
-  <tbody>
-    <tr><td><b>생성물을 손으로 고치기</b><br>
-        <code>docs/index.md</code> · <code>docs/tables/</code> · <code>docs/erd.md</code></td>
-        <td>다음 생성 때 <b>날아간다.</b> 고칠 것이 있으면 원본을 고친다 —
-            표 설명은 DDL 주석, 빈 표 사유는 <code>db/erd.py</code> 의
-            <code>EMPTY_REASON</code></td></tr>
-    <tr><td><b><code>raw/</code> 안의 파일 고치기</b></td>
-        <td>회의에서 정한 것이 바뀌어도 회의록은 그대로 둔다. 바뀐 것은
-            <b>새 결정</b>으로 적는다 — 그래야 "언제 왜 마음이 바뀌었나"가 남는다</td></tr>
-    <tr><td><b>문서에 스키마·명령어 베껴 적기</b></td>
-        <td>DDL과 스크립트가 진실이다. 베끼면 <b>두 번째 진실</b>이 생기고
-            반드시 어긋난다</td></tr>
-    <tr><td><b>결정을 색인에만 적기</b></td>
-        <td><code>DECISIONS.md</code> 는 목록일 뿐이다. 내용은 노드 파일에 있어야
-            검색·연결·<code>superseded</code> 추적이 된다</td></tr>
-  </tbody>
+  <tr><th>무엇</th><th>지금 값</th></tr>
+  <tr><td><b>규약 파일이 매 세션 붙는다</b></td>
+      <td class="bad">16,935 토큰. 개편 때보다 두 배. 최대 미해결 항목</td></tr>
+  <tr><td><b>색인 자체가 무겁다</b></td>
+      <td>10,545 토큰. 전체 탐색 때는 이 값을 낸다(보통은 안 읽는다)</td></tr>
+  <tr><td><b>규율이 무너지면 더 나쁘다</b></td>
+      <td>매칭 전부 읽기 = 한 파일 시절의 7.1배</td></tr>
+  <tr><td><b>파일 목록이 커지고 있다</b></td>
+      <td>골라 읽기 비용 중 파일 목록 비중이 13% → 24%.
+          노드 180~200개 근처에서 다시 볼 값이다</td></tr>
+  <tr><td><b>검사를 늘리는 일은 안 끝난다</b></td>
+      <td>lint 6종 → 9종. 셋 다 당하고 나서 붙였다</td></tr>
 </table>
 
-<h3>스키마를 바꾼 뒤</h3>
-<pre>python db/erd.py          # ERD 재생성
-python db/wiki_tables.py  # 표 페이지 재생성
-python db/doc_lint.py     # 문서가 실제와 맞는지</pre>
+<h3>재현</h3>
+<pre><span class="c"># 토큰 실측 — 두 시점을 같은 자로 잰다</span>
+python db/token_bench.py --window 15,25,40
 
-<h3>옵시디언으로 볼 때</h3>
-<p>저장소 루트를 볼트로 연다. <code>group</code>·<code>status</code>·<code>tags</code>
-속성으로 필터가 되고, 그래프에서 <code>superseded</code> 노드 4개가 각각 후속 결정으로
-화살표가 가 있는 것이 보인다.</p>
-</section>
+<span class="c"># 이 보고서의 그래프 그림</span>
+python db/wiki_graph.py
 
-<!-- ══════════ 7 ══════════ -->
-<section>
-<h2><span class="num">07</span>3주 뒤 — 구조가 견뎠나</h2>
-<p class="lede">결정이 <b>56 → 89 개</b>로 늘었다. 늘어난 33건이 구조를 시험했다.</p>
+<span class="c"># 문서가 실제와 어긋났는지</span>
+python db/doc_lint.py
 
-<h3>검사가 셋 늘었다 — 전부 당하고 나서</h3>
-<p>lint 는 여섯 가지로 시작했다. 지금 아홉이다. <b>새로 붙은 셋은 전부
-실제로 겪은 사고에서 나왔다</b> — 미리 상상해서 넣은 것이 하나도 없다.</p>
-<table>
-  <thead><tr><th style="width:46mm">검사</th><th>무엇을 당했나</th></tr></thead>
-  <tbody>
-    <tr><td><b>없는 질문 번호</b></td>
-        <td>합성 데이터 설계 문답에서 질문 하나를 지웠더니, 그것을 <code>Q17</code> 같은
-            번호로 인용하던 <b>문서 4개가 조용히 깨져 있었다.</b>
-            <b>번호는 위치 기반 식별자라</b> 원본이 바뀌면 가리키는 곳이 어긋난다.</td></tr>
-    <tr><td><b>결정 없이 쌓인 코드</b></td>
-        <td>합성 데이터 작업에서 <b>아홉 번 연속으로 결정 노드를 건너뛰었다.</b>
-            근거가 커밋 메시지와 설정 주석에만 남았다 — 위키에서는 안 보인다.
-            마지막 결정 노드 이후 코드 커밋이 8개를 넘으면 알린다.</td></tr>
-    <tr><td><b>색인에서 빠진 노드</b></td>
-        <td><code>group: 웹앱</code> 인 노드 3개가 <b>그 갈래 자체가 색인에 없어서</b>
-            통째로 빠져 있었다. 파일은 멀쩡히 있는데 아무도 못 찾는다 —
-            query 연산이 색인을 거쳐 찾기 때문이다. <b>색인에 없는 노드는 없는 노드다.</b></td></tr>
-  </tbody>
-</table>
-<div class="note warn">
-  <b>셋 다 3장에서 말한 그 성질이다 —</b> 오류를 내지 않는다. 링크는 멀쩡하고
-  문서는 잘 읽힌다. 다만 가리키는 곳이 없거나, 근거가 없거나, 찾을 수 없을 뿐이다.
-  <b>검사를 늘리는 일은 끝나지 않는다</b>는 것이 3주 동안 배운 것이다.
-</div>
-
-<h3>규율은 지켜졌나 — 반반이다</h3>
-<table>
-  <thead><tr><th style="width:46mm">무엇</th><th>결과</th></tr></thead>
-  <tbody>
-    <tr><td><b>끊어진 링크 0</b></td>
-        <td class="ok">지켜졌다. 노드가 36% 늘었는데도 0 이다 —
-            <b>lint 가 실패로 잡기 때문</b>이지 조심해서가 아니다.
-            기계가 확정할 수 있는 것은 실패로 두는 판단이 맞았다.</td></tr>
-    <tr><td><b>결정을 노드로 적기</b></td>
-        <td>⚠️ <b>아홉 번 어겼다.</b> 그래서 검사를 붙였다. 사람의 규율에 기대는
-            항목은 결국 어긋난다 — 검사로 옮겨야 지켜진다.</td></tr>
-    <tr><td><b>회의록 ingest</b></td>
-        <td>⚠️ <b>한 번도 안 썼다.</b> 회의가 없었다. ingest 연산은 3주 동안
-            놀았고, 결정 33건이 전부 "작업하다 판단이 서면 그 자리에서" 경로로 났다.</td></tr>
-    <tr><td><b>CLAUDE.md 를 얇게</b></td>
-        <td>⚠️ <b>못 지켰다.</b> 개편 때 10,031 → 8,782 토큰으로 줄였는데
-            <b>다시 불었다</b>(669줄). 함정을 겪을 때마다 한 줄씩 늘기 때문이다.
-            중복 117줄을 덜어내는 일이 대기 중이다.</td></tr>
-  </tbody>
-</table>
-
-<h3>쪼갠 것이 실제로 도움이 됐나</h3>
-<p>가장 뚜렷한 증거는 <b>뒤집힌 결정</b>이다. 3주 사이에 2건에서 <b>4건</b>이 됐다 —
-행수 가드레일이 쿼리 하드캡으로, v4 확정이 v5 로 뒤집혔다. 한 파일 시절이었다면
-옛 결정이 그대로 살아 있었을 것이고, <b>나중에 누군가 그것을 근거로 삼았을 것이다.</b>
-지금은 색인에서 취소선이 그어지고 후속 결정으로 화살표가 간다.</p>
-<div class="note">
-  <b>되돌리지 않았다.</b> 3장의 판단 기준 둘(토큰을 더 쓰는가 · 답이 나빠지는가)
-  어느 쪽도 발생하지 않았다. 다만 <b>되돌리는 스크립트는 계속 유지한다</b> —
-  쓰지 않을 길을 열어 두는 값이 싸기 때문이다.
-</div>
-
-<h3>지금 이 위키가 서 있는 자리</h3>
-<p>문서 체계를 바꾼 뒤 프로젝트는 <b>P5 품질검증 · P6 스테이징과 마트 · Airflow DAG</b>
-까지 왔다. 그 사이 늘어난 결정 33건 중 파이프라인 갈래가 가장 많다.
-<b>표 40개를 하나씩 놓고 값을 정하는 작업</b>(개편 당시 "다음 단계에서 바로 쓰인다"고
-적었던 그것)은 끝났다 — 그때 미구현이던 14개가 지금 <b>0개</b>다.</p>
-</section>
+<span class="c"># 되돌리기 (노드 → 한 파일)</span>
+python db/wiki_merge.py --dry-run</pre>
 
 <footer>
-  ping-v2 · 2026-08-20 기준 <span style="color:var(--ink3)">(개편 2026-07-31 · 토큰 측정 그때 값)</span>
-  · 이 보고서는 <code>docs/WIKI-REPORT.html</code> 에서 만든다
+  ping-v2 · 문서 체계 보고서 · 2026-08-25 기준 (개편 2026-07-31)<br>
+  이 보고서는 <code>docs/WIKI-REPORT.html</code> 에서 만든다 ·
+  토큰 수치는 <code>db/token_bench.py</code> (tiktoken/cl100k_base) 실측
 </footer>
-
-</body>
-</html>

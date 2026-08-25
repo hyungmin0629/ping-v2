@@ -134,6 +134,7 @@ python -m venv .venv               # 없을 때만
 | `python db/link_decisions.py` | 결정끼리 '이어지는 결정' 링크 재생성 |
 | `python db/wiki_merge.py` | **되돌리기** — 결정 노드를 `DECISIONS.md` 한 파일로 합친다 |
 | `python db/token_bench.py` | 위키 구조의 토큰 실측. **두 시점을 같은 자로 잰다** |
+| `python db/wiki_graph.py` | 위키 링크 그래프를 SVG 로. **씨앗이 고정돼 같은 그림이 나온다** |
 | `python db/replay_check.py` | **처음부터 다시 만들어도 같은 스키마가 나오는지.** 표를 지우거나 이름을 바꾼 뒤 반드시 |
 | `python db/neis_schools.py --schools` | 전국 중·고 목록 |
 | `python db/neis_schools.py --classes <코드> [--into <조직>]` | 학급 |
