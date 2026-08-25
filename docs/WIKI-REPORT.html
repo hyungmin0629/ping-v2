@@ -70,24 +70,23 @@
 <div class="meta">
   <div><b>기준일</b> 2026년 8월 25일 · 개편은 2026년 7월 31일 (4주 경과)</div>
   <div><b>규모</b> 위키 노드 163개 (결정 91 · 표 40 · 색인/규약 13 · 운영 10 · 원본 9) · 링크 663개</div>
-  <div><b>핵심 수치</b> 결정 하나를 찾는 비용 — 지금 <b>1,268 토큰</b>,
-      <b>개편이 없었다면 3,206~4,484</b> (반사실 비교 · 5장)</div>
-  <div><b>매 세션 고정비</b> 지금 16,982 토큰. <b>개편이 없었어도 비슷했을 값</b>(추정 16,700) —
-      이쪽은 본전이다</div>
+  <div><b>결정 하나를 찾는 비용</b> <b>1,268 토큰</b> — 같은 내용을 한 파일로 두었을 때는 4,484</div>
+  <div><b>매 세션 고정비</b> 16,982 토큰 — 위키가 없었어도 비슷했을 값</div>
   <div><b>근거</b> Andrej Karpathy, <i>LLM Wiki: A Pattern for Persistent Knowledge Bases</i></div>
-  <div><b>도구</b> Obsidian 볼트로 열림 · 생성·검사 스크립트 7종</div>
+  <div><b>도구</b> Obsidian 볼트로 열림 · 생성·검사 스크립트 8종</div>
 </div>
 
 <div class="toc">
   <div><b>1</b> LLM 위키란 무엇인가 <span class="dim">— 처음 듣는 사람을 위해</span></div>
   <div><b>2</b> 왜 도입했나 — 2026년 7월 31일의 상태</div>
   <div><b>3</b> 지금의 구조 — 세 개의 층</div>
-  <div><b>4</b> 그래프로 본 위키 <span class="dim">— 옵시디언으로 무엇을 관찰하나</span></div>
-  <div><b>5</b> 무엇이 달라졌나 — 숫자</div>
-  <div><b>6</b> 팀 협업에서의 쓸모</div>
+  <div><b>4</b> 그래프로 본 위키</div>
+  <div><b>5</b> 효과 — 숫자로</div>
+  <div><b>6</b> 이득 — 여덟 가지</div>
   <div><b>7</b> 어떻게 쓰나 — 세 가지 연산</div>
-  <div><b>8</b> 4주 뒤 — 구조가 견뎠나 <span class="dim">(못 지킨 것 포함)</span></div>
+  <div><b>8</b> 4주 뒤 — 구조가 견뎠나</div>
   <div><b>9</b> 되돌리는 기준과 남은 비용</div>
+  <div><b>부록</b> 측정 방법 <span class="dim">— 경로 정의 · 민감도 · 반사실 계산</span></div>
 </div>
 
 <h2>1. LLM 위키란 무엇인가</h2>
@@ -312,316 +311,120 @@
   한 파일 시절에는 볼 모양 자체가 없었다.</p>
 </div>
 
-<h2 class="pb">5. 무엇이 달라졌나 — 숫자</h2>
-<p class="lede">토큰 절감이 가장 크고, 그다음이 낡음 탐지다.</p>
+<h2 class="pb">5. 효과 — 숫자로</h2>
+<p class="lede">같은 토크나이저로 세 시점을 쟀다. 측정 방법은 부록에 있다.</p>
 
-<h3>세 단계로 한눈에</h3>
-<p>같은 토크나이저로 <b>개편 전 · 개편 직후 · 현재</b> 세 시점을 쟀다.
-옛 상태는 git 에서 꺼냈다(<code>pre-wiki</code> · <code>9a10db0</code>).</p>
+<h3>결정 하나를 알려면 몇 토큰을 읽어야 하나</h3>
 
 <figure>
-<svg viewBox="0 0 700 258" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto">
-  <text x="0" y="14" font-size="12" font-weight="700" fill="#1a1a1a">결정 하나를 알기 위해 읽는 토큰</text>
+<svg viewBox="0 0 700 152" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto">
+  <text x="112" y="30" text-anchor="end" font-size="11" fill="#333">개편 전</text>
+  <text x="112" y="43" text-anchor="end" font-size="8.5" fill="#999">한 파일 · 56 결정</text>
+  <rect x="120" y="16" width="520" height="22" fill="#b3261e"/>
+  <text x="632" y="31" text-anchor="end" font-size="12" font-weight="800" fill="#fff">33,792</text>
 
-  <text x="112" y="45" text-anchor="end" font-size="11" fill="#333">개편 전</text>
-  <text x="112" y="58" text-anchor="end" font-size="8.5" fill="#999">7/30 · 한 파일</text>
-  <rect x="120" y="31" width="520" height="22" fill="#b3261e"/>
-  <text x="632" y="46" text-anchor="end" font-size="12" font-weight="800" fill="#fff">33,792</text>
+  <text x="112" y="78" text-anchor="end" font-size="11" fill="#333">지금 · 위키</text>
+  <text x="112" y="91" text-anchor="end" font-size="8.5" fill="#999">91 노드</text>
+  <rect x="120" y="64" width="20" height="22" fill="#1b6b3a"/>
+  <text x="147" y="79" font-size="12" font-weight="800" fill="#1b6b3a">1,268</text>
 
-  <text x="112" y="90" text-anchor="end" font-size="11" fill="#333">개편 직후</text>
-  <text x="112" y="103" text-anchor="end" font-size="8.5" fill="#999">7/31 · 56 노드</text>
-  <rect x="120" y="76" width="15" height="22" fill="#1b6b3a"/>
-  <text x="142" y="91" font-size="12" font-weight="800" fill="#1b6b3a">972</text>
-
-  <text x="112" y="135" text-anchor="end" font-size="11" fill="#333">현재</text>
-  <text x="112" y="148" text-anchor="end" font-size="8.5" fill="#999">8/25 · 91 노드</text>
-  <rect x="120" y="121" width="20" height="22" fill="#1b6b3a"/>
-  <text x="147" y="136" font-size="12" font-weight="800" fill="#1b6b3a">1,268</text>
-
-  <text x="120" y="172" font-size="9.5" fill="#666">개편 전은 실제로 파일을 통째로 읽었다. 아래는 그 작은 값들만 확대한 것이다.</text>
-  <line x1="0" y1="182" x2="700" y2="182" stroke="#e2e2e2"/>
-
-  <text x="112" y="205" text-anchor="end" font-size="11" fill="#333">개편 직후</text>
-  <rect x="120" y="192" width="113" height="18" fill="#1b6b3a"/>
-  <text x="240" y="205" font-size="11" font-weight="800" fill="#1b6b3a">972</text>
-
-  <text x="112" y="230" text-anchor="end" font-size="11" fill="#333">현재</text>
-  <rect x="120" y="217" width="147" height="18" fill="#1b6b3a"/>
-  <text x="274" y="230" font-size="11" font-weight="800" fill="#1b6b3a">1,268</text>
-
-  <text x="112" y="247" text-anchor="end" font-size="10" fill="#777">한 파일이면</text>
-  <rect x="120" y="238" width="520" height="10" fill="#c9d2dc"/>
-  <text x="632" y="247" text-anchor="end" font-size="9.5" font-weight="700" fill="#4a5b6b">4,484</text>
+  <text x="112" y="126" text-anchor="end" font-size="11" fill="#333">지금 · 위키가 없었다면</text>
+  <text x="112" y="139" text-anchor="end" font-size="8.5" fill="#999">같은 내용, 한 파일</text>
+  <rect x="120" y="112" width="69" height="22" fill="#8a97a5"/>
+  <text x="196" y="127" font-size="12" font-weight="800" fill="#555">4,484</text>
 </svg>
-<figcaption><b>위</b> 세 시점 — 개편 전 막대는 <b>그때 실제로 하던 습관</b>(통째로 읽기)이지 한 파일의 최선이 아니다. 한 파일의 최선은 3,206 이고 그것과 비교해도 D 가 2.5배 싸다("이 비교가 공정한가").
-<b>아래</b> 작은 값 확대. 회색은 <b>지금 규모를 한 파일로 되돌렸을 때</b> grep 으로
-구간만 읽는 비용(4,484)이다 — 공정한 기준선은 이쪽이고, 그에 비해서도 71.7% 싸다.</figcaption>
+<figcaption>세 번째 막대가 <b>공정한 비교 대상</b>이다 — 지금의 결정 91개를 한 파일로
+합쳐 놓고 grep 으로 필요한 부분만 읽었을 때의 비용. 첫 번째 막대는 개편 전에
+<b>실제로 하던 습관</b>(파일을 통째로 읽기)이다.</figcaption>
 </figure>
-
-<figure>
-<svg viewBox="0 0 700 150" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto">
-  <text x="0" y="14" font-size="12" font-weight="700" fill="#1a1a1a">매 세션 고정비 — CLAUDE.md (모든 세션이 무조건 지불한다)</text>
-
-  <text x="112" y="42" text-anchor="end" font-size="11" fill="#333">개편 전</text>
-  <rect x="120" y="30" width="414" height="20" fill="#8a97a5"/>
-  <text x="542" y="45" font-size="11.5" font-weight="800" fill="#555">13,518</text>
-
-  <text x="112" y="80" text-anchor="end" font-size="11" fill="#333">개편 직후</text>
-  <rect x="120" y="68" width="329" height="20" fill="#1b6b3a"/>
-  <text x="457" y="83" font-size="11.5" font-weight="800" fill="#1b6b3a">10,745</text>
-  <text x="522" y="83" font-size="10" font-weight="700" fill="#1b6b3a">−21%</text>
-
-  <text x="112" y="118" text-anchor="end" font-size="11" fill="#333">현재</text>
-  <rect x="120" y="106" width="520" height="20" fill="#8a97a5"/>
-  <text x="632" y="121" text-anchor="end" font-size="11.5" font-weight="800" fill="#fff">16,982</text>
-  <rect x="120" y="106" width="511" height="20" fill="none" stroke="#8a6d1f" stroke-width="1.2" stroke-dasharray="4 3"/>
-  <text x="120" y="143" font-size="10" font-weight="700" fill="#8a6d1f">점선 = 개편이 없었어도 들었을 값(추정 16,700) — 이 항목은 본전이다</text>
-</svg>
-<figcaption><b>개편의 효과는 앞의 두 막대다</b> — 13,518 → 10,745(−21%).
-세 번째 막대는 그 뒤 4주간의 변화이고, 개편의 성패가 아니라 <b>프로젝트가 커진 결과</b>가
-대부분이다. 갈라보면 아래와 같다.</figcaption>
-</figure>
-
-<h4>고정비는 왜 늘었나 — 갈라보면</h4>
-<p>4주 동안 CLAUDE.md 에 <b>+6,151 토큰</b>이 붙었다. 무엇이 붙었는지 절 단위로 갈랐다.</p>
-<table>
-  <tr><th>갈래</th><th class="n">토큰</th><th>내용</th></tr>
-  <tr><td><b>위키 규약 자체</b></td><td class="n">+3,078</td>
-      <td>「위키 구조」·「세 가지 연산」·「되돌려야 한다면」 세 절.
-          <b>개편 직후 시점에는 아직 없었고 그 뒤에 쓰였다</b> —
-          즉 <b>위키를 도입해서 생긴 비용</b>이지 규율이 무너져 생긴 것이 아니다</td></tr>
-  <tr><td><b>4주간 새 작업</b></td><td class="n">+3,079</td>
-      <td>「합성 데이터」 1,923 · 「.venv 환경」 473 · 「DDL 주석이 낡는다」 394 ·
-          「주간 보고서」 289. 전부 그 사이 실제로 겪은 함정과 새 기능이다</td></tr>
-  <tr><td>기존 절 증가</td><td class="n">+1,928</td>
-      <td>스크립트 표 +501(스크립트가 늘었다) · BigQuery +467 · 문서 규칙 +547 ·
-          확정된 제약 +356</td></tr>
-</table>
-
-<div class="box ok">
-  <h4>그래서 정정한다 — "규율이 무너졌다"는 과한 서술이었다</h4>
-  <p><b>개편의 효과는 −21% 다</b>(13,518 → 10,745). 그 뒤의 증가는 대부분
-  프로젝트가 커진 결과이고, 위키 자체를 문서화한 값이다.
-  <b>지식이 늘면 규약도 는다</b> — 그것까지 실패로 세면 아무 구조도 통과하지 못한다.</p>
-  <p>정규화해 보면 오히려 <b>느리게 자랐다.</b> 결정 노드 전체 대비 CLAUDE.md 의 비중은
-  <b>28.2% → 17.3%</b> 로 떨어졌다(10,745/38,150 → 16,982/98,367).
-  프로젝트가 2.6배 커지는 동안 고정비는 1.6배가 됐다.</p>
-</div>
-
-<div class="box note">
-  <h4>그래도 볼 값이 남는 두 가지</h4>
-  <p><b>① 위키 규약 3,078 토큰이 매 세션 붙는다.</b> "필요할 때만 골라 읽는다"는 규칙
-  자체가 늘 읽히는 셈이라 아이러니가 있다. 절차 본문을 노드로 빼고 규약에는 포인터만
-  두면 줄어든다.</p>
-  <p><b>② 「합성 데이터」 1,923 토큰은 상당 부분 중복이다.</b> 같은 내용이 결정 노드와
-  <code>ops-synthetic-data</code> 에 이미 있다. 중복 117줄을 덜어내는 작업이 대기 중이다.</p>
-</div>
-
-<table>
-  <tr><th>단계</th><th class="n">결정 하나 찾기</th><th class="n">매 세션 고정비</th>
-      <th>그때 실제로 하던 방식</th></tr>
-  <tr><td><b>개편 전</b> <span class="dim">7/30</span></td>
-      <td class="n bad">33,792</td><td class="n">13,518</td>
-      <td>결정 56개짜리 한 파일을 통째로 읽었다</td></tr>
-  <tr><td><b>개편 직후</b> <span class="dim">7/31</span></td>
-      <td class="n cut">972</td><td class="n good">10,745</td>
-      <td>grep 으로 파일명만 받고 노드 하나만</td></tr>
-  <tr><td><b>현재</b> <span class="dim">8/25</span></td>
-      <td class="n cut">1,268</td><td class="n bad">16,982</td>
-      <td>같은 방식. 결정은 91개로 늘었다</td></tr>
-</table>
-
-<div class="box plain">
-  <h4>두 숫자가 반대 방향으로 갔다</h4>
-  <p><b>질문당 비용</b>은 위키가 2.6배 커지는 동안 거의 안 늘었다(972 → 1,268).
-  <b>세션당 고정비</b>는 1.6배가 됐다(10,745 → 16,982). 둘 다 프로젝트 성장보다
-  느리지만 <b>기울기가 다르다</b> — 지식은 노드로 흩어지고, 규약은 한곳에 쌓인다.
-  <b>노드에 담을 수 있는 것을 규약에 두지 않는 것</b>이 이 구조를 유지하는 일의 전부다.</p>
-</div>
-
-<h3>경로별로 나눠 보기</h3>
-<p>질문 다섯(하트 경제 · 친구 끊기 · 합성 데이터 · 증분 함정 · 힌트 요금)으로
-경로별 비용을 쟀다. <b>2026-08-25 에 다시 쟀고</b>, 비교를 위해 <b>개편 직후 상태를
-git 에서 꺼내 같은 토크나이저로 함께 쟀다.</b></p>
-
-<table>
-  <tr><th>경로</th><th class="n">노드 56개<br>(2026-07-31)</th>
-      <th class="n">노드 91개<br>(2026-08-25)</th><th>무엇인가</th></tr>
-  <tr><td><b>A</b> 통째로 읽기</td><td class="n">34,796</td><td class="n">92,384</td>
-      <td>쪼개기 전에 실제로 하던 것</td></tr>
-  <tr><td><b>B</b> grep + 구간 읽기</td><td class="n">2,535</td><td class="n">4,484</td>
-      <td><b>쪼개기 전에도 가능했던 것</b> — 공정한 기준선</td></tr>
-  <tr><td><b>D</b> grep + 정확한 노드</td><td class="n cut">972</td><td class="n cut">1,268</td>
-      <td><b>쪼갠 뒤 하게 되는 것</b></td></tr>
-  <tr><td><b>E</b> grep + 매칭 전부</td><td class="n bad">8,822</td><td class="n bad">31,655</td>
-      <td>규율이 무너졌을 때</td></tr>
-  <tr><th>B 대비 D 절감</th><th class="n">61.6%</th><th class="n cut">71.7%</th><th></th></tr>
-</table>
 
 <div class="kpis">
-  <div class="kpi"><div class="v">2.6배</div><div class="k">위키 전체 크기 증가</div></div>
-  <div class="kpi"><div class="v">+30%</div><div class="k">골라 읽기 비용 증가</div></div>
-  <div class="kpi"><div class="v">71.7%</div><div class="k">절감 (61.6% → )</div></div>
-  <div class="kpi"><div class="v">7.1배</div><div class="k">규율을 어겼을 때(E/B)</div></div>
+  <div class="kpi"><div class="v">3.5배</div><div class="k">같은 질문이 싸졌다<br>4,484 → 1,268</div></div>
+  <div class="kpi"><div class="v">2.6배</div><div class="k">그동안 위키는<br>이만큼 커졌다</div></div>
+  <div class="kpi"><div class="v">+30%</div><div class="k">그런데 질문 비용은<br>이만큼만 늘었다</div></div>
+  <div class="kpi"><div class="v">0건</div><div class="k">끊어진 링크<br>노드 163개 기준</div></div>
 </div>
 
-<p><b>위키가 커질수록 이득도 커졌다.</b> 전체는 2.6배가 됐는데 골라 읽기는 30%만
-늘었다 — 노드 하나의 크기는 위키 크기와 무관하기 때문이다. 읽기 창을 ±15/±40 줄로
-바꿔도 방향은 같다(52→68%, 69→75%).</p>
+<p><b>핵심은 기울기다.</b> 위키가 2.6배로 자라는 동안 질문 하나의 비용은 972 에서
+1,268 로 30% 늘었을 뿐이다. 노드 하나의 크기는 위키 전체 크기와 무관하기 때문이다.
+반면 한 파일 방식은 파일이 두꺼워질수록 같이 비싸진다.</p>
 
-<div class="box">
-  <h4>규율을 어겼을 때의 벌금은 두 배가 됐다</h4>
-  <p>매칭된 노드를 <b>전부</b> 읽으면 한 파일 시절의 <b>7.1배</b>다(56개 시절엔 3.5배).
-  "합성"이라는 낱말은 이제 <b>91개 중 47개</b>에 걸리고, 그것을 다 읽으면 58,940 토큰이다.
-  <b>구조가 아니라 규율이 이득을 만든다</b>는 말이 4주 만에 더 사실이 됐다.</p>
-</div>
+<h3>매 세션 붙는 고정비</h3>
 
-<h3>반사실 비교 — "개편이 없었다면 지금"</h3>
-<p><b>'현재'의 짝은 '개편 직후'가 아니다.</b> 그 사이에 프로젝트가 커졌으므로,
-개편의 효과를 지금 시점에서 보려면 <b>"개편을 안 했다면 지금 얼마였을까"</b>와
-견줘야 한다. 질문당 비용은 그렇게 재고 있었고(지금 노드를 한 파일로 합쳐 재구성),
-고정비도 같은 방식으로 추정했다.</p>
+<p>에이전트가 <b>무조건 읽는</b> 파일(<code>CLAUDE.md</code>)의 크기다.</p>
 
 <table>
-  <tr><th></th><th class="n">현재 · 실제</th><th class="n">현재 · 개편이 없었다면</th>
-      <th>어떻게 얻었나</th></tr>
-  <tr><td><b>결정 하나 찾기</b></td>
-      <td class="n cut">1,268</td><td class="n bad">3,206 ~ 4,484</td>
-      <td><b>실측.</b> 지금 노드 91개를 한 파일로 합쳐 grep 경로를 그대로 재현했다</td></tr>
-  <tr><td><b>매 세션 고정비</b></td>
-      <td class="n">16,982</td><td class="n">약 16,700</td>
-      <td><b>추정.</b> 아래 계산</td></tr>
+  <tr><th></th><th class="n">개편 전</th><th class="n">개편 직후</th>
+      <th class="n">지금</th><th class="n">지금 · 위키가 없었다면</th></tr>
+  <tr><td>매 세션 고정비</td><td class="n">13,518</td><td class="n good">10,745</td>
+      <td class="n">16,982</td><td class="n">약 16,700</td></tr>
 </table>
 
-<pre>현재 실제                              16,982
-  − 위키 규약 3절 (개편을 안 했으면 쓸 일이 없던 글)   −3,078
-  + 개편 때 노드로 덜어낸 분량 (그대로 남아 있었을 것)  +2,773
-<span class="c">─────────────────────────────────────────────</span>
-개편이 없었다면 (추정)                  ≈ 16,677</pre>
+<p>개편으로 21% 덜어냈지만, 그 뒤 4주 동안 <b>위키 사용법 자체</b>(+3,078)와
+<b>새로 늘어난 작업</b>(+3,079)이 그 자리를 채웠다. 위키가 없었어도 비슷한 값이
+됐을 것이므로 <b>이 항목은 본전이다.</b> 이득은 질문당 비용에서 났다.</p>
 
-<div class="box ok">
-  <h4>그래서 결론이 바뀐다 — 고정비는 본전, 이득은 질문당 비용에서 났다</h4>
-  <p>고정비는 <b>개편을 했든 안 했든 지금쯤 16,000~17,000 이었을 값</b>이다.
-  개편으로 덜어낸 2,773 을, 위키 자체를 설명하는 글 3,078 이 도로 채웠기 때문이다.
-  <b>여기서 위키는 이득도 손해도 아니다.</b></p>
-  <p>이득은 다른 쪽에 있다 — <b>같은 질문에 1,268 대 3,206~4,484.</b> 이쪽은 추정이
-  아니라 실측이고, 위키가 커질수록 격차가 벌어진다.</p>
+<div class="box plain">
+  <h4>다만 방향은 다르다</h4>
+  <p>지식이 늘 때 <b>결정은 노드로 흩어지고 규약은 한곳에 쌓인다.</b> 결정 노드 전체
+  대비 규약의 비중은 28% → 17% 로 떨어졌지만, 절대값은 계속 는다.
+  <b>노드에 담을 수 있는 것을 규약에 두지 않는 것</b>이 이 구조를 유지하는 일이다.</p>
 </div>
 
-<div class="box note">
-  <h4>이 추정의 약한 곳</h4>
-  <p>"개편을 안 했다면 4주간의 새 내용이 어디에 쓰였을까"는 알 수 없다. 결정은
-  <code>DECISIONS.md</code>(세션마다 읽지는 않는 파일)로 갔을 테니 고정비에 안 붙지만,
-  <b>규약성 글은 어차피 CLAUDE.md 에 붙었을 것</b>으로 봤다. 그 가정이 틀리면 추정은
-  <b>실제보다 낮아진다</b> — 즉 개편에 유리해지지, 불리해지지 않는다.</p>
-</div>
-
-<h3>이 비교가 공정한가</h3>
-<p>당연히 나올 반론이 있다. <b>"한 파일이어도 전부 읽지는 않는다.
-통째로 읽기(A)와 골라 읽기(D)를 견주면 사기 아닌가?"</b> 맞는 말이고,
-이 프로젝트가 실제로 한 번 그렇게 틀렸다 — 처음엔 A 를 기준으로
-<b>"91% 절감"</b>이라 적었다가 <b>"그건 게으른 선택이었지 유일한 방법이
-아니었다"</b>며 스스로 취소했다. 그래서 기준선이 B 다.</p>
-
-<p>그러면 남는 질문은 <b>"B 를 얼마나 잘 잡았느냐"</b>다. 읽기 창을 줄여
-가며 재봤다 — 창이 0 이면 <b>본문을 한 줄도 안 읽는다</b>는 뜻이다.</p>
+<h2 class="pb">6. 이득 — 여덟 가지</h2>
+<p class="lede">토큰이 가장 크지만, 나머지가 실제로 더 자주 쓰인다.</p>
 
 <table>
-  <tr><th class="n">읽기 창</th><th class="n">B 합계</th><th class="n">├ grep 출력</th>
-      <th class="n">└ 본문 읽기</th><th class="n">D</th><th class="n">절감</th></tr>
-  <tr><td class="n"><b>±0줄</b></td><td class="n"><b>3,206</b></td><td class="n">3,180</td>
-      <td class="n">26</td><td class="n cut">1,268</td><td class="n">60.5%</td></tr>
-  <tr><td class="n">±15줄</td><td class="n">3,930</td><td class="n">3,180</td>
-      <td class="n">750</td><td class="n cut">1,268</td><td class="n">67.7%</td></tr>
-  <tr><td class="n">±25줄</td><td class="n">4,484</td><td class="n">3,180</td>
-      <td class="n">1,304</td><td class="n cut">1,268</td><td class="n">71.7%</td></tr>
-  <tr><td class="n">±40줄</td><td class="n">5,131</td><td class="n">3,180</td>
-      <td class="n">1,951</td><td class="n cut">1,268</td><td class="n">75.3%</td></tr>
-</table>
+  <tr><th class="c">#</th><th>이득</th><th>측정값 · 근거</th></tr>
 
-<div class="box ok">
-  <h4>한 파일 경로의 비용은 본문 읽기가 아니라 <b>검색 결과 자체</b>다</h4>
-  <p>창을 0 으로 줄여 <b>아무것도 읽지 않아도 3,206 토큰</b>이고, 그래도 D 의
-  2.5배다. 이유는 구조적이다 — <b>한 파일에서 grep 하면 결과가 '줄'이고,
-  노드로 쪼개면 '파일 이름'이다.</b></p>
-</div>
+  <tr><td class="c">1</td><td><b>질문 하나가 3.5배 싸졌다</b><br>
+      <span class="dim">그리고 위키가 커져도 거의 안 는다</span></td>
+      <td>1,268 토큰 (같은 내용을 한 파일로 두었을 때 4,484).
+          위키가 2.6배 커지는 동안 +30%</td></tr>
 
-<table>
-  <tr><th>질문</th><th class="n">한 파일 grep 출력</th><th class="n">노드 파일명 목록</th>
-      <th class="n">D 합계</th></tr>
-  <tr><td>친구 끊기</td><td class="n">4,843</td><td class="n">27개 파일명</td><td class="n cut">1,450</td></tr>
-  <tr><td>합성 데이터</td><td class="n">3,753</td><td class="n">47개 파일명</td><td class="n cut">1,362</td></tr>
-  <tr><td>하트 경제</td><td class="n">3,570</td><td class="n">21개 파일명</td><td class="n cut">939</td></tr>
-  <tr><td>힌트 요금</td><td class="n">2,301</td><td class="n">20개 파일명</td><td class="n cut">1,515</td></tr>
-  <tr><td>증분 함정</td><td class="n">1,433</td><td class="n">13개 파일명</td><td class="n cut">1,073</td></tr>
-</table>
+  <tr><td class="c">2</td><td><b>세션을 짧게 끊을 수 있다</b><br>
+      <span class="dim">맥락을 대화에 쟁여둘 필요가 없다</span></td>
+      <td>작은 작업마다 새 세션을 열고 노드 하나(1,268)만 읽는다.
+          예전에는 맥락 재설명이 아까워 세션을 이어 썼고,
+          <b>그 대화가 이후 모든 요청에 계속 실렸다</b></td></tr>
 
-<p>"하트" 같은 낱말은 한 파일에서 수십~수백 줄에 걸리고 그 줄들은 전부 본문이라 길다.
-파일명은 한 줄에 10토큰 남짓이고 파일당 하나뿐이다. <b>같은 낱말로 검색해도
-돌아오는 것의 성격이 다르다.</b></p>
+  <tr><td class="c">3</td><td><b>맥락이 저장소에 남는다</b><br>
+      <span class="dim">대화창이 아니라</span></td>
+      <td>결정 91개 · 운영 문서 10개. 대화에만 있던 "왜 그렇게 정했나"가
+          파일이 됐다 — 팀원도 보고, 몇 주 뒤의 나도 찾는다</td></tr>
 
-<div class="box note">
-  <h4>반대로, D 에도 유리한 가정이 하나 있다</h4>
-  <p><b>파일명만 보고 한 번에 맞는 노드를 고른다</b>고 가정한 값이다. 잘못 고르면
-  다른 노드를 하나 더 읽어야 하고(+약 1,000), <b>두 번 틀리면 B 와 비슷해진다.</b>
-  이 경로의 이득은 <b>이름을 보고 고르는 판단이 맞을 때만</b> 성립한다 —
-  그래서 결정 노드의 제목과 파일명을 짓는 일이 실제 작업이다.</p>
-  <p>그리고 <b>3단계 그림의 빨간 막대(33,792)는 A 다.</b> 그것은 "그때 실제로 하던
-  습관"이지 "한 파일의 최선"이 아니다. 한 파일의 최선은 위 표의 <b>3,206</b> 이고,
-  그와 비교해도 D 가 2.5배 싸다.</p>
-</div>
+  <tr><td class="c">4</td><td><b>뒤집힌 결정이 드러난다</b></td>
+      <td>4건. <code>superseded_by</code> 로 후속 결정을 가리키고 색인에
+          취소선이 그어진다. 한 파일 시절에는 옛 결정이 그대로 살아 있었다</td></tr>
 
-<h3>세션을 끊을 수 있게 됐다</h3>
-<p>2장의 여섯 번째 문제에 대한 답이다. 지금은 작은 작업마다 새 세션을 열고,
-필요한 노드만 읽어 시작한다.</p>
-<table>
-  <tr><th>작업 방식</th><th>맥락을 세우는 비용</th><th>남는 것</th></tr>
-  <tr><td>세션을 계속 이어 쓰기</td>
-      <td>0 처럼 보이지만, <b>이후 모든 요청이 누적 대화를 다시 싣는다</b></td>
-      <td>대화창을 닫으면 사라진다</td></tr>
-  <tr><td><b>새 세션 + 노드 골라 읽기</b></td>
-      <td><b>1,268 토큰</b> (결정 하나 기준)</td>
-      <td>저장소에 남는다. 팀원도 본다</td></tr>
-</table>
+  <tr><td class="c">5</td><td><b>낡음을 기계가 잡는다</b></td>
+      <td><code>doc_lint.py</code> 9종. 끊어진 링크 <b>0건 유지</b>(노드가 63% 느는 동안).
+          검사 셋은 <b>실제로 당한 뒤</b> 추가됐다 —
+          없는 질문 번호 · 결정 없이 쌓인 코드 · 색인에서 빠진 노드</td></tr>
 
-<h3>그 밖의 절감</h3>
-<table>
-  <tr><th>작업</th><th>전</th><th>후</th></tr>
-  <tr><td>표 하나 파악</td><td>4개 파일을 열어 조합</td>
-      <td><b>표 페이지 1장</b> (484 토큰)</td></tr>
-  <tr><td>뒤집힌 결정 찾기</td><td>제목만 보면 알 수 없음</td>
-      <td>색인에서 <b>취소선 + 후속 결정 화살표</b></td></tr>
-  <tr><td>낡은 서술 찾기</td><td>사람이 눈으로</td>
-      <td><code>doc_lint.py</code> <b>9종 검사</b></td></tr>
-</table>
+  <tr><td class="c">6</td><td><b>표 하나를 한 장에서 본다</b></td>
+      <td>484 토큰. 예전에는 DDL 주석 · 결정 · 정합성 검사 · 정책
+          <b>네 곳</b>을 열어 조합해야 했다</td></tr>
 
-<h2>6. 팀 협업에서의 쓸모</h2>
-<p class="lede">에이전트를 위해 만든 구조인데, 사람에게 먼저 쓰였다.</p>
+  <tr><td class="c">7</td><td><b>팀이 같은 문서를 본다</b></td>
+      <td><code>ONBOARDING</code> 이 계정 없이 되는 길과 계정이 필요한 길을 나눠 적는다.
+          스키마를 건드릴 때 <b>표 페이지 한 장이 영향 범위</b>가 된다.
+          결정 하나 = 파일 하나라 <b>커밋 diff 에 그 결정만</b> 뜬다.
+          마크다운이라 새 도구를 깔라고 할 필요도 없다</td></tr>
 
-<p>팀원 4명이 붙어 있다(BigQuery 관리자 권한). 위키가 협업에서 실제로 한 일은 셋이다.</p>
-
-<table>
-  <tr><th>무엇</th><th>어떻게 쓰이나</th></tr>
-  <tr><td><b>합류 경로가 문서 하나</b></td>
-      <td><code>ONBOARDING</code> 이 <b>계정 없이 되는 A 갈래</b>(로컬 합성 데이터)와
-          <b>계정이 필요한 B 갈래</b>를 나눠 적는다. 새로 온 사람에게 이것만 가리키면 된다</td></tr>
-  <tr><td><b>영향 범위가 한 장에</b></td>
-      <td>스키마를 바꿀 때 <code>docs/tables/&lt;표&gt;.md</code> 한 장이 그 표에 걸린
-          결정·검사·정책을 다 보여준다. <b>"이거 고치면 뭐가 깨지죠"에 답하는 문서</b>다.
-          절차는 <code>TEAM-PLAN</code> 에 있다</td></tr>
-  <tr><td><b>결정이 리뷰 단위가 된다</b></td>
-      <td>결정 하나가 파일 하나라 <b>커밋 diff 에 그 결정만 뜬다.</b> 한 파일 시절에는
-          긴 문서의 어느 줄이 바뀌었는지 봐야 했다</td></tr>
-  <tr><td><b>도구를 강요하지 않는다</b></td>
-      <td>마크다운이라 에디터·깃허브에서 그냥 읽히고, 옵시디언으로 열면 그래프와
-          백링크가 덤으로 온다. <b>팀원에게 새 도구를 깔라고 하지 않아도 된다</b></td></tr>
+  <tr><td class="c">8</td><td><b>구조를 눈으로 본다</b></td>
+      <td>옵시디언 그래프(4장). 문서를 읽어서가 아니라 <b>모양이 이상해서</b>
+          잡은 사고가 셋이다 — 필터 대소문자로 결정 56개가 사라진 것 ·
+          별 모양이 되던 것 · 색인에서 빠진 노드</td></tr>
 </table>
 
 <div class="box note">
-  <h4>정직하게 — 협업 기능 중 하나는 4주 동안 놀았다</h4>
-  <p><b>회의록 ingest 는 한 번도 쓰이지 않았다.</b> <code>raw/meetings/</code> 에는
-  템플릿만 있다. 회의가 없었기 때문이고, 결정 35건이 전부 "작업하다 판단이 서면
-  그 자리에서" 경로로 났다. <b>구조를 만들었다고 그 경로가 쓰이는 것은 아니다.</b></p>
+  <h4>이득이 공짜는 아니다 — 규율이 조건이다</h4>
+  <p>grep 에 걸린 노드를 <b>전부</b> 읽으면 31,655 토큰이다. 같은 내용을 한 파일로
+  두고 읽는 것(4,484)보다 <b>7배 나쁘다.</b> "합성"이라는 낱말 하나가 이제 91개 중
+  47개에 걸린다.</p>
+  <p><b>구조가 아니라 규율이 이득을 만든다</b> — 이름을 보고 골라 그 노드만 읽는 것.
+  그래서 결정의 제목과 파일명을 짓는 일이 실제 작업이다.</p>
 </div>
 
 <h2 class="pb">7. 어떻게 쓰나 — 세 가지 연산</h2>
@@ -670,22 +473,10 @@ git 에서 꺼내 같은 토크나이저로 함께 쟀다.</b></p>
   <tr><td><b>회의록 ingest</b></td>
       <td class="warn">⚠️ 0회. 회의가 없었다</td></tr>
   <tr><td><b>CLAUDE.md 를 얇게</b></td>
-      <td class="warn">⚠️ <b>개편 때는 지켰다(13,518 → 10,745).</b> 지금은 16,982 인데,
-          <b>개편이 없었어도 비슷했을 값</b>이다(5장 반사실 추정 약 16,700).
-          결정 노드 대비 비중은 28% → 17% 로 오히려 떨어졌다.
-          <b>남은 과제는 중복 요약을 노드로 밀어내는 것</b></td></tr>
+      <td class="warn">⚠️ 개편 때는 지켰다(13,518 → 10,745). 지금은 16,982 로
+          다시 늘었다 — 위키가 없었어도 비슷했을 값이지만(5장), 노드에 이미 있는
+          내용의 <b>중복 요약</b>이 섞여 있다. 그것을 밀어내는 일이 남았다</td></tr>
 </table>
-
-<div class="box">
-  <h4>고정비는 늘었다 — 다만 "실패"라 부르기 전에 갈라 봐야 한다</h4>
-  <p>CLAUDE.md 는 <b>모든 세션이 무조건 지불하는 비용</b>이라 눈에 띈다. 그런데
-  증가분의 절반은 <b>위키 규약 자체</b>(+3,078)이고 나머지 절반은 <b>4주간 실제로
-  늘어난 작업 표면</b>(+3,079)이다. <b>지식이 늘면 규약도 는다</b> —
-  그것까지 실패로 세면 어떤 구조도 통과하지 못한다(5장의 반사실 비교).</p>
-  <p>남는 과제는 좁고 분명하다 — <b>노드에 이미 있는 내용의 요약이 규약에 중복돼 있다.</b>
-  「합성 데이터」 절 1,923 토큰이 대표적이고, 중복 117줄을 덜어내는 작업이 대기 중이다.
-  절차 본문은 노드로 빼고 규약에는 포인터만 두는 것이 방향이다.</p>
-</div>
 
 <h2>9. 되돌리는 기준과 남은 비용</h2>
 
@@ -699,12 +490,11 @@ git 에서 꺼내 같은 토크나이저로 함께 쟀다.</b></p>
 <table>
   <tr><th>무엇</th><th>지금 값</th></tr>
   <tr><td><b>규약 파일이 매 세션 붙는다</b></td>
-      <td class="warn">16,982 토큰. <b>개편이 없었어도 비슷했을 값</b>이라 개편의 손해는
-          아니지만, 중복 요약을 덜어내면 줄어든다</td></tr>
+      <td class="warn">16,982 토큰. 중복 요약을 덜어내면 줄어든다</td></tr>
   <tr><td><b>색인 자체가 무겁다</b></td>
       <td>10,545 토큰. 전체 탐색 때는 이 값을 낸다(보통은 안 읽는다)</td></tr>
   <tr><td><b>규율이 무너지면 더 나쁘다</b></td>
-      <td>매칭 전부 읽기 = 한 파일 시절의 7.1배</td></tr>
+      <td>매칭된 노드를 전부 읽으면 31,655 토큰 — 한 파일로 두는 것보다 7배 나쁘다</td></tr>
   <tr><td><b>파일 목록이 커지고 있다</b></td>
       <td>골라 읽기 비용 중 파일 목록 비중이 13% → 24%.
           노드 180~200개 근처에서 다시 볼 값이다</td></tr>
@@ -712,18 +502,76 @@ git 에서 꺼내 같은 토크나이저로 함께 쟀다.</b></p>
       <td>lint 6종 → 9종. 셋 다 당하고 나서 붙였다</td></tr>
 </table>
 
+<h2 class="pb">부록 · 측정 방법</h2>
+<p class="lede">본문의 숫자를 어떻게 얻었는지. <code>python db/token_bench.py</code> 로 재현된다.</p>
+
+<h3>무엇을 쟀나</h3>
+<p>질문 다섯(하트 경제 · 친구 끊기 · 합성 데이터 · 증분 함정 · 힌트 요금)에
+답하기 위해 읽어야 하는 토큰의 평균이다. 토크나이저는 <code>tiktoken/cl100k_base</code>,
+옛 시점은 git 에서 꺼내 <b>같은 자로</b> 쟀다(<code>pre-wiki</code> · <code>9a10db0</code>).</p>
+
+<table>
+  <tr><th class="c">경로</th><th>방법</th><th class="n">지금 규모</th></tr>
+  <tr><td class="c"><b>A</b></td><td>파일을 통째로 읽는다 <span class="dim">— 개편 전의 실제 습관</span></td>
+      <td class="n">92,384</td></tr>
+  <tr><td class="c"><b>B</b></td><td>한 파일에서 grep 하고 그 구간만 읽는다
+      <span class="dim">— 위키가 없었다면 가능한 최선</span></td><td class="n">3,206 ~ 5,131</td></tr>
+  <tr><td class="c"><b>D</b></td><td>grep 으로 <b>파일명만</b> 받고 노드 하나만 읽는다
+      <span class="dim">— 지금 하는 것</span></td><td class="n cut">1,268</td></tr>
+  <tr><td class="c"><b>E</b></td><td>grep 에 걸린 노드를 전부 읽는다
+      <span class="dim">— 규율이 무너졌을 때</span></td><td class="n bad">31,655</td></tr>
+</table>
+
+<p><b>본문의 비교는 B 대 D 다.</b> A 대 D 로 견주면 "한 파일이어도 전부 읽지는
+않는다"는 반론에 답할 수 없다. 실제로 이 프로젝트가 처음에 A 를 기준으로
+"91% 절감"이라 적었다가 취소한 적이 있다.</p>
+
+<h3>B 를 유리하게 잡아도</h3>
+<p>B 의 값은 "구간을 몇 줄 읽느냐"에 달렸다. 창이 0 이면 <b>본문을 한 줄도 읽지
+않는다</b>는 뜻이다.</p>
+
+<table>
+  <tr><th class="n">읽기 창</th><th class="n">B 합계</th><th class="n">├ grep 출력</th>
+      <th class="n">└ 본문 읽기</th><th class="n">D 대비</th></tr>
+  <tr><td class="n">±0줄</td><td class="n">3,206</td><td class="n">3,180</td>
+      <td class="n">26</td><td class="n">2.5배</td></tr>
+  <tr><td class="n">±15줄</td><td class="n">3,930</td><td class="n">3,180</td>
+      <td class="n">750</td><td class="n">3.1배</td></tr>
+  <tr><td class="n">±25줄</td><td class="n">4,484</td><td class="n">3,180</td>
+      <td class="n">1,304</td><td class="n">3.5배</td></tr>
+  <tr><td class="n">±40줄</td><td class="n">5,131</td><td class="n">3,180</td>
+      <td class="n">1,951</td><td class="n">4.0배</td></tr>
+</table>
+
+<p><b>한 파일 경로의 비용은 본문이 아니라 검색 결과 자체다.</b> 한 파일에서 grep 하면
+결과가 <b>줄</b>로 돌아오고("친구" → 4,843 토큰), 노드로 쪼개면 <b>파일 이름</b>으로
+돌아온다(27개 파일명 = 303 토큰). 그래서 아무것도 읽지 않아도 2.5배 차이가 난다.</p>
+
+<h3>"위키가 없었다면 지금"을 어떻게 구했나</h3>
+<p><b>질문당 비용은 추정이 아니다</b> — 지금의 노드 91개를 한 파일로 합쳐 놓고
+B 경로를 그대로 돌린 값이다.</p>
+<p><b>고정비는 추정이다.</b></p>
+<pre>지금 실제                                        16,982
+  − 위키 사용법 3절 (위키가 없었으면 쓸 일 없던 글)   −3,078
+  + 개편 때 노드로 덜어낸 분량 (그대로 남았을 것)     +2,773
+<span class="c">──────────────────────────────────────────────────</span>
+위키가 없었다면 (추정)                          ≈ 16,677</pre>
+<p>"위키가 없었다면 4주간의 새 내용이 어디에 쓰였을까"는 알 수 없다. 결정은 세션마다
+읽지 않는 파일로 갔을 테니 고정비에 안 붙지만, 규약성 글은 어차피
+<code>CLAUDE.md</code> 에 붙었을 것으로 봤다. <b>이 가정이 틀리면 추정치는 낮아진다</b> —
+위키에 불리해지는 방향은 아니다.</p>
+
+<h3>D 쪽의 가정</h3>
+<p>D 는 <b>파일명만 보고 한 번에 맞는 노드를 고른다</b>고 가정한 값이다. 잘못 고르면
+노드를 하나 더 읽어야 하고(약 +1,000), 두 번 틀리면 B 와 비슷해진다.
+<b>이 경로의 이득은 이름을 보고 고르는 판단이 맞을 때만 성립한다.</b></p>
+
 <h3>재현</h3>
-<pre><span class="c"># 토큰 실측 — 두 시점을 같은 자로 잰다</span>
-python db/token_bench.py --window 15,25,40
-
-<span class="c"># 이 보고서의 그래프 그림</span>
-python db/wiki_graph.py
-
-<span class="c"># 문서가 실제와 어긋났는지</span>
-python db/doc_lint.py
-
-<span class="c"># 되돌리기 (노드 → 한 파일)</span>
-python db/wiki_merge.py --dry-run</pre>
+<pre>python db/token_bench.py                       <span class="c"># 두 시점 · 경로별</span>
+python db/token_bench.py --stages              <span class="c"># 개편 전 · 직후 · 현재</span>
+python db/token_bench.py --window 0,15,25,40   <span class="c"># 창 민감도</span>
+python db/wiki_graph.py                        <span class="c"># 4장의 그래프</span>
+python db/doc_lint.py                          <span class="c"># 문서가 실제와 맞는가</span></pre>
 
 <footer>
   ping-v2 · 문서 체계 보고서 · 2026-08-25 기준 (개편 2026-07-31)<br>
