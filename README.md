@@ -221,23 +221,22 @@ python pipeline/verify_load.py  --source local                  # 행 수 대조
 
 ## 진행 상태
 
-### 지금 하고 있는 것 — 대시보드 (2026-08-18)
+### 완주했다 — 대시보드까지 (2026-08-25)
 
-**P6 까지 끝났다.** raw → stg → mart 가 서 있고, 남은 것은 루커 스튜디오에
-`mart` 를 연결하는 일뿐이다. 절차는 [[ops-p5-p7]].
+**P0~P7 · W0~W19 가 섰다.** Supabase·로컬 PG → raw → stg → mart → 루커 5쪽이
+이어지고, 적재·검증·마트가 DAG 셋으로 돈다. 절차는 [[ops-p5-p7]],
+전체 기록은 [완주 리포트](docs/PROJECT-CLOSING.pdf).
 
 | 층 | 상태 |
 |---|---|
 | `raw` | 40표 · 1억 2,373만 행 · 8.74 GiB. 품질검사 **430/430 통과** |
 | `stg` | **뷰 10개** (저장 0). 대시보드 때문에 넷이 늘었다 — [[stg-views-for-dashboard]] |
 | `mart` | **표 8개 · 495 MiB.** 주간 필터와 전주 대비까지 검증 — [[mart-grain-for-weekly-filter]] |
-| 루커 | **아직 안 붙였다.** [스케치](https://claude.ai/code/artifact/cf24c619-a001-4880-a901-6ec0ea412aca)만 있다 |
+| 루커 | **5쪽 완성.** KPI·시계열 / 유저·코호트 / 퍼널·분포 / 하트 / 신고·적체 |
 
 **남은 것**
 
-- **P7** — 루커에 `mart` 만 연결한다. `raw` 를 연결하면 화면을 그릴 때마다
-  1억 2천만 행을 읽는다
-- **P3 DAG 화** — NEIS 수집이 아직 손으로 돈다
+- **P3 DAG 화** — NEIS 수집이 아직 손으로 돈다. **28단계 중 유일하게 부분인 항목**
 - ⚠️ **앱과 생성기가 어긋난 곳 3개** — 투표 보상 · 일일 적립 상한 ·
   **이름 공개 시 `reveal_status` 미갱신**([[synthetic-reveal-status-not-updated]]).
   **다음 판본에서 한 번에 고친다** — [[app-follows-generator]]
@@ -295,5 +294,6 @@ python pipeline/verify_load.py  --source local                  # 행 수 대조
   mart **표 8개**(495 MiB). 그레인은 주간 필터가 정했다 —
   비율을 굽지 않고 distinct 를 사전 집계하지 않는다([[mart-grain-for-weekly-filter]]).
   주간 값이 stg 직접 집계와 일치하는 것까지 확인했다 |
-| P7 | 대시보드 | **다음 차례** — 루커에 `mart` 만 연결한다.
+| P7 | 대시보드 | **완료 (2026-08-25)** — 루커 스튜디오 **5쪽**. `mart` 만 연결한다.
+  설계대로 붙었다 — 주간 규칙 넷·같은 차원 이름·`sido_iso` 를 미리 해 둔 덕이다.
   ⚠️ `user_journey` 퍼널은 단조 감소하지 않으니 **막대 묶음**으로 그린다 |
