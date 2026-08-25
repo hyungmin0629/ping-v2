@@ -142,6 +142,10 @@ python -m venv .venv               # 없을 때만
 | `python db/reset_users.py --yes` | 유저 데이터 전체 삭제 (마스터는 보존) |
 | `python pipeline/extract_load.py --source supabase` | BigQuery raw 증분 적재 |
 | `python pipeline/verify_load.py --source supabase` | **적재 후 행 수 대조. 증분은 조용히 틀린다** |
+| `python report/collect.py [--week 2026-08-17]` | 주간 보고서 숫자 수집 (mart → JSON). **raw 를 읽지 않는다** |
+| `python report/render.py` | JSON → 3쪽 PDF (Playwright) |
+| `python report/deliver.py` | PDF → 공유 Drive 폴더 (같은 이름이면 새 버전) |
+| `python report/gdrive_auth.py --client client_secret.json` | Drive 토큰 **최초 1회** 발급 |
 
 정합성 검사는 `qa/checks/integrity.sql` 을 Supabase 에 그대로 돌린다(17종, 위반 0이어야 한다).
 
@@ -375,6 +379,20 @@ docker run -d --name pgtest -e POSTGRES_PASSWORD=test -e POSTGRES_DB=pingv2 -p 5
 저장 순서대로 꺼내면 한 덩어리가 수십 일치에 흩어져 금방 찬다 — 2026-08-06 에
 `vote_candidate` 가 2,620만 행에서 막혔다. **`ORDER BY` 파티션 컬럼으로 꺼낸다**
 (이미 코드에 있다). 경위와 기각한 대안은 [[partition-ordered-extract]].
+
+## 주간 보고서 — 매주 월요일 자동 발송
+
+지난주(월~일) 3쪽 PDF 가 **GitHub Actions** 에서 만들어져 공유 Drive 폴더에 쌓인다.
+적재 → 대조 → 품질 → 마트 → 수집 → 렌더 → 업로드를 한 번에 돈다.
+
+⚠️ **로컬 Airflow 가 아니다.** PC·Docker 가 꺼져 있으면 안 돌기 때문이다
+(실제로 2026-08-25 에 raw 가 5일 밀려 있었다). 경위는 [[weekly-report-runs-in-ci]].
+
+⚠️ **분모가 10 미만이면 비율을 쓰지 않는다** — `0/2` 처럼 실수로 적는다.
+실유저 23명 규모에서 "50.0%"는 한 사람이 바꾸면 뒤집히는 값이다
+([[weekly-report-suppresses-small-denominators]]).
+
+설정(최초 1회)과 실패했을 때 볼 곳은 [[ops-weekly-report]].
 
 ## 합성 데이터
 

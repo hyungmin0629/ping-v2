@@ -1,0 +1,133 @@
+# =====================================================================
+# 주간 보고서 · 매주 월요일 아침에 저절로 만들어 Drive 로 보낸다
+# =====================================================================
+# **왜 Airflow 가 아니라 여기인가.**
+#   로컬 Airflow 는 이 PC 와 Docker Desktop 이 켜져 있을 때만 돈다.
+#   2026-08-25 확인 시점에 Docker 가 꺼져 있었고 raw 가 5일 밀려 있었다.
+#   "터치 안 해도 유지"가 목표라면 실행 주체가 PC 밖에 있어야 한다.
+#   비용은 0 이다(프라이빗 저장소 무료 분수 안, 주 1회 몇 분).
+#   경위와 기각한 대안은 docs/decisions/weekly-report-runs-in-ci.md
+#
+# **적재부터 다 한다.** 보고서만 돌리면 마트가 며칠 전 것이라 조용히 옛
+# 숫자를 보고하게 된다. 그래서 ①적재 ②대조 ③품질 ④마트 ⑤보고서 순으로
+# 로컬 DAG 와 같은 일을 한다.
+#
+# ⚠️ 스케줄 워크플로는 **저장소가 60일간 조용하면 GitHub 이 꺼 버린다.**
+#    끄기 전에 메일이 온다. 커밋이 계속 있으면 걸릴 일이 없다.
+# =====================================================================
+name: 주간 보고서
+
+on:
+  schedule:
+    # 월요일 05:30 KST = 일요일 20:30 UTC. 지난주(월~일)를 대상으로 돈다.
+    - cron: "30 20 * * 0"
+  workflow_dispatch:
+    inputs:
+      week:
+        description: "그 날이 속한 주를 뽑는다 (YYYY-MM-DD). 비우면 지난주"
+        required: false
+      source:
+        description: "데이터 원천"
+        required: false
+        default: supabase
+        type: choice
+        options: [supabase, local]
+      skip_pipeline:
+        description: "적재·마트를 건너뛰고 보고서만 (마트가 이미 최신일 때)"
+        required: false
+        default: false
+        type: boolean
+
+concurrency:
+  group: weekly-report
+  cancel-in-progress: false
+
+jobs:
+  report:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    env:
+      GCP_PROJECT_ID: ping-v2-503916
+      BQ_LOCATION: asia-northeast3
+      BQ_DATASET_RAW: raw
+      BQ_DATASET_STG: stg
+      BQ_DATASET_MART: mart
+      GOOGLE_APPLICATION_CREDENTIALS: ./credentials.json
+      SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+      GDRIVE_TOKEN_JSON: ${{ secrets.GDRIVE_TOKEN_JSON }}
+      GDRIVE_WEEKLY_FOLDER_ID: ${{ vars.GDRIVE_WEEKLY_FOLDER_ID || '1li2Y9wfc65yUT08lyod7Xq7xU1us3fma' }}
+      REPORT_SOURCE: ${{ inputs.source || 'supabase' }}
+      PYTHONIOENCODING: utf-8
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: 패키지 설치
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      # ⚠️ 한글 글꼴이 없으면 PDF 가 통째로 두부(□)가 된다. 러너에는 안 깔려 있다.
+      - name: 한글 글꼴 · 크로미움
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq fonts-noto-cjk
+          python -m playwright install --with-deps chromium
+
+      # 서비스 계정 키는 파일로만 쓸 수 있다. 작업이 끝나면 러너와 함께 사라진다.
+      - name: BigQuery 자격
+        run: echo '${{ secrets.GCP_SA_KEY }}' > credentials.json
+
+      # ① 원천 → raw (증분)
+      - name: 적재
+        if: ${{ inputs.skip_pipeline != true }}
+        run: python pipeline/extract_load.py --source "$REPORT_SOURCE"
+
+      # ② 행 수 대조 — **증분은 조용히 틀린다.** 이 확인이 없으면 모른다.
+      - name: 적재 대조
+        if: ${{ inputs.skip_pipeline != true }}
+        run: python pipeline/verify_load.py --source "$REPORT_SOURCE"
+
+      # ③ 온 행을 믿어도 되나. 창을 9일로 잡는다 — 주 1회 실행이라
+      #    한 주(7일)에 실행이 밀릴 여유 이틀을 더한 값이다.
+      - name: 품질 검증
+        if: ${{ inputs.skip_pipeline != true }}
+        run: |
+          python qa/quality_check.py --source "$REPORT_SOURCE" \
+            --kinds 필수값,시각 --since-days 9 --max-scan-gib 20
+
+      # ④ 마트 다시 굽기. CREATE OR REPLACE 라 재시도가 안전하다.
+      - name: 마트 빌드
+        if: ${{ inputs.skip_pipeline != true }}
+        run: python bigquery/build.py --layer mart
+
+      # ⑤ 숫자 → 그림 → 배송
+      - name: 숫자 수집
+        run: |
+          python report/collect.py --source "$REPORT_SOURCE" \
+            ${{ inputs.week && format('--week {0}', inputs.week) || '' }}
+
+      - name: PDF 렌더
+        run: python report/render.py
+
+      - name: Drive 업로드
+        run: python report/deliver.py
+
+      # 업로드가 실패해도 PDF 는 남긴다. 실패한 주의 보고서를 손으로
+      # 건질 수 있어야 한다.
+      - name: 산출물 보관
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: weekly-report
+          path: |
+            report/out/*.pdf
+            report/out/*.json
+          retention-days: 90
+          if-no-files-found: warn

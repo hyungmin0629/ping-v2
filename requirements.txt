@@ -27,6 +27,14 @@ matplotlib==3.11.1                   # 그래프
 ipykernel==7.3.0                     # VS Code·주피터에서 이 환경을 커널로 쓰기 위해
 nbformat==5.10.4                     # notebooks/_make_*.py 가 .ipynb 를 만들 때
 
+# 주간 보고서 (2026-08-25 추가) — report/ 가 이것들을 쓴다.
+# ⚠️ Airflow 컨테이너에는 넣지 않는다. 주간 보고서는 로컬 Airflow 가 아니라
+#    GitHub Actions 에서 돈다([[weekly-report-runs-in-ci]]).
+playwright==1.62.0                   # HTML → PDF. 크로미움을 번들로 들고 온다
+                                     #   ⚠️ 설치 후 `python -m playwright install chromium` 한 번 더 필요
+google-api-python-client==2.199.0    # Drive 업로드
+google-auth-oauthlib==1.4.1          # Drive OAuth 토큰 발급·갱신
+
 
 # ---------------------------------------------------------------------
 # 앞으로 단계별로 추가될 것 (지금은 설치하지 않는다)

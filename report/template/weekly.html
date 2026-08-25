@@ -1,0 +1,244 @@
+<!-- =====================================================================
+     주간 보고서 템플릿 · {{키}} 는 render.py 가 채운다
+     -------------------------------------------------------------------
+     ⚠️ 자바스크립트도 외부 자원도 쓰지 않는다. PDF 로 뽑을 때 네트워크를
+        기다리게 만들면 CI 에서 가끔 빈 그래프가 나온다.
+     ⚠️ 한글 글꼴은 **시스템에 깔린 것**을 쓴다. 우분투 러너에는
+        fonts-noto-cjk 를 워크플로가 설치한다 — 없으면 전부 두부(□)가 된다.
+     ===================================================================== -->
+<meta charset="utf-8">
+<title>{{TITLE}}</title>
+<style>
+  :root{
+    --blue:#2563eb; --blue-d:#1e3a8a; --blue-l:#93b4f7;
+    --ink:#0f172a; --dim:#64748b; --line:#e2e8f0; --bg:#fff;
+    --ok:#16a34a; --warn:#f59e0b; --bad:#dc2626; --track:#f1f5f9;
+  }
+  *{box-sizing:border-box; margin:0; padding:0}
+  html{-webkit-print-color-adjust:exact; print-color-adjust:exact}
+  body{
+    font-family:'Noto Sans KR','Malgun Gothic','Apple SD Gothic Neo',sans-serif;
+    color:var(--ink); background:var(--bg); font-size:11px; line-height:1.45;
+  }
+  @page{ size:A4 landscape; margin:0 }
+
+  .page{
+    width:297mm; height:210mm; padding:12mm 13mm 9mm; position:relative;
+    display:flex; flex-direction:column; page-break-after:always; overflow:hidden;
+  }
+  .page:last-child{ page-break-after:auto }
+
+  /* 머리말 --------------------------------------------------------- */
+  .eyebrow{ color:var(--blue); font-size:9.5px; font-weight:700; letter-spacing:.09em }
+  h1{ font-size:25px; font-weight:800; letter-spacing:-.02em; margin:2px 0 3px }
+  .sub{ color:var(--dim); font-size:10px }
+  .head{ display:flex; justify-content:space-between; align-items:flex-start;
+         border-bottom:1px solid var(--line); padding-bottom:8px; margin-bottom:11px }
+  .pageno{ color:var(--dim); font-size:10px; text-align:right; white-space:nowrap }
+  .badges{ display:flex; gap:6px; margin-top:7px; justify-content:flex-end; flex-wrap:wrap }
+  .badge{ font-size:9.5px; font-weight:700; padding:4px 9px; border-radius:999px;
+          background:#eff6ff; color:var(--blue-d); white-space:nowrap }
+  .badge.warn{ background:#fef3c7; color:#92400e }
+  .badge.ok{ background:#dcfce7; color:#166534 }
+
+  /* KPI 카드 ------------------------------------------------------- */
+  .kpis{ display:grid; grid-template-columns:repeat(6,1fr); gap:7px; margin-bottom:11px }
+  .kpis.rev{ grid-template-columns:repeat(4,1fr) }
+  .kpi{ border:1px solid var(--line); border-top:3px solid var(--blue);
+        border-radius:7px; padding:9px 10px 8px; min-height:74px }
+  .kpi.attn{ border-top-color:var(--warn) }
+  .kpi .k{ font-size:9.5px; color:var(--dim); font-weight:700; margin-bottom:3px }
+  .kpi .v{ font-size:21px; font-weight:800; letter-spacing:-.02em; line-height:1.15 }
+  .kpi .v.sm{ font-size:15px }
+  .kpi .foot{ display:flex; justify-content:space-between; align-items:baseline;
+              gap:5px; margin-top:3px }
+  .kpi .note{ font-size:9px; color:var(--dim) }
+  .up{ color:var(--ok); font-weight:700; font-size:9.5px }
+  .down{ color:var(--bad); font-weight:700; font-size:9.5px }
+  .flat{ color:var(--dim); font-weight:700; font-size:9.5px }
+  .attn .up{ color:var(--warn) }
+
+  /* 패널 ----------------------------------------------------------- */
+  .grid2{ display:grid; grid-template-columns:1fr 1fr; gap:11px; flex:1; min-height:0 }
+  .row2{ display:grid; grid-template-columns:1fr 1fr; gap:11px; min-height:0 }
+  .stack{ display:flex; flex-direction:column; gap:11px; min-height:0 }
+  .panel{ display:flex; flex-direction:column; min-height:0 }
+  h2{ font-size:13.5px; font-weight:800; margin-bottom:1px }
+  .cap{ color:var(--dim); font-size:9.5px; margin-bottom:6px }
+  .box{ border:1px solid var(--line); border-radius:8px; padding:9px 11px;
+        flex:1; display:flex; flex-direction:column; justify-content:center; min-height:0 }
+  .foot-note{ color:var(--dim); font-size:8.8px; margin-top:5px;
+              border-top:1px dashed var(--line); padding-top:4px }
+
+  /* 차트 ----------------------------------------------------------- */
+  .chart{ width:100%; height:auto; display:block }
+  .axis{ font-size:9px; fill:var(--dim) }
+  .pointlabel{ font-size:10px; font-weight:800; fill:var(--ink) }
+  .hlabel{ font-size:10px; font-weight:700; fill:var(--ink) }
+  .hvalue{ font-size:9.5px; font-weight:700; fill:var(--ink) }
+
+  /* 코호트 표 ------------------------------------------------------ */
+  table.cohort{ width:100%; border-collapse:separate; border-spacing:3px; font-size:9.5px }
+  table.cohort th{ color:var(--dim); font-size:9px; font-weight:700; padding:2px }
+  table.cohort td{ text-align:center; padding:6px 2px; border-radius:4px; font-weight:700 }
+  table.cohort td.rowhead{ text-align:right; color:var(--dim); font-weight:700; background:none }
+  td.c0{ background:var(--blue-d); color:#fff }
+  td.c1{ background:#3b6fd4; color:#fff }
+  td.c2{ background:#8fb0ea; color:#0f172a }
+  td.c3{ background:#cddcf7; color:#0f172a }
+  td.c4{ background:#eef3fd; color:#0f172a }
+  td.none{ background:#f8fafc; color:#cbd5e1 }
+
+  /* 요약 ----------------------------------------------------------- */
+  .summary{ display:flex; flex-direction:column; gap:6px }
+  .sline{ display:flex; gap:8px; align-items:flex-start; font-size:10.5px }
+  .tag{ flex:none; font-size:9px; font-weight:800; color:#fff; border-radius:4px;
+        padding:2px 7px; margin-top:1px }
+  .tag.good{ background:var(--ok) } .tag.warn{ background:var(--warn) }
+  .tag.ops{ background:var(--bad) } .tag.info{ background:var(--blue) }
+  .cta{ background:var(--blue-d); color:#fff; border-radius:8px; padding:11px 13px;
+        display:flex; flex-direction:column; justify-content:center; gap:5px }
+  .cta h3{ font-size:12px; font-weight:800 }
+  .cta p{ font-size:9.5px; color:#c7d7f5 }
+  .cta a{ background:var(--blue); color:#fff; text-decoration:none; font-weight:800;
+          font-size:10px; padding:7px 0; border-radius:6px; text-align:center; display:block }
+
+  .alerts{ display:flex; flex-direction:column; gap:7px }
+  .alert{ display:flex; justify-content:space-between; align-items:center; font-size:10.5px }
+  .alert .dot{ width:7px; height:7px; border-radius:50%; display:inline-block; margin-right:7px }
+  .alert b{ font-weight:800 }
+  .callout{ background:#fff7ed; border:1px solid #fed7aa; color:#9a3412;
+            border-radius:6px; padding:7px 9px; font-size:9.5px; font-weight:700 }
+  .callout.quiet{ background:#f8fafc; border-color:var(--line); color:var(--dim) }
+
+  .pfoot{ position:absolute; left:13mm; right:13mm; bottom:5mm; display:flex;
+          justify-content:space-between; color:var(--dim); font-size:8.5px;
+          border-top:1px solid var(--line); padding-top:5px }
+</style>
+
+<!-- ============================ 1쪽 ============================ -->
+<section class="page">
+  <div class="head">
+    <div>
+      <div class="eyebrow">PING WEEKLY REPORT</div>
+      <h1>서비스 핵심 현황</h1>
+      <div class="sub">데이터 기간 {{PERIOD}} · {{SOURCE_LABEL}}</div>
+    </div>
+    <div>
+      <div class="pageno">1 / 3</div>
+      <div class="badges">{{BADGES}}</div>
+    </div>
+  </div>
+
+  <div class="kpis">{{KPI_CARDS}}</div>
+
+  <div class="grid2">
+    <div class="panel">
+      <h2>최근 8주 주간 유효 투표 참여율</h2>
+      <div class="cap">친구 5명 확보 유효 사용자 중 해당 주 실제 투표자 비율</div>
+      <div class="box">{{CHART_PARTICIPATION}}</div>
+    </div>
+    <div class="panel">
+      <h2>전주 대비 사용자 현황</h2>
+      <div class="cap">회색: 전주 · 파랑: 금주{{STAGE_UNIT_NOTE}}</div>
+      <div class="box">{{CHART_STAGES}}</div>
+    </div>
+  </div>
+
+  <div class="grid2" style="flex:none; margin-top:11px">
+    <div class="panel">
+      <h2>이번 주 핵심 요약</h2>
+      <div class="box summary">{{SUMMARY}}</div>
+    </div>
+    <div class="cta">
+      <h3>상세 대시보드</h3>
+      <p>필터와 세부 지표는 Looker Studio 에서 확인하세요.</p>
+      <a href="{{DASHBOARD_URL}}">Looker Studio 열기</a>
+    </div>
+  </div>
+
+  <div class="pfoot"><span>{{FOOTNOTE}}</span><span>{{STAMP}}</span></div>
+</section>
+
+<!-- ============================ 2쪽 ============================ -->
+<section class="page">
+  <div class="head">
+    <div>
+      <div class="eyebrow">PING WEEKLY REPORT</div>
+      <h1>가입·투표·리텐션</h1>
+      <div class="sub">사용자가 핵심 가치에 도달하고 반복 참여하는 과정을 확인합니다.</div>
+    </div>
+    <div class="pageno">2 / 3</div>
+  </div>
+
+  <div class="stack" style="flex:1">
+    <div class="row2" style="flex:1">
+      <div class="panel">
+        <h2>신규 가입자 Activation</h2>
+        <div class="cap">{{ACT_CAP}}</div>
+        <div class="box">{{FUNNEL_USER}}<div class="foot-note">{{ACT_NOTE}}</div></div>
+      </div>
+      <div class="panel">
+        <h2>투표 수신 → 이름 공개 전환</h2>
+        <div class="cap">각 단계는 그 주에 받은 투표 전체를 분모로 계산</div>
+        <div class="box">{{FUNNEL_RECV}}<div class="foot-note">{{RECV_NOTE}}</div></div>
+      </div>
+    </div>
+    <div class="row2" style="flex:1">
+      <div class="panel">
+        <h2>최근 첫 투표 코호트 리텐션</h2>
+        <div class="cap">회색 칸은 관찰 기간이 아직 지나지 않은 구간</div>
+        <div class="box">{{COHORT}}<div class="foot-note">{{COHORT_NOTE}}</div></div>
+      </div>
+      <div class="panel">
+        <h2>세그먼트별 투표 참여율</h2>
+        <div class="cap">{{SEG_CAP}}</div>
+        <div class="box">{{SEGMENTS}}<div class="foot-note">{{SEG_NOTE}}</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="pfoot"><span>{{FOOTNOTE}}</span><span>{{STAMP}}</span></div>
+</section>
+
+<!-- ============================ 3쪽 ============================ -->
+<section class="page">
+  <div class="head">
+    <div>
+      <div class="eyebrow">PING WEEKLY REPORT</div>
+      <h1>하트·매출·신고</h1>
+      <div class="sub">수익성과 운영 안전 지표를 함께 확인합니다.</div>
+    </div>
+    <div class="pageno">3 / 3</div>
+  </div>
+
+  <div class="kpis rev">{{REV_CARDS}}</div>
+
+  <div class="grid2" style="flex:1">
+    <div class="panel">
+      <h2>금주 하트 유입·소비</h2>
+      <div class="cap">무료·결제 유입과 사용처를 분리</div>
+      <div class="box">{{HEART_FLOW}}<div class="foot-note">{{HEART_NOTE}}</div></div>
+    </div>
+    <div class="panel">
+      <h2>미처리 신고 적체</h2>
+      <div class="cap">매주 말 기준 스냅샷</div>
+      <div class="box">{{CHART_BACKLOG}}</div>
+    </div>
+  </div>
+
+  <div class="grid2" style="flex:none; margin-top:11px">
+    <div class="panel">
+      <h2>최근 8주 실제 매출 추이</h2>
+      <div class="cap">스텁·실패·대기·환불 제외</div>
+      <div class="box">{{CHART_REVENUE}}</div>
+    </div>
+    <div class="panel">
+      <h2>신고 운영 알림</h2>
+      <div class="cap">신규 접수 · 처리 · 장기 미처리</div>
+      <div class="box alerts">{{REPORT_ALERTS}}</div>
+    </div>
+  </div>
+
+  <div class="pfoot"><span>{{FOOTNOTE}}</span><span>{{STAMP}}</span></div>
+</section>

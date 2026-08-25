@@ -9,6 +9,8 @@
 credentials.json
 service-account*.json
 gcp-key*.json
+client_secret*.json
+report/.gdrive_token.json
 
 
 # =====================================================================
@@ -86,3 +88,7 @@ desktop.ini
 .obsidian/workspace-mobile.json
 .obsidian/cache
 .obsidian/plugins/*/data.json
+
+# 주간 보고서 산출물 — 매주 쌓이고 언제든 다시 만들 수 있다.
+# 보관소는 저장소가 아니라 Google Drive 다.
+report/out/

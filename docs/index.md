@@ -55,7 +55,7 @@ API 스펙 등 바깥에서 온 문서.
 
 _아직 없다._
 
-## 결정 <sub>`docs/decisions` · 89</sub>
+## 결정 <sub>`docs/decisions` · 91</sub>
 
 왜 그렇게 했는지. 하나가 한 노드다.
 
@@ -145,11 +145,13 @@ _아직 없다._
 - [[watermark-lag-5min|워터마크를 스냅샷보다 5분 뒤로 물려 저장한다]] — 매 실행이 최근 5분치를 다시 읽는다.
 - [[watermark-updated-at|증분 워터마크를 `updated_at` 하나로 통일한다]] — . 적재 조건은 테이블과 무관하게
 - [[webapp-first-track|웹앱을 최우선 트랙으로 재편]] — 9단계를 다 끝내도 나오는 것은 BigQuery 테이블과 대시보드뿐이었다. 대화에서는
+- [[weekly-report-runs-in-ci|주간 보고서는 로컬 Airflow 가 아니라 GitHub Actions 에서 돌린다]] — 만든다. 월요일 05:30 KST(일 20:30 UTC)에 적재 → 대조 → 품질 → 마트 →
+- [[weekly-report-suppresses-small-denominators|분모가 10 미만이면 비율을 쓰지 않는다]] — 전주 대비 %p 비교도 양쪽이 다 10 이상일 때만 계산한다. 임계값은
 - [[withdraw-keeps-rows|계정 삭제는 행을 지우지 않는다]] — 없어 누가 탈퇴했는지 특정할 수 없었다. 사유의 57%가 "기타"였고, 탈퇴 사유를
 - [[withdrawal-is-terminal|탈퇴는 종점이다 — 그 뒤로 어떤 로그도 남기지 않는다]] — 세션·투표·원장을 전부 훑어 가장 늦은 것을 찾은 다음 그 뒤에 놓는다.
 - [[withdrawal-user-id|탈퇴 기록에 유저 식별자를 넣는다]] — 누가 탈퇴했는지 특정할 수 없었다. 탈퇴 사유를 유저 속성과 교차분석하는 게 원천 봉쇄됐다.
 
-## 운영 참조 <sub>`docs/ops` · 9</sub>
+## 운영 참조 <sub>`docs/ops` · 10</sub>
 
 실제로 그 작업을 할 때 필요한 값과 절차.
 
@@ -162,6 +164,7 @@ _아직 없다._
 - [[ops-school-data|조직·학교 데이터]] — 이름은 테스트 조직이지만 급식·시간표·학사일정은 서울고등학교의 공개 데이터를 쓴다.
 - [[ops-synthetic-data|합성 데이터 만들기]] — 설정 주석에 주장으로만 있던 것을 전체 규모로 확인했다 — 2만 명·12개월을 다시
 - [[ops-webapp|웹앱 (web/)]] — 프로덕션 빌드는 정상이지만 로컬에서 확인이 불가능하므로, 동적 라우트 대신
+- [[ops-weekly-report|주간 보고서 — 한 번 설정하고 매주 자동으로 받는다]] — 매주 월요일 아침, 지난주의 3쪽짜리 PDF 가 Google Drive 폴더에 쌓인다.
 
 ## 테이블 <sub>`docs/tables` · 40</sub>
 
@@ -210,4 +213,4 @@ _아직 없다._
 
 ---
 
-문서 156개 · `python db/wiki_index.py` 로 갱신
+문서 159개 · `python db/wiki_index.py` 로 갱신

@@ -7,7 +7,7 @@ DDL과 스크립트가 진실이다.
 **이 문서는 색인이다.** 결정 하나하나는 `docs/decisions/` 의 파일이고,
 각각이 옵시디언 노드다. 하나를 보려고 전체를 읽지 않는다.
 
-결정 84개 · 유효 80 · 대체됨 4
+결정 86개 · 유효 82 · 대체됨 4
 
 ## 새 결정을 적을 때
 
@@ -119,6 +119,7 @@ DDL과 스크립트가 진실이다.
 - `2026-07-29` [[supabase-session-pooler|Supabase 연결은 Session pooler 를 쓴다]]
 - `2026-07-29` [[local-docker-airflow|Cloud Composer 대신 로컬 Docker Airflow]]
 - `2026-07-30` [[airflow-two-services|Airflow 는 공식 컴포즈 대신 2개 서비스로 줄인다]]
+- `2026-08-25` [[weekly-report-runs-in-ci|주간 보고서는 로컬 Airflow 가 아니라 GitHub Actions 에서 돌린다]]
 
 ## 검증
 
@@ -142,4 +143,4 @@ DDL과 스크립트가 진실이다.
 - `2026-08-05` [[dow-from-legacy-attendance|요일 패턴은 구 서비스 출석 로그를 따라간다 — 우하향이 아니라 V자]]
 - `2026-08-05` [[session-bounded-actions|유저의 직접 행동은 접속 세션 안에서만 일어난다 — v5]]
 - `2026-08-05` [[withdrawal-is-terminal|탈퇴는 종점이다 — 그 뒤로 어떤 로그도 남기지 않는다]]
-
+- `2026-08-25` [[weekly-report-suppresses-small-denominators|분모가 10 미만이면 비율을 쓰지 않는다]]
