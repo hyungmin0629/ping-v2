@@ -233,6 +233,7 @@ python pipeline/verify_load.py  --source local                  # 행 수 대조
 | `stg` | **뷰 10개** (저장 0). 대시보드 때문에 넷이 늘었다 — [[stg-views-for-dashboard]] |
 | `mart` | **표 8개 · 495 MiB.** 주간 필터와 전주 대비까지 검증 — [[mart-grain-for-weekly-filter]] |
 | 루커 | **5쪽 완성.** KPI·시계열 / 유저·코호트 / 퍼널·분포 / 하트 / 신고·적체 |
+| 주간 보고 | **매주 월요일 자동 발송.** mart → 3쪽 PDF → 공유 Drive. GitHub Actions 에서 돈다 |
 
 **남은 것**
 
@@ -245,7 +246,8 @@ python pipeline/verify_load.py  --source local                  # 행 수 대조
 
 ---
 
-웹앱 트랙은 W19 까지 끝났고, **지금 움직이는 것은 파이프라인 트랙**이다.
+웹앱 트랙은 W19 까지, 파이프라인 트랙은 P7 까지 끝났다. **지금 저절로 도는 것은
+주간 보고서 하나**다 — 매주 월요일 지난주 실적이 Drive 에 쌓인다([[ops-weekly-report]]).
 웹앱을 먼저 세운 이유는 [DECISIONS.md](DECISIONS.md)의 "웹앱을 최우선 트랙으로 재편" 참조.
 
 **웹앱 트랙**
