@@ -146,6 +146,10 @@ def measure(nodes_dir: Path, term: str, hints: tuple[str, ...], tok, window: int
     e = tok(list_out) + sum(tok(p.read_text(encoding="utf-8")) for p in matched)
 
     return {"A": a, "B": b, "D": d, "E": e,
+            # B 도 쪼개 둔다. **창을 0 으로 줄여도 grep 출력값은 남는다** —
+            # 한 파일에서 흔한 낱말을 치면 매칭 줄이 수십 개라 그 자체가 비용이다.
+            "B_grep": tok(grep_out),
+            "B_read": b - tok(grep_out),
             # D 를 둘로 쪼개 둔다. 노드가 더 늘면 **파일 목록 쪽이 먼저 커진다** —
             # 흔한 낱말 하나가 위키 절반에 걸리기 시작하면 그때가 한계다.
             "D_list": tok(list_out),
