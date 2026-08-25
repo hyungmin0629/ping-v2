@@ -242,12 +242,24 @@
 <p class="lede">노드와 링크를 그림으로 보면 문서로는 안 보이는 것이 보인다.</p>
 
 <figure>
-  <img src="img/wiki-graph.svg" alt="위키 링크 그래프">
+  <img src="img/obsidian-graph.png" alt="옵시디언 그래프 뷰">
   <figcaption>
-    <b>ping-v2 위키 링크 그래프</b> (2026-08-25 · 노드 153 · 링크 505).
-    색은 갈래, 크기는 연결 수. <code>python db/wiki_graph.py</code> 로 다시 만든다 —
-    <b>배치 씨앗이 고정돼 있어 같은 그림이 다시 나온다.</b>
-    생성 색인(<code>index</code>)은 뺐다. 모든 노드를 가리켜서 그리면 그래프가
+    <b>옵시디언 그래프 뷰에서 본 저장소 전체.</b> 가운데 촘촘한 덩어리가 위키다 —
+    결정(파랑) · 표(청록) · 운영(초록) · 색인(회색)이 서로 이어져 있고,
+    <code>DECISIONS</code> · <code>index</code> · <code>CLAUDE</code> 가 큰 원으로 보인다.
+    <b>바깥에 흩어진 노란 점들은 위키가 아니다</b> — SQL · 스크립트 · 데이터 파일이라
+    링크가 없다. <b>이 대비가 곧 "무엇이 문서화돼 있고 무엇이 아닌가"</b>다.
+  </figcaption>
+</figure>
+
+<figure>
+  <img src="img/wiki-graph.svg" alt="위키 링크 그래프 (생성물)">
+  <figcaption>
+    같은 데이터를 <b>재현 가능한 형태</b>로 다시 그린 것 —
+    <code>python db/wiki_graph.py</code> (노드 153 · 링크 505).
+    스크린샷은 찍은 순간의 것이고 배치가 매번 달라지지만, 이쪽은 씨앗이 고정돼
+    <b>같은 그림이 다시 나온다.</b> 위키 노드만 남기고 SQL·스크립트는 뺐으며,
+    생성 색인(<code>index</code>)도 뺐다 — 모든 노드를 가리켜서 그리면 그래프가
     통째로 별 모양이 되고 결정끼리의 구조가 안 보인다.
   </figcaption>
 </figure>
