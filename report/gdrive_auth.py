@@ -23,6 +23,7 @@ import sys
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
+ROOT = HERE.parent
 TOKEN_FILE = HERE / ".gdrive_token.json"
 SCOPES = ["https://www.googleapis.com/auth/drive.file"]
 
@@ -34,17 +35,29 @@ def main() -> int:
         pass
 
     ap = argparse.ArgumentParser()
-    ap.add_argument("--client", default="client_secret.json",
-                    help="콘솔에서 받은 OAuth 클라이언트 JSON 경로")
+    ap.add_argument("--client", default=None,
+                    help="콘솔에서 받은 OAuth 클라이언트 JSON 경로. "
+                         "없으면 저장소 루트의 client_secret*.json 을 찾는다")
     args = ap.parse_args()
 
-    client = Path(args.client)
+    if args.client:
+        client = Path(args.client)
+    else:
+        # 콘솔이 주는 파일 이름은 client_secret_1234-....apps.googleusercontent.com.json
+        # 처럼 길다. 받은 그대로 폴더에 두게 두고 **스크립트가 찾는다** —
+        # 이름을 바꾸라고 시키면 거기서 한 번 더 틀린다.
+        found = sorted(ROOT.glob("client_secret*.json"))
+        if len(found) > 1:
+            names = "\n  ".join(f.name for f in found)
+            sys.exit(f"client_secret*.json 이 여러 개입니다. --client 로 하나를 고르세요:\n  {names}")
+        client = found[0] if found else ROOT / "client_secret.json"
+
     if not client.exists():
         sys.exit(
-            f"OAuth 클라이언트 파일이 없습니다: {client}\n"
-            "Google Cloud 콘솔 → API 및 서비스 → 사용자 인증 정보 →\n"
-            "  '사용자 인증 정보 만들기' → 'OAuth 클라이언트 ID' → 유형 **데스크톱 앱**\n"
-            "받은 JSON 을 이 경로에 두고 다시 실행하세요.\n"
+            f"OAuth 클라이언트 파일을 못 찾았습니다 (찾은 곳: {ROOT})\n"
+            "Google Cloud 콘솔 → Google 인증 플랫폼 → 클라이언트 →\n"
+            "  'OAuth 클라이언트 만들기' → 유형 **데스크톱 앱** → JSON 다운로드\n"
+            "받은 파일을 **이름 그대로** 저장소 루트에 두고 다시 실행하세요.\n"
             "자세한 절차는 docs/ops/ops-weekly-report.md"
         )
 
